@@ -19,8 +19,8 @@ const userSchema = new mongoose.Schema(
             required: true,
             minlength: 6
         },
-        age: {
-            type: Number
+        dob: {
+            type: String
         },
         cnic: {
             type: String

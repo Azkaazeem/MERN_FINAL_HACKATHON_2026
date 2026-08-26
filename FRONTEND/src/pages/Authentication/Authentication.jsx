@@ -35,7 +35,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   const [signupData, setSignupData] = useState({
     username: '',
     email: '',
-    age: '',
+    dob: '',
     cnic: '',
     password: '',
     confirmPassword: '',
@@ -137,7 +137,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         name: signupData.username,
         email: signupData.email,
         password: signupData.password,
-        age: signupData.age ? Number(signupData.age) : undefined,
+        dob: signupData.dob,
         cnic: signupData.cnic,
         profilePic: signupData.profilePic
       });
@@ -213,14 +213,14 @@ const Authentication = ({ defaultIsSignUp = false }) => {
               />
             </div>
 
-            {/* Age */}
+            {/* Date of Birth (DOB) */}
             <div className="input-group">
               <Calendar size={18} className="input-icon" />
               <input 
-                type="number" 
-                name="age" 
-                placeholder="Age" 
-                value={signupData.age} 
+                type="date" 
+                name="dob" 
+                placeholder="Date of Birth" 
+                value={signupData.dob} 
                 onChange={handleSignupChange} 
                 required 
               />

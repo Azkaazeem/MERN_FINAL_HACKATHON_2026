@@ -9,14 +9,14 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, age, cnic, profilePic } = req.body;
+    const { name, email, password, dob, cnic, profilePic } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    const user = await User.create({ name, email, password, age, cnic, profilePic });
+    const user = await User.create({ name, email, password, dob, cnic, profilePic });
 
     res.status(201).json({
       success: true,
@@ -25,7 +25,7 @@ exports.register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        age: user.age,
+        dob: user.dob,
         cnic: user.cnic,
         profilePic: user.profilePic,
         role: user.role
@@ -58,7 +58,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        age: user.age,
+        dob: user.dob,
         cnic: user.cnic,
         profilePic: user.profilePic,
         role: user.role
