@@ -1,58 +1,162 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import toast, { Toaster } from 'react-hot-toast';
-import { User, Mail, Lock, Calendar, CreditCard, Camera } from 'lucide-react';
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  Calendar, 
+  CreditCard, 
+  Camera, 
+  Eye, 
+  EyeOff 
+} from 'lucide-react';
+import API from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 import './Authentication.css';
 
 const Authentication = ({ defaultIsSignUp = false }) => {
+  const { login } = useAuth();
   const [isSignUp, setIsSignUp] = useState(defaultIsSignUp);
+  const [loading, setLoading] = useState(false);
   const containerRef = useRef(null);
-  
-  // To handle initial load if user visits /register directly
+
+  // --- Password Visibility States ---
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
+
+  // --- Form States ---
+  const [loginData, setLoginData] = useState({
+    email: '',
+    password: ''
+  });
+
+  const [signupData, setSignupData] = useState({
+    username: '',
+    email: '',
+    age: '',
+    cnic: '',
+    password: '',
+    confirmPassword: '',
+    profilePic: ''
+  });
+
+  // --- Initial Route Check (/login or /register) ---
   useEffect(() => {
     if (defaultIsSignUp) {
-      togglePanel(true, 0); // 0 duration so it snaps instantly on load
+      togglePanel(true, 0); // instant snap without animation on direct link
     } else {
       togglePanel(false, 0);
     }
   }, [defaultIsSignUp]);
 
+  // --- GSAP Panel Toggle Logic ---
   const togglePanel = (toSignUp, duration = 0.6) => {
     setIsSignUp(toSignUp);
     const q = gsap.utils.selector(containerRef);
-    
+
     if (toSignUp) {
-      // Move to Sign Up (Right side)
-      gsap.to(q('.sign-in-container'), { x: '100%', opacity: 0, zIndex: 1, duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.sign-up-container'), { x: '100%', opacity: 1, zIndex: 5, duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-container'), { x: '-100%', duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay'), { x: '50%', duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-left'), { x: 0, duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-right'), { x: '20%', duration: duration, ease: "power2.inOut" });
+      // Slide to Sign Up (Right side)
+      gsap.to(q('.sign-in-container'), { x: '100%', opacity: 0, zIndex: 1, duration, ease: "power2.inOut" });
+      gsap.to(q('.sign-up-container'), { x: '100%', opacity: 1, zIndex: 5, duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay-container'), { x: '-100%', duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay'), { x: '50%', duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay-left'), { x: 0, duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay-right'), { x: '20%', duration, ease: "power2.inOut" });
     } else {
-      // Move to Sign In (Left side)
-      gsap.to(q('.sign-in-container'), { x: '0%', opacity: 1, zIndex: 5, duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.sign-up-container'), { x: '0%', opacity: 0, zIndex: 1, duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-container'), { x: '0%', duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay'), { x: '0%', duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-left'), { x: '-20%', duration: duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-right'), { x: '0%', duration: duration, ease: "power2.inOut" });
+      // Slide to Sign In (Left side)
+      gsap.to(q('.sign-in-container'), { x: '0%', opacity: 1, zIndex: 5, duration, ease: "power2.inOut" });
+      gsap.to(q('.sign-up-container'), { x: '0%', opacity: 0, zIndex: 1, duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay-container'), { x: '0%', duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay'), { x: '0%', duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay-left'), { x: '-20%', duration, ease: "power2.inOut" });
+      gsap.to(q('.overlay-right'), { x: '0%', duration, ease: "power2.inOut" });
     }
   };
 
-  const handleSignIn = (e) => {
-    e.preventDefault();
-    toast.success('Successfully signed in!');
+  // --- Input Change Handlers ---
+  const handleLoginChange = (e) => {
+    setLoginData({ ...loginData, [e.target.name]: e.target.value });
   };
 
-  const handleSignUp = (e) => {
-    e.preventDefault();
-    toast.success('Account created successfully!');
+  const handleSignupChange = (e) => {
+    setSignupData({ ...signupData, [e.target.name]: e.target.value });
   };
 
+  // --- Profile Picture Preview & Base64 Converter ---
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSignupData({ ...signupData, profilePic: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // --- Sign In Handler (Backend API Connection) ---
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await API.post('/auth/login', {
+        email: loginData.email,
+        password: loginData.password
+      });
+
+      if (res.data.success) {
+        toast.success(res.data.message || 'Login successful!');
+        login(res.data.user, res.data.token);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Sign Up Handler (Backend API Connection) ---
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+
+    // Validations
+    if (signupData.password !== signupData.confirmPassword) {
+      return toast.error('Passwords do not match!');
+    }
+    if (signupData.password.length < 6) {
+      return toast.error('Password must be at least 6 characters long!');
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await API.post('/auth/register', {
+        name: signupData.username,
+        email: signupData.email,
+        password: signupData.password,
+        age: signupData.age ? Number(signupData.age) : undefined,
+        cnic: signupData.cnic,
+        profilePic: signupData.profilePic
+      });
+
+      if (res.data.success) {
+        toast.success(res.data.message || 'Account created successfully!');
+        login(res.data.user, res.data.token);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Forgot Password Placeholder ---
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    toast('Redirecting to forgot password...', { icon: '🔑' });
+    toast('Forgot password logic triggered', { icon: '🔑' });
   };
 
   return (
@@ -60,58 +164,141 @@ const Authentication = ({ defaultIsSignUp = false }) => {
       <Toaster position="top-right" />
       <div className="auth-container" ref={containerRef}>
         
-        {/* Sign Up Form */}
+        {/* ===================== SIGN UP FORM ===================== */}
         <div className="form-container sign-up-container">
           <form onSubmit={handleSignUp}>
             <h2>Create Account</h2>
             
+            {/* Profile Picture Upload Circle */}
             <div className="profile-pic-wrapper">
               <label htmlFor="profile-upload" className="profile-pic-label" title="Upload Profile Picture">
-                <Camera size={24} />
+                {signupData.profilePic ? (
+                  <img src={signupData.profilePic} alt="Profile" className="profile-preview-img" />
+                ) : (
+                  <Camera size={22} />
+                )}
               </label>
-              <input type="file" id="profile-upload" className="hidden-input" accept="image/*" />
+              <input 
+                type="file" 
+                id="profile-upload" 
+                className="hidden-input" 
+                accept="image/*" 
+                onChange={handleImageChange}
+              />
             </div>
 
+            {/* Username */}
             <div className="input-group">
-              <User size={18} />
-              <input type="text" placeholder="Username" required />
-            </div>
-            <div className="input-group">
-              <Mail size={18} />
-              <input type="email" placeholder="Email" required />
-            </div>
-            <div className="input-group">
-              <Calendar size={18} />
-              <input type="number" placeholder="Age" required />
-            </div>
-            <div className="input-group">
-              <CreditCard size={18} />
-              <input type="text" placeholder="CNIC" required />
-            </div>
-            <div className="input-group">
-              <Lock size={18} />
-              <input type="password" placeholder="Password" required />
-            </div>
-            <div className="input-group">
-              <Lock size={18} />
-              <input type="password" placeholder="Confirm Password" required />
+              <User size={18} className="input-icon" />
+              <input 
+                type="text" 
+                name="username" 
+                placeholder="Username" 
+                value={signupData.username} 
+                onChange={handleSignupChange} 
+                required 
+              />
             </div>
 
-            <button className="submit-btn" type="submit">Sign Up</button>
+            {/* Email */}
+            <div className="input-group">
+              <Mail size={18} className="input-icon" />
+              <input 
+                type="email" 
+                name="email" 
+                placeholder="Email" 
+                value={signupData.email} 
+                onChange={handleSignupChange} 
+                required 
+              />
+            </div>
+
+            {/* Age */}
+            <div className="input-group">
+              <Calendar size={18} className="input-icon" />
+              <input 
+                type="number" 
+                name="age" 
+                placeholder="Age" 
+                value={signupData.age} 
+                onChange={handleSignupChange} 
+                required 
+              />
+            </div>
+
+            {/* CNIC */}
+            <div className="input-group">
+              <CreditCard size={18} className="input-icon" />
+              <input 
+                type="text" 
+                name="cnic" 
+                placeholder="CNIC (e.g. 42101-xxxxxxx-x)" 
+                value={signupData.cnic} 
+                onChange={handleSignupChange} 
+                required 
+              />
+            </div>
+
+            {/* Password with Eye Toggle */}
+            <div className="input-group">
+              <Lock size={18} className="input-icon" />
+              <input 
+                type={showSignupPassword ? "text" : "password"} 
+                name="password" 
+                placeholder="Password" 
+                value={signupData.password} 
+                onChange={handleSignupChange} 
+                required 
+              />
+              <button 
+                type="button" 
+                className="eye-btn" 
+                onClick={() => setShowSignupPassword(!showSignupPassword)}
+                tabIndex="-1"
+              >
+                {showSignupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {/* Confirm Password with Eye Toggle */}
+            <div className="input-group">
+              <Lock size={18} className="input-icon" />
+              <input 
+                type={showSignupConfirmPassword ? "text" : "password"} 
+                name="confirmPassword" 
+                placeholder="Confirm Password" 
+                value={signupData.confirmPassword} 
+                onChange={handleSignupChange} 
+                required 
+              />
+              <button 
+                type="button" 
+                className="eye-btn" 
+                onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                tabIndex="-1"
+              >
+                {showSignupConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            <button className="submit-btn" type="submit" disabled={loading}>
+              {loading ? 'Creating...' : 'Sign Up'}
+            </button>
             
+            {/* Social Buttons (Visual / UI) */}
             <div className="social-container">
-              <p style={{margin: '5px 0'}}>Or sign up with</p>
+              <p style={{ margin: '4px 0', fontSize: '12px' }}>Or connect with</p>
               <div className="social-icons">
-                <button type="button" className="social-btn">
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{width: '20px', height: '20px'}} />
+                <button type="button" className="social-btn" title="Google">
+                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
                 </button>
-                <button type="button" className="social-btn">
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{width: '20px', height: '20px'}} />
+                <button type="button" className="social-btn" title="GitHub">
+                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{ width: '18px', height: '18px' }} />
                 </button>
               </div>
             </div>
-            
-            {/* Mobile Toggle */}
+
+            {/* Mobile View Toggle */}
             <p className="mobile-toggle" onClick={() => {
               window.history.pushState({}, '', '/login');
               togglePanel(false);
@@ -121,41 +308,69 @@ const Authentication = ({ defaultIsSignUp = false }) => {
           </form>
         </div>
 
-        {/* Sign In Form */}
+        {/* ===================== SIGN IN FORM ===================== */}
         <div className="form-container sign-in-container">
           <form onSubmit={handleSignIn}>
             <h2>Sign In</h2>
             
+            {/* Social Buttons (Visual / UI) */}
             <div className="social-container">
-              <p style={{margin: '5px 0'}}>Use your account</p>
+              <p style={{ margin: '4px 0', fontSize: '12px' }}>Use your account</p>
               <div className="social-icons">
-                <button type="button" className="social-btn">
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{width: '20px', height: '20px'}} />
+                <button type="button" className="social-btn" title="Google">
+                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
                 </button>
-                <button type="button" className="social-btn">
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{width: '20px', height: '20px'}} />
+                <button type="button" className="social-btn" title="GitHub">
+                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{ width: '18px', height: '18px' }} />
                 </button>
               </div>
             </div>
 
-            <p>or use your email</p>
+            <p style={{ margin: '6px 0', fontSize: '12px' }}>or use your email</p>
 
+            {/* Email */}
             <div className="input-group">
-              <Mail size={18} />
-              <input type="email" placeholder="Email" required />
+              <Mail size={18} className="input-icon" />
+              <input 
+                type="email" 
+                name="email" 
+                placeholder="Email" 
+                value={loginData.email} 
+                onChange={handleLoginChange} 
+                required 
+              />
             </div>
+
+            {/* Password with Eye Toggle */}
             <div className="input-group">
-              <Lock size={18} />
-              <input type="password" placeholder="Password" required />
+              <Lock size={18} className="input-icon" />
+              <input 
+                type={showLoginPassword ? "text" : "password"} 
+                name="password" 
+                placeholder="Password" 
+                value={loginData.password} 
+                onChange={handleLoginChange} 
+                required 
+              />
+              <button 
+                type="button" 
+                className="eye-btn" 
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                tabIndex="-1"
+              >
+                {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
             
             <a href="#" className="forgot-password" onClick={handleForgotPassword}>
               Forgot your password?
             </a>
 
-            <button className="submit-btn" type="submit">Sign In</button>
+            <button className="submit-btn" type="submit" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
 
-            {/* Mobile Toggle */}
+            {/* Mobile View Toggle */}
             <p className="mobile-toggle" onClick={() => {
               window.history.pushState({}, '', '/register');
               togglePanel(true);
@@ -165,20 +380,20 @@ const Authentication = ({ defaultIsSignUp = false }) => {
           </form>
         </div>
 
-        {/* Sliding Overlay */}
+        {/* ===================== SLIDING OVERLAY ===================== */}
         <div className="overlay-container">
           <div className="overlay">
-            {/* Left Overlay - Shown when Sign Up form is active */}
+            {/* Left Overlay - Shown when Sign Up is active */}
             <div className="overlay-panel overlay-left">
               <h2>Welcome Back!</h2>
               <p>To keep connected with us please login with your personal info</p>
-              {/* NOTE: We update the URL without page reload using window.history, or we just slide it. Since it's one page, sliding is enough, but to sync with routes, we can just slide. */}
               <button className="ghost-btn" onClick={() => {
                 window.history.pushState({}, '', '/login');
                 togglePanel(false);
               }}>Sign In</button>
             </div>
-            {/* Right Overlay - Shown when Sign In form is active */}
+
+            {/* Right Overlay - Shown when Sign In is active */}
             <div className="overlay-panel overlay-right">
               <h2>Hello, Friend!</h2>
               <p>Enter your personal details and start journey with us</p>
