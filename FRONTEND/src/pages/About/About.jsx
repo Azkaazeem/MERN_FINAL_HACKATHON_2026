@@ -21,10 +21,6 @@ const About = () => {
         
         {/* ================= HERO SECTION ================= */}
         <section className="about-hero">
-          <div className="about-badge-hero">
-            <Sparkles size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
-            Final Hackathon 2026
-          </div>
           <h1>
             Empowering Innovation with <span className="gradient-text-about">Modern Full-Stack</span> Solutions
           </h1>

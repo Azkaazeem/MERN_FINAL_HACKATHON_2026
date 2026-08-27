@@ -1,71 +1,69 @@
 /* CustomCursor.css */
-@media (hover: hover) and (pointer: fine) {
-  * {
-    cursor: none !important;
-  }
+* {
+  cursor: none !important;
+}
+
+.custom-cursor-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2147483647; /* Highest layer */
 }
 
 .custom-cursor-dot {
   position: fixed;
   top: 0;
   left: 0;
-  width: 10px;
-  height: 10px;
-  background-color: var(--primary-color, #ff4b2b);
+  width: 8px;
+  height: 8px;
+  background-color: #ff4b2b;
   border: 2px solid #ffffff;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 999999;
   transform: translate(-50%, -50%);
-  transition: opacity 0.2s ease, transform 0.1s ease, background-color 0.2s ease;
+  transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 .custom-cursor-ring {
   position: fixed;
   top: 0;
   left: 0;
-  width: 36px;
-  height: 36px;
-  border: 1.5px solid var(--primary-color, #ff4b2b);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 2px 10px rgba(0, 0, 0, 0.15);
-  background-color: rgba(255, 255, 255, 0.1);
+  width: 32px;
+  height: 32px;
+  border: 2px solid #ff4b2b;
+  box-shadow: 0 0 0 1.5px #ffffff, 0 0 10px rgba(0, 0, 0, 0.35);
+  background-color: rgba(255, 75, 43, 0.15);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 999998;
   transform: translate(-50%, -50%);
-  transition: width 0.25s ease, height 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.2s ease;
+  transition: width 0.2s ease, height 0.2s ease, transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
 /* Hover state on interactive elements */
 .custom-cursor-ring.cursor-hover {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   background-color: rgba(255, 255, 255, 0.25);
   border-color: #ffffff;
-  box-shadow: 0 0 0 2px var(--primary-color, #ff4b2b), 0 0 15px rgba(255, 75, 43, 0.4);
+  box-shadow: 0 0 0 2px #ff4b2b, 0 0 14px rgba(255, 75, 43, 0.5);
 }
 
 .custom-cursor-dot.cursor-hover {
-  transform: translate(-50%, -50%) scale(1.25);
-  background-color: var(--secondary-color, #ff416c);
-  border-color: #ffffff;
+  transform: translate(-50%, -50%) scale(1.4);
+  background-color: #ffffff;
+  border-color: #ff4b2b;
 }
 
 /* Click / Active state */
 .custom-cursor-ring.cursor-active {
-  transform: translate(-50%, -50%) scale(0.85);
-  background-color: rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%) scale(0.75);
+  background-color: rgba(255, 75, 43, 0.4);
 }
 
 .custom-cursor-dot.cursor-active {
-  transform: translate(-50%, -50%) scale(0.65);
-}
-
-/* Hidden on touch devices */
-@media (hover: none) or (pointer: coarse) {
-  .custom-cursor-dot,
-  .custom-cursor-ring {
-    display: none !important;
-  }
+  transform: translate(-50%, -50%) scale(0.6);
 }
