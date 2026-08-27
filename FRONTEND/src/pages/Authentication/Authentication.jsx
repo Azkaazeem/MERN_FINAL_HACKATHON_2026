@@ -214,8 +214,8 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     if (!githubClientId) {
       return toast.error('GitHub Client ID is missing in .env');
     }
-    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${redirectUri}&scope=user:email`;
+    // Omitting redirect_uri allows GitHub to automatically use the Callback URL configured in GitHub App settings
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email`;
   };
 
   // --- Forgot Password Placeholder ---
