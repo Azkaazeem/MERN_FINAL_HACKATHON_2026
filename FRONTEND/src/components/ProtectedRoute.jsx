@@ -19,8 +19,9 @@ const ProtectedRoute = ({ adminOnly = false }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // If page is admin-only and user is NOT admin -> strictly redirect to /home
-  if (adminOnly && user.role !== 'admin' && user.email !== 'admin@gmail.com') {
+  // STRICT CHECK: If page is admin-only, user MUST have role === 'admin' in database!
+  // If their role is 'user' (even if email is admin@gmail.com), they CANNOT access /admin
+  if (adminOnly && user.role !== 'admin') {
     return <Navigate to="/home" replace />;
   }
 
