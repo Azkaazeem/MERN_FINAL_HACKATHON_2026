@@ -57,8 +57,8 @@ exports.login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    if (!email || !password || !role) {
+      return res.status(400).json({ success: false, message: 'Please provide email, password, and role' });
     }
 
     const user = await User.findOne({ email });
@@ -66,11 +66,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // Role Check: If user selects 'admin' from dropdown, verify if their DB role is actually 'admin'
-    if (role === 'admin' && user.role !== 'admin') {
+    // Strict 3-Way Check: Selected dropdown role MUST EXACTLY match the database user.role
+    if (role !== user.role) {
       return res.status(403).json({
         success: false,
-        message: 'Access Denied: You do not have Admin privileges in database'
+        message: `Role mismatch! This account is registered as '${user.role.toUpperCase()}', but you selected '${role.toUpperCase()}'.`
       });
     }
 

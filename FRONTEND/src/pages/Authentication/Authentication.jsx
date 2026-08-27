@@ -30,10 +30,10 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
 
-  // --- Form States (By default Role is 'user') ---
+  // --- Form States (Default Role: user) ---
   const [loginData, setLoginData] = useState({
-    email: 'admin@gmail.com',
-    password: 'admin123@',
+    email: '',
+    password: '',
     role: 'user'
   });
 
