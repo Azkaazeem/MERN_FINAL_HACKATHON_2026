@@ -247,10 +247,10 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   };
 
   // --- Forgot Password Placeholder ---
-  const handleForgotPassword = (e) => {
-    e.preventDefault();
-    toast('Forgot password logic triggered', { icon: '🔑' });
-  };
+  // const handleForgotPassword = (e) => {
+  //   e.preventDefault();
+  //   toast('Forgot password logic triggered', { icon: '🔑' });
+  // };
 
   return (
     <div className="auth-body">
@@ -494,9 +494,9 @@ const Authentication = ({ defaultIsSignUp = false }) => {
               </select>
             </div>
             
-            <a href="#" className="forgot-password" onClick={handleForgotPassword}>
+            {/* <a href="#" className="forgot-password" onClick={handleForgotPassword}>
               Forgot your password?
-            </a>
+            </a> */}
 
             <button className="submit-btn" type="submit" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
