@@ -7,12 +7,16 @@ import Profile from './pages/Profile/Profile';
 import Admin from './pages/Admin/Admin';
 import ProtectedRoute from './components/ProtectedRoute';
 import CustomCursor from './components/CustomCursor/CustomCursor';
+import Chatbot from './components/Chatbot/Chatbot';
 
 function App() {
   return (
     <Router>
       {/* Global Smooth Custom Cursor */}
       <CustomCursor />
+
+      {/* Floating AI Chatbot Widget */}
+      <Chatbot />
       
       <Routes>
         {/* Public Auth Routes */}
