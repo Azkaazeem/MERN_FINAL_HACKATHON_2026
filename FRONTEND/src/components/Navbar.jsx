@@ -180,14 +180,19 @@ const Navbar = () => {
             </NavLink>
 
             {user?.role === 'admin' && (
-              <NavLink 
-                to="/admin" 
-                className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
-                onClick={closeMobileMenu}
-              >
-                <Shield size={18} />
-                <span>Admin Dashboard</span>
-              </NavLink>
+              <>
+                <div style={{ margin: '8px 0 4px', padding: '0 4px', fontSize: '11px', fontWeight: '700', color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Admin Controls
+                </div>
+                <NavLink 
+                  to="/admin" 
+                  className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
+                  onClick={closeMobileMenu}
+                >
+                  <Shield size={18} />
+                  <span>Admin Dashboard</span>
+                </NavLink>
+              </>
             )}
           </div>
         </div>
