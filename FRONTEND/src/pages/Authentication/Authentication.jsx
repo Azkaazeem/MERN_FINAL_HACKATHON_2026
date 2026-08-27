@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import toast, { Toaster } from 'react-hot-toast';
 import { 
@@ -17,7 +18,8 @@ import { useAuth } from '../../context/AuthContext';
 import './Authentication.css';
 
 const Authentication = ({ defaultIsSignUp = false }) => {
-  const { login } = useAuth();
+  const { user, login } = useAuth();
+  const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(defaultIsSignUp);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef(null);
@@ -42,6 +44,27 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     confirmPassword: '',
     profilePic: ''
   });
+
+  // --- Helper: Redirect Based on User Role ---
+  const handleAuthSuccess = (userData, token) => {
+    login(userData, token);
+    if (userData.role === 'admin' || userData.email?.toLowerCase() === 'admin@gmail.com') {
+      navigate('/admin', { replace: true });
+    } else {
+      navigate('/home', { replace: true });
+    }
+  };
+
+  // --- Auto-redirect if already logged in ---
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin' || user.email?.toLowerCase() === 'admin@gmail.com') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   // --- Initial Route Check (/login or /register) ---
   useEffect(() => {
@@ -70,7 +93,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
           const res = await API.post('/auth/github', { code });
           if (res.data.success) {
             toast.success(res.data.message || 'GitHub login successful!');
-            login(res.data.user, res.data.token);
+            handleAuthSuccess(res.data.user, res.data.token);
           }
         } catch (err) {
           toast.error(err.response?.data?.message || 'GitHub Authentication failed');
@@ -81,7 +104,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
 
       exchangeGithubCode();
     }
-  }, [login]);
+  }, [login, navigate]);
 
   // --- GSAP Panel Toggle Logic ---
   const togglePanel = (toSignUp, duration = 0.6) => {
@@ -144,7 +167,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
 
       if (res.data.success) {
         toast.success(res.data.message || 'Login successful!');
-        login(res.data.user, res.data.token);
+        handleAuthSuccess(res.data.user, res.data.token);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid credentials');
@@ -179,7 +202,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
 
       if (res.data.success) {
         toast.success(res.data.message || 'Account created successfully!');
-        login(res.data.user, res.data.token);
+        handleAuthSuccess(res.data.user, res.data.token);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
@@ -188,7 +211,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     }
   };
 
-  // --- Google OAuth Handler (React OAuth Google Popup) ---
+  // --- Google OAuth Handler ---
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setLoading(true);
@@ -198,7 +221,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         });
         if (res.data.success) {
           toast.success(res.data.message || 'Google login successful!');
-          login(res.data.user, res.data.token);
+          handleAuthSuccess(res.data.user, res.data.token);
         }
       } catch (err) {
         toast.error(err.response?.data?.message || 'Google login failed');
@@ -211,13 +234,12 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     }
   });
 
-  // --- GitHub OAuth Handler (Redirect to GitHub) ---
+  // --- GitHub OAuth Handler ---
   const handleGithubLogin = () => {
     const githubClientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
     if (!githubClientId) {
       return toast.error('GitHub Client ID is missing in .env');
     }
-    // Omitting redirect_uri allows GitHub to automatically use the Callback URL configured in GitHub App settings
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email`;
   };
 
