@@ -8,10 +8,8 @@ import {
   Paperclip,
   Bot
 } from 'lucide-react';
+import aiRoboImg from '../../assets/AI robo.jpg';
 import './Chatbot.css';
-
-// High Quality Cute Cartoon Robot Avatar
-const ROBO_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=Felix&backgroundColor=ff4b2b,ff416c";
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,9 +60,9 @@ const Chatbot = () => {
       {/* ================= 1. FLOATING PROMPT BUBBLE (Notice box) ================= */}
       {showPrompt && !isOpen && (
         <div className="chatbot-prompt-bubble" onClick={toggleChat} title="Click to chat with AI">
-          {/* Left: Cartoon Robot Avatar */}
+          {/* Left: Custom Cartoon Robot Image */}
           <img 
-            src={ROBO_AVATAR} 
+            src={aiRoboImg} 
             alt="AI Bot" 
             className="bubble-robot-img" 
           />
@@ -93,7 +91,7 @@ const Chatbot = () => {
           {/* Header */}
           <div className="chatbot-header">
             <div className="header-left">
-              <img src={ROBO_AVATAR} alt="Robot Avatar" className="header-avatar" />
+              <img src={aiRoboImg} alt="Robot Avatar" className="header-avatar" />
               <div className="header-info">
                 <h4>AI Assistant</h4>
                 <div className="header-status">
@@ -111,7 +109,7 @@ const Chatbot = () => {
             {messages.map((msg) => (
               <div key={msg.id} className={`message-item ${msg.sender}`}>
                 {msg.sender === 'bot' && (
-                  <img src={ROBO_AVATAR} alt="Bot" className="bot-msg-avatar" />
+                  <img src={aiRoboImg} alt="Bot" className="bot-msg-avatar" />
                 )}
                 <div>
                   <div className="message-bubble">{msg.text}</div>
@@ -148,7 +146,7 @@ const Chatbot = () => {
           <X size={26} />
         ) : (
           <>
-            <img src={ROBO_AVATAR} alt="Chatbot Icon" className="fab-robo-icon" />
+            <img src={aiRoboImg} alt="Chatbot Icon" className="fab-robo-icon" />
             <span className="fab-online-dot" />
           </>
         )}
