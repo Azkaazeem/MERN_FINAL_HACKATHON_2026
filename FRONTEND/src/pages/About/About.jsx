@@ -1,5 +1,6 @@
 import React from 'react';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer/Footer';
 import profileImg from '../../assets/profile img.png';
 import { 
   Globe, 
@@ -187,6 +188,7 @@ const About = () => {
         </section>
 
       </div>
+      <Footer />
     </div>
   );
 };

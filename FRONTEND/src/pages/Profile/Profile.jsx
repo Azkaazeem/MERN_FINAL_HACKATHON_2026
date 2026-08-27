@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../api/axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -314,6 +315,7 @@ const Profile = () => {
 
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
