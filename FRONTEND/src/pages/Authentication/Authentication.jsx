@@ -10,7 +10,8 @@ import {
   CreditCard, 
   Camera, 
   Eye, 
-  EyeOff 
+  EyeOff,
+  Shield
 } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import API from '../../api/axios';
@@ -29,10 +30,11 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
 
-  // --- Form States (Pre-filled with Demo Admin Credentials) ---
+  // --- Form States (By default Role is 'user') ---
   const [loginData, setLoginData] = useState({
     email: 'admin@gmail.com',
-    password: 'admin123@'
+    password: 'admin123@',
+    role: 'user'
   });
 
   const [signupData, setSignupData] = useState({
@@ -45,10 +47,10 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     profilePic: ''
   });
 
-  // --- Helper: Redirect Based on User Role ---
-  const handleAuthSuccess = (userData, token) => {
+  // --- Helper: Redirect Based on User Role & Login Selection ---
+  const handleAuthSuccess = (userData, token, selectedRole = 'user') => {
     login(userData, token);
-    if (userData.role === 'admin' || userData.email?.toLowerCase() === 'admin@gmail.com') {
+    if (selectedRole === 'admin' && userData.role === 'admin') {
       navigate('/admin', { replace: true });
     } else {
       navigate('/home', { replace: true });
@@ -58,7 +60,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   // --- Auto-redirect if already logged in ---
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin' || user.email?.toLowerCase() === 'admin@gmail.com') {
+      if (user.role === 'admin') {
         navigate('/admin', { replace: true });
       } else {
         navigate('/home', { replace: true });
@@ -93,7 +95,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
           const res = await API.post('/auth/github', { code });
           if (res.data.success) {
             toast.success(res.data.message || 'GitHub login successful!');
-            handleAuthSuccess(res.data.user, res.data.token);
+            handleAuthSuccess(res.data.user, res.data.token, 'user');
           }
         } catch (err) {
           toast.error(err.response?.data?.message || 'GitHub Authentication failed');
@@ -162,12 +164,13 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     try {
       const res = await API.post('/auth/login', {
         email: loginData.email,
-        password: loginData.password
+        password: loginData.password,
+        role: loginData.role
       });
 
       if (res.data.success) {
         toast.success(res.data.message || 'Login successful!');
-        handleAuthSuccess(res.data.user, res.data.token);
+        handleAuthSuccess(res.data.user, res.data.token, loginData.role);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid credentials');
@@ -202,7 +205,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
 
       if (res.data.success) {
         toast.success(res.data.message || 'Account created successfully!');
-        handleAuthSuccess(res.data.user, res.data.token);
+        handleAuthSuccess(res.data.user, res.data.token, 'user');
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
@@ -221,7 +224,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         });
         if (res.data.success) {
           toast.success(res.data.message || 'Google login successful!');
-          handleAuthSuccess(res.data.user, res.data.token);
+          handleAuthSuccess(res.data.user, res.data.token, 'user');
         }
       } catch (err) {
         toast.error(err.response?.data?.message || 'Google login failed');
@@ -474,6 +477,21 @@ const Authentication = ({ defaultIsSignUp = false }) => {
               >
                 {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
+            </div>
+
+            {/* Role Dropdown (By Default 'User') */}
+            <div className="input-group">
+              <Shield size={18} className="input-icon" />
+              <select 
+                name="role" 
+                value={loginData.role} 
+                onChange={handleLoginChange}
+                className="role-select"
+                required
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
             
             <a href="#" className="forgot-password" onClick={handleForgotPassword}>

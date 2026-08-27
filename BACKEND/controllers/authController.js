@@ -20,8 +20,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    const role = email.toLowerCase() === 'admin@gmail.com' ? 'admin' : 'user';
-
+    // By default, every user gets 'user' role. Admin role can be assigned in DB.
     const user = await User.create({
       name,
       email,
@@ -29,7 +28,7 @@ exports.register = async (req, res) => {
       dob,
       cnic,
       profilePic,
-      role,
+      role: 'user',
       authProvider: 'local'
     });
 
@@ -56,7 +55,7 @@ exports.register = async (req, res) => {
 // @route   POST /api/auth/login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
@@ -67,9 +66,12 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    if (user.email.toLowerCase() === 'admin@gmail.com' && user.role !== 'admin') {
-      user.role = 'admin';
-      await user.save();
+    // Role Check: If user selects 'admin' from dropdown, verify if their DB role is actually 'admin'
+    if (role === 'admin' && user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: You do not have Admin privileges in database'
+      });
     }
 
     res.status(200).json({
