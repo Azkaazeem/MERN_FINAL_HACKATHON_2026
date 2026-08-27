@@ -92,7 +92,6 @@ exports.googleAuth = async (req, res) => {
     let email, name, picture, googleId;
 
     if (credential) {
-      // Flow 1: Google ID Token verification
       const ticket = await googleClient.verifyIdToken({
         idToken: credential,
         audience: process.env.GOOGLE_CLIENT_ID
@@ -103,7 +102,6 @@ exports.googleAuth = async (req, res) => {
       picture = payload.picture;
       googleId = payload.sub;
     } else if (accessToken) {
-      // Flow 2: Access Token (fetching userinfo from Google)
       const googleRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
@@ -115,11 +113,10 @@ exports.googleAuth = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No Google credential provided' });
     }
 
-    // Check if user already exists
+    // Find or create user
     let user = await User.findOne({ $or: [{ email }, { googleId }] });
 
     if (!user) {
-      // Create new user with Google details
       user = await User.create({
         name: name || 'Google User',
         email,
@@ -128,7 +125,6 @@ exports.googleAuth = async (req, res) => {
         profilePic: picture || ''
       });
     } else {
-      // Update googleId and provider if user existed via local
       if (!user.googleId) user.googleId = googleId;
       if (!user.profilePic && picture) user.profilePic = picture;
       await user.save();
@@ -164,7 +160,10 @@ exports.githubAuth = async (req, res) => {
       return res.status(400).json({ success: false, message: 'GitHub code is required' });
     }
 
-    if (!process.env.GITHUB_CLIENT_SECRET) {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    if (!clientSecret) {
       return res.status(400).json({
         success: false,
         message: 'GITHUB_CLIENT_SECRET is missing in backend .env'
@@ -175,44 +174,58 @@ exports.githubAuth = async (req, res) => {
     const tokenRes = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        client_id: clientId,
+        client_secret: clientSecret,
         code
       },
       {
-        headers: { Accept: 'application/json' }
+        headers: { 
+          Accept: 'application/json',
+          'User-Agent': 'MERN-Hackathon-App'
+        }
       }
     );
 
     const accessToken = tokenRes.data.access_token;
     if (!accessToken) {
+      console.error('GitHub token exchange failed:', tokenRes.data);
       return res.status(400).json({
         success: false,
-        message: 'Failed to retrieve GitHub access token: ' + (tokenRes.data.error_description || tokenRes.data.error)
+        message: 'GitHub token error: ' + (tokenRes.data.error_description || tokenRes.data.error || 'Invalid code')
       });
     }
 
-    // Step 2: Fetch user profile from GitHub API
+    // Step 2: Fetch user profile from GitHub API (User-Agent header is MANDATORY for GitHub API)
     const userRes = await axios.get('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${accessToken}` }
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'MERN-Hackathon-App'
+      }
     });
 
     const githubUser = userRes.data;
     let email = githubUser.email;
 
-    // If email is private on GitHub, fetch from /user/emails
+    // If user's email is private on GitHub, fetch from /user/emails
     if (!email) {
-      const emailRes = await axios.get('https://api.github.com/user/emails', {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      const primaryEmailObj = emailRes.data.find((e) => e.primary && e.verified) || emailRes.data[0];
-      if (primaryEmailObj) {
-        email = primaryEmailObj.email;
+      try {
+        const emailRes = await axios.get('https://api.github.com/user/emails', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'User-Agent': 'MERN-Hackathon-App'
+          }
+        });
+        const primaryEmail = emailRes.data.find((e) => e.primary && e.verified) || emailRes.data[0];
+        if (primaryEmail) {
+          email = primaryEmail.email;
+        }
+      } catch (emailErr) {
+        console.warn('Could not fetch GitHub private emails:', emailErr.message);
       }
     }
 
     if (!email) {
-      email = `${githubUser.login}@github.com`; // Fallback email
+      email = `${githubUser.login}@github.com`;
     }
 
     // Step 3: Check if user exists in database
@@ -249,8 +262,11 @@ exports.githubAuth = async (req, res) => {
       token: generateToken(user._id)
     });
   } catch (error) {
-    console.error('GitHub Auth Error:', error);
-    res.status(500).json({ success: false, message: 'GitHub Authentication failed: ' + error.message });
+    console.error('GitHub Auth Error:', error.response?.data || error.message);
+    res.status(500).json({ 
+      success: false, 
+      message: 'GitHub Authentication failed: ' + (error.response?.data?.message || error.message) 
+    });
   }
 };
 

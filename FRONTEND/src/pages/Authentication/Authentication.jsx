@@ -53,11 +53,14 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   }, [defaultIsSignUp]);
 
   // --- GitHub OAuth Callback Handler ---
+  const githubCodeProcessed = useRef(false);
+
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const code = searchParams.get('code');
 
-    if (code) {
+    if (code && !githubCodeProcessed.current) {
+      githubCodeProcessed.current = true;
       // Clean query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
 
