@@ -11,6 +11,7 @@ import {
   Eye, 
   EyeOff 
 } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import './Authentication.css';
@@ -50,6 +51,34 @@ const Authentication = ({ defaultIsSignUp = false }) => {
       togglePanel(false, 0);
     }
   }, [defaultIsSignUp]);
+
+  // --- GitHub OAuth Callback Handler ---
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = searchParams.get('code');
+
+    if (code) {
+      // Clean query params from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      const exchangeGithubCode = async () => {
+        setLoading(true);
+        try {
+          const res = await API.post('/auth/github', { code });
+          if (res.data.success) {
+            toast.success(res.data.message || 'GitHub login successful!');
+            login(res.data.user, res.data.token);
+          }
+        } catch (err) {
+          toast.error(err.response?.data?.message || 'GitHub Authentication failed');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      exchangeGithubCode();
+    }
+  }, [login]);
 
   // --- GSAP Panel Toggle Logic ---
   const togglePanel = (toSignUp, duration = 0.6) => {
@@ -99,7 +128,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     }
   };
 
-  // --- Sign In Handler (Backend API Connection) ---
+  // --- Local Sign In Handler ---
   const handleSignIn = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -121,7 +150,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     }
   };
 
-  // --- Sign Up Handler (Backend API Connection) ---
+  // --- Local Sign Up Handler ---
   const handleSignUp = async (e) => {
     e.preventDefault();
 
@@ -156,6 +185,39 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     }
   };
 
+  // --- Google OAuth Handler (React OAuth Google Popup) ---
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      try {
+        const res = await API.post('/auth/google', {
+          accessToken: tokenResponse.access_token
+        });
+        if (res.data.success) {
+          toast.success(res.data.message || 'Google login successful!');
+          login(res.data.user, res.data.token);
+        }
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Google login failed');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      toast.error('Google login popup was closed or cancelled');
+    }
+  });
+
+  // --- GitHub OAuth Handler (Redirect to GitHub) ---
+  const handleGithubLogin = () => {
+    const githubClientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+    if (!githubClientId) {
+      return toast.error('GitHub Client ID is missing in .env');
+    }
+    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${redirectUri}&scope=user:email`;
+  };
+
   // --- Forgot Password Placeholder ---
   const handleForgotPassword = (e) => {
     e.preventDefault();
@@ -186,7 +248,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                 id="profile-upload" 
                 className="hidden-input" 
                 accept="image/*" 
-                onChange={handleImageChange}
+                onChange={handleImageChange} 
               />
             </div>
 
@@ -288,14 +350,26 @@ const Authentication = ({ defaultIsSignUp = false }) => {
               {loading ? 'Creating...' : 'Sign Up'}
             </button>
             
-            {/* Social Buttons (Visual / UI) */}
+            {/* Social OAuth Buttons */}
             <div className="social-container">
               <p style={{ margin: '4px 0', fontSize: '12px' }}>Or connect with</p>
               <div className="social-icons">
-                <button type="button" className="social-btn" title="Google">
+                <button 
+                  type="button" 
+                  className="social-btn" 
+                  title="Continue with Google"
+                  onClick={() => handleGoogleLogin()}
+                  disabled={loading}
+                >
                   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
                 </button>
-                <button type="button" className="social-btn" title="GitHub">
+                <button 
+                  type="button" 
+                  className="social-btn" 
+                  title="Continue with GitHub"
+                  onClick={handleGithubLogin}
+                  disabled={loading}
+                >
                   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{ width: '18px', height: '18px' }} />
                 </button>
               </div>
@@ -316,14 +390,26 @@ const Authentication = ({ defaultIsSignUp = false }) => {
           <form onSubmit={handleSignIn}>
             <h2>Sign In</h2>
             
-            {/* Social Buttons (Visual / UI) */}
+            {/* Social OAuth Buttons */}
             <div className="social-container">
               <p style={{ margin: '4px 0', fontSize: '12px' }}>Use your account</p>
               <div className="social-icons">
-                <button type="button" className="social-btn" title="Google">
+                <button 
+                  type="button" 
+                  className="social-btn" 
+                  title="Continue with Google"
+                  onClick={() => handleGoogleLogin()}
+                  disabled={loading}
+                >
                   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
                 </button>
-                <button type="button" className="social-btn" title="GitHub">
+                <button 
+                  type="button" 
+                  className="social-btn" 
+                  title="Continue with GitHub"
+                  onClick={handleGithubLogin}
+                  disabled={loading}
+                >
                   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{ width: '18px', height: '18px' }} />
                 </button>
               </div>

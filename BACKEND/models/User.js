@@ -16,8 +16,21 @@ const userSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: true,
+            required: function () {
+                return this.authProvider === 'local';
+            },
             minlength: 6
+        },
+        authProvider: {
+            type: String,
+            enum: ['local', 'google', 'github'],
+            default: 'local'
+        },
+        googleId: {
+            type: String
+        },
+        githubId: {
+            type: String
         },
         dob: {
             type: String
@@ -38,15 +51,16 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// SAVE PASSWORD BEFORE HASHING (Mongoose modern async middleware does not use next)
+// SAVE PASSWORD BEFORE HASHING
 userSchema.pre('save', async function () {
-    if (!this.isModified('password')) return;
+    if (!this.password || !this.isModified('password')) return;
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 
 // PASSWORD COMPARISON METHOD
 userSchema.methods.matchPassword = async function (enteredPassword) {
+    if (!this.password) return false;
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
