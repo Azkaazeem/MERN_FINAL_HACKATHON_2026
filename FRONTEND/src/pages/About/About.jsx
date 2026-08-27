@@ -3,16 +3,11 @@ import Navbar from '../../components/Navbar';
 import profileImg from '../../assets/profile img.png';
 import { 
   Globe, 
-  Linkedin, 
-  Github, 
   Mail, 
   ExternalLink, 
   Code2, 
   Sparkles, 
-  Layers, 
-  ShieldCheck, 
-  Share2,
-  Cpu
+  ShieldCheck 
 } from 'lucide-react';
 import './About.css';
 
@@ -87,7 +82,11 @@ const About = () => {
                 className="social-link-btn"
                 title="Connect on LinkedIn"
               >
-                <Linkedin size={16} color="#0077b5" />
+                <img 
+                  src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/linkedin/linkedin-original.svg" 
+                  alt="LinkedIn" 
+                  style={{ width: '16px', height: '16px' }} 
+                />
                 <span>LinkedIn</span>
               </a>
 
@@ -99,7 +98,11 @@ const About = () => {
                 className="social-link-btn"
                 title="GitHub Profile"
               >
-                <Github size={16} color="#333" />
+                <img 
+                  src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" 
+                  alt="GitHub" 
+                  style={{ width: '16px', height: '16px' }} 
+                />
                 <span>GitHub</span>
               </a>
 
@@ -111,7 +114,11 @@ const About = () => {
                 className="social-link-btn"
                 title="Reddit Profile"
               >
-                <Share2 size={16} color="#ff4500" />
+                <img 
+                  src="https://www.vectorlogo.zone/logos/reddit/reddit-icon.svg" 
+                  alt="Reddit" 
+                  style={{ width: '16px', height: '16px' }} 
+                />
                 <span>Reddit</span>
               </a>
 
