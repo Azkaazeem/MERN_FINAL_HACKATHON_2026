@@ -11,8 +11,8 @@
    ========================================================================== */
 :root {
   /* --- Primary Brand & Gradient Colors --- */
-  --primary-color: #ff4b2b;              /* Main brand highlight color */
-  --secondary-color: #ff416c;            /* Gradient pair secondary color */
+    --primary-color: #2b60ff;
+  --secondary-color: #41efff;           /* Gradient pair secondary color */
   --primary-glow: rgba(255, 75, 43, 0.25);
   --primary-light: rgba(255, 75, 43, 0.1);
 
