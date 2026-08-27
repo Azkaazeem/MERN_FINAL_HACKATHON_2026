@@ -1,3 +1,56 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* ==========================================================================
+   🎨 GLOBAL CENTRALIZED THEME VARIABLES
+   Aapko kisi doosri file mein jane ki zaroorat nahi hai!
+   Bas yahan se colors change karein aur poori app ka theme change ho jayega!
+   ========================================================================== */
+:root {
+  /* --- Primary Brand & Gradient Colors --- */
+  --primary-color: #ff4b2b;              /* Main brand highlight color */
+  --secondary-color: #ff416c;            /* Gradient pair secondary color */
+  --primary-glow: rgba(255, 75, 43, 0.25);
+  --primary-light: rgba(255, 75, 43, 0.1);
+
+  /* --- Text & Neutral Colors --- */
+  --text-color: #333333;                 /* Standard text */
+  --text-dark: #1e293b;                  /* Heading & bold dark text */
+  --text-muted: #64748b;                 /* Subtitles & gray description */
+  --text-light: #ffffff;                 /* Pure white text */
+
+  /* --- Backgrounds --- */
+  --bg-color: #f8f9fa;                   /* Main page background */
+  --card-bg: #ffffff;                    /* Card & container background */
+  --input-bg: #f0f2f5;                   /* Input fields background */
+
+  /* --- Dark Elements (Sidebar, Footer) --- */
+  --sidebar-bg: #1e1e2d;                 /* Admin sidebar background */
+  --sidebar-hover: #27273a;              /* Admin sidebar active hover */
+  --footer-bg: #1a1a24;                  /* Footer background */
+  --footer-text: #a0a0b0;                /* Footer muted text */
+
+  /* --- Borders & Radii (Sharp Theme) --- */
+  --border-color: #e2e8f0;               /* Default subtle border */
+  --border-radius-sharp: 4px;            /* Sharp modern border radius */
+
+  /* --- Global Typography --- */
+  --font-family: 'Poppins', sans-serif;  /* Global modern font */
+}
+
+/* Global Reset & Base */
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+* {
+  box-sizing: inherit;
+}

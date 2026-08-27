@@ -1,20 +1,4 @@
-/* Authentication.css */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-  /* HACKATHON THEME COLORS - Change this once to match your theme! */
-  --primary-color: #ff4b2b; /* Change to your theme's main color */
-  --secondary-color: #ff416c; /* Change to your theme's gradient/secondary color */
-  
-  --bg-color: #f6f5f7;
-  --text-color: #333333;
-  --text-light: #ffffff;
-  --input-bg: #eeeeee;
-  
-  --border-radius: 12px;
-  --font-family: 'Poppins', sans-serif;
-}
-
+/* Authentication.css (Inherits theme variables from index.css) */
 html, body {
   overflow-x: hidden;
   margin: 0;

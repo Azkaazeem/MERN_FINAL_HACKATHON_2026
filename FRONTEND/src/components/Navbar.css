@@ -1,15 +1,4 @@
-/* Navbar.css */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --primary-color: #ff4b2b;
-  --secondary-color: #ff416c;
-  --text-color: #333333;
-  --text-light: #ffffff;
-  --bg-color: #f6f5f7;
-  --font-family: 'Poppins', sans-serif;
-}
-
+/* Navbar.css (Inherits theme variables from index.css) */
 .navbar-header {
   position: sticky;
   top: 0;

@@ -1,13 +1,4 @@
-/* Chatbot.css */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --primary-color: #ff4b2b;
-  --secondary-color: #ff416c;
-  --text-color: #333333;
-  --font-family: 'Poppins', sans-serif;
-}
-
+/* Chatbot.css (Inherits theme variables from index.css) */
 .chatbot-wrapper {
   position: fixed;
   bottom: 25px;
@@ -66,7 +57,7 @@
   flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--primary-color);
+  border: 1px solid var(--primary-color);
   box-shadow: 0 2px 6px rgba(255, 75, 43, 0.2);
 }
 

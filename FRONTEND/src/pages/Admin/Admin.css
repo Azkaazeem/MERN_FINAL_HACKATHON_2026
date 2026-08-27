@@ -1,19 +1,4 @@
-/* Admin.css - Sharp Modern Dashboard Aesthetic */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-
-:root {
-  --primary-color: #ff4b2b;
-  --secondary-color: #ff416c;
-  --admin-bg: #f8f9fa;
-  --sidebar-bg: #1e1e2d;
-  --sidebar-hover: #27273a;
-  --card-bg: #ffffff;
-  --text-dark: #1e293b;
-  --text-gray: #64748b;
-  --border-sharp: #e2e8f0;
-  --font-family: 'Poppins', sans-serif;
-}
-
+/* Admin.css (Inherits theme variables from index.css) */
 .admin-layout-container {
   display: flex;
   flex-direction: column;

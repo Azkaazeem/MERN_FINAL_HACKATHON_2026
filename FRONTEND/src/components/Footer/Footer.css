@@ -1,15 +1,4 @@
-/* Footer.css */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --primary-color: #ff4b2b;
-  --secondary-color: #ff416c;
-  --text-color: #333333;
-  --footer-bg: #1a1a24;
-  --footer-text: #a0a0b0;
-  --font-family: 'Poppins', sans-serif;
-}
-
+/* Footer.css (Inherits theme variables from index.css) */
 .footer-main {
   background-color: var(--footer-bg);
   color: var(--footer-text);

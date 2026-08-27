@@ -1,16 +1,4 @@
-/* About.css */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-
-:root {
-  --primary-color: #ff4b2b;
-  --secondary-color: #ff416c;
-  --text-color: #333333;
-  --text-muted: #666666;
-  --bg-color: #f8f9fa;
-  --card-bg: #ffffff;
-  --font-family: 'Poppins', sans-serif;
-}
-
+/* About.css (Inherits theme variables from index.css) */
 .about-page-container {
   font-family: var(--font-family);
   background-color: var(--bg-color);
