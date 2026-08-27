@@ -236,6 +236,20 @@
     display: flex;
   }
 
+  .mobile-logout-btn {
+    padding: 7px;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px; /* Sharp */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-logout-btn span {
+    display: none;
+  }
+
   .mobile-drawer {
     display: block;
     background: #ffffff;

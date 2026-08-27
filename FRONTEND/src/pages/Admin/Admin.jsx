@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
+import API from '../../api/axios';
+import Swal from 'sweetalert2';
+import toast, { Toaster } from 'react-hot-toast';
 import { 
   LayoutDashboard, 
   Users, 
@@ -21,7 +24,11 @@ import {
   AlertCircle,
   ExternalLink,
   ShieldCheck,
-  Server
+  Server,
+  Lock,
+  UserCheck,
+  UserX,
+  RefreshCw
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -33,10 +40,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  BarChart,
-  Bar,
-  Legend
+  Cell
 } from 'recharts';
 import './Admin.css';
 
@@ -75,6 +79,68 @@ const Admin = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [usersSearch, setUsersSearch] = useState('');
+
+  // Live Database Users State
+  const [dbUsers, setDbUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  const isSuperAdmin = user?.email?.toLowerCase() === 'admin@gmail.com';
+
+  // Fetch all users from MongoDB API
+  const fetchDbUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await API.get('/admin/users');
+      if (res.data.success) {
+        setDbUsers(res.data.users);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to fetch users from database');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDbUsers();
+  }, []);
+
+  // Handle Role Change with SweetAlert2
+  const handleRoleChange = (targetUser, newRole) => {
+    // Client-side Super Admin check
+    if (!isSuperAdmin) {
+      return toast.error('Access Denied: Only Super Admin (admin@gmail.com) can modify roles!');
+    }
+
+    if (targetUser.email.toLowerCase() === 'admin@gmail.com') {
+      return toast.error('Super Admin role is permanently locked and cannot be changed!');
+    }
+
+    Swal.fire({
+      title: `Change Role to ${newRole.toUpperCase()}?`,
+      text: `Are you sure you want to change ${targetUser.name}'s role to ${newRole.toUpperCase()}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ff4b2b',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: `Yes, Make ${newRole.toUpperCase()}`,
+      cancelButtonText: 'Cancel',
+      reverseButtons: true
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const res = await API.put(`/admin/users/${targetUser._id}/role`, { role: newRole });
+          if (res.data.success) {
+            toast.success(res.data.message);
+            fetchDbUsers();
+          }
+        } catch (err) {
+          toast.error(err.response?.data?.message || 'Failed to update role');
+        }
+      }
+    });
+  };
 
   // Filter transactions
   const filteredTransactions = initialTransactions.filter((tx) => 
@@ -83,8 +149,18 @@ const Admin = () => {
     tx.action.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Filter live database users
+  const filteredDbUsers = dbUsers.filter((u) => 
+    u.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
+    u.email?.toLowerCase().includes(usersSearch.toLowerCase()) ||
+    u.cnic?.toLowerCase().includes(usersSearch.toLowerCase()) ||
+    u.role?.toLowerCase().includes(usersSearch.toLowerCase())
+  );
+
   return (
     <div className="admin-layout-container">
+      <Toaster position="top-right" />
+      
       {/* Top Navbar */}
       <Navbar />
 
@@ -109,7 +185,7 @@ const Admin = () => {
               >
                 <Users size={18} />
                 <span>Users Management</span>
-                <span className="nav-count">1.4k</span>
+                <span className="nav-count">{dbUsers.length}</span>
               </button>
 
               <button 
@@ -158,222 +234,399 @@ const Admin = () => {
           {/* Header Row */}
           <div className="admin-header-row">
             <div className="admin-title-col">
-              <h1>Admin Control Center</h1>
-              <p>Welcome back, <b>{user?.name || 'Administrator'}</b>. Here is your system performance summary.</p>
+              <h1>
+                {activeTab === 'overview' && 'Admin Control Center'}
+                {activeTab === 'users' && 'Users Directory & Role Control'}
+                {activeTab === 'products' && 'Product Catalog & Inventory'}
+                {activeTab === 'analytics' && 'System Analytics & Insights'}
+                {activeTab === 'settings' && 'Global System Settings'}
+              </h1>
+              <p>
+                Logged in as <b>{user?.name || 'Administrator'}</b> ({user?.email}) — {isSuperAdmin ? '👑 Super Admin Authority' : 'Standard Admin Access'}
+              </p>
             </div>
             <div className="admin-actions-col">
               <button 
                 className="btn-sharp"
-                onClick={() => alert("Exporting system analytics CSV...")}
+                onClick={fetchDbUsers}
+                title="Refresh Live Data"
               >
-                <Download size={15} />
-                <span>Export Report</span>
+                <RefreshCw size={15} className={usersLoading ? 'animate-spin' : ''} />
+                <span>Sync DB</span>
               </button>
               <button 
                 className="btn-sharp primary"
-                onClick={() => alert("Quick Action triggered")}
+                onClick={() => setActiveTab('users')}
               >
-                <Plus size={15} />
-                <span>Create Entry</span>
+                <Users size={15} />
+                <span>View {dbUsers.length} Users</span>
               </button>
             </div>
           </div>
 
-          {/* ================= 3. 4 SHARP STAT CARDS ================= */}
-          <div className="stats-grid-4">
-            {/* Stat 1: Revenue */}
-            <div className="stat-card-sharp">
-              <div className="stat-info-left">
-                <span className="stat-title">Total Revenue</span>
-                <span className="stat-value">$84,650.00</span>
-                <span className="stat-badge-sharp green">
-                  <ArrowUpRight size={14} /> +18.4% vs last month
-                </span>
-              </div>
-              <div className="stat-icon-wrapper revenue">
-                <DollarSign size={22} />
-              </div>
-            </div>
-
-            {/* Stat 2: Users */}
-            <div className="stat-card-sharp">
-              <div className="stat-info-left">
-                <span className="stat-title">Total Users</span>
-                <span className="stat-value">1,428</span>
-                <span className="stat-badge-sharp green">
-                  <ArrowUpRight size={14} /> +12.8% growth
-                </span>
-              </div>
-              <div className="stat-icon-wrapper users">
-                <Users size={22} />
-              </div>
-            </div>
-
-            {/* Stat 3: Orders */}
-            <div className="stat-card-sharp">
-              <div className="stat-info-left">
-                <span className="stat-title">Active Orders</span>
-                <span className="stat-value">389</span>
-                <span className="stat-badge-sharp blue">
-                  <ArrowUpRight size={14} /> +6.2% active
-                </span>
-              </div>
-              <div className="stat-icon-wrapper orders">
-                <ShoppingBag size={22} />
-              </div>
-            </div>
-
-            {/* Stat 4: System Health */}
-            <div className="stat-card-sharp">
-              <div className="stat-info-left">
-                <span className="stat-title">System Status</span>
-                <span className="stat-value">Healthy</span>
-                <span className="stat-badge-sharp green">
-                  <ShieldCheck size={14} /> 0 Server alerts
-                </span>
-              </div>
-              <div className="stat-icon-wrapper growth">
-                <Server size={22} />
-              </div>
-            </div>
-          </div>
-
-          {/* ================= 4. ANALYTICS & RECHARTS ================= */}
-          <div className="charts-grid-2">
-            
-            {/* Revenue Analytics Chart */}
-            <div className="chart-card-sharp">
-              <div className="chart-header">
-                <h3>Revenue Growth & Order Volume</h3>
-                <div className="chart-legend-sharp">
-                  <span><span className="legend-dot" style={{ background: 'var(--primary-color)' }}></span> Revenue ($)</span>
-                </div>
-              </div>
-              <div style={{ width: '100%', height: 280 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyRevenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ff4b2b" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#ff4b2b" stopOpacity={0.0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <Tooltip 
-                      contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px' }}
-                    />
-                    <Area type="monotone" dataKey="revenue" stroke="#ff4b2b" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Traffic Distribution Donut Chart */}
-            <div className="chart-card-sharp">
-              <div className="chart-header">
-                <h3>User Device Breakdown</h3>
-              </div>
-              <div style={{ width: '100%', height: 230 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={trafficDeviceData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={80}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {trafficDeviceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '12px', color: '#64748b', marginTop: '10px' }}>
-                {trafficDeviceData.map((item) => (
-                  <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '8px', height: '8px', background: item.color, display: 'inline-block', borderRadius: '2px' }}></span>
-                    <b>{item.name}:</b> {item.value}%
+          {/* ================= TAB 1: DASHBOARD OVERVIEW ================= */}
+          {activeTab === 'overview' && (
+            <>
+              {/* 4 Sharp Stat Cards */}
+              <div className="stats-grid-4">
+                <div className="stat-card-sharp">
+                  <div className="stat-info-left">
+                    <span className="stat-title">Total Revenue</span>
+                    <span className="stat-value">$84,650.00</span>
+                    <span className="stat-badge-sharp green">
+                      <ArrowUpRight size={14} /> +18.4% vs last month
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="stat-icon-wrapper revenue">
+                    <DollarSign size={22} />
+                  </div>
+                </div>
 
-          </div>
+                <div className="stat-card-sharp">
+                  <div className="stat-info-left">
+                    <span className="stat-title">Registered Users</span>
+                    <span className="stat-value">{dbUsers.length}</span>
+                    <span className="stat-badge-sharp green">
+                      <ArrowUpRight size={14} /> Live in MongoDB
+                    </span>
+                  </div>
+                  <div className="stat-icon-wrapper users">
+                    <Users size={22} />
+                  </div>
+                </div>
 
-          {/* ================= 5. RECENT ACTIVITY & TRANSACTIONS TABLE ================= */}
-          <div className="table-card-sharp">
-            <div className="table-header-row">
-              <h3>Recent System Transactions</h3>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '6px 12px', borderRadius: '4px' }}>
-                  <Search size={14} color="#64748b" style={{ marginRight: '6px' }} />
-                  <input 
-                    type="text" 
-                    placeholder="Search transactions..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '12px', fontFamily: 'var(--font-family)' }}
-                  />
+                <div className="stat-card-sharp">
+                  <div className="stat-info-left">
+                    <span className="stat-title">Active Orders</span>
+                    <span className="stat-value">389</span>
+                    <span className="stat-badge-sharp blue">
+                      <ArrowUpRight size={14} /> +6.2% active
+                    </span>
+                  </div>
+                  <div className="stat-icon-wrapper orders">
+                    <ShoppingBag size={22} />
+                  </div>
+                </div>
+
+                <div className="stat-card-sharp">
+                  <div className="stat-info-left">
+                    <span className="stat-title">System Status</span>
+                    <span className="stat-value">Healthy</span>
+                    <span className="stat-badge-sharp green">
+                      <ShieldCheck size={14} /> 0 Alerts
+                    </span>
+                  </div>
+                  <div className="stat-icon-wrapper growth">
+                    <Server size={22} />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="table-responsive-wrapper">
-              <table className="sharp-table">
-                <thead>
-                  <tr>
-                    <th>Reference</th>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((tx) => (
-                    <tr key={tx.id}>
-                      <td style={{ fontWeight: '700', color: 'var(--primary-color)' }}>{tx.id}</td>
-                      <td>
-                        <div className="user-cell-sharp">
-                          <div className="user-avatar-sharp">
-                            {tx.user.charAt(0)}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: '600' }}>{tx.user}</div>
-                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{tx.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{tx.action}</td>
-                      <td style={{ fontWeight: '700' }}>{tx.amount}</td>
-                      <td>
-                        <span className={`status-tag-sharp ${tx.status}`}>
-                          {tx.status}
-                        </span>
-                      </td>
-                      <td style={{ color: '#64748b', fontSize: '12px' }}>{tx.date}</td>
-                      <td>
-                        <button className="action-btn-sharp" onClick={() => alert(`Viewing details for ${tx.id}`)}>
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {/* Charts Grid */}
+              <div className="charts-grid-2">
+                <div className="chart-card-sharp">
+                  <div className="chart-header">
+                    <h3>Revenue Growth & Order Volume</h3>
+                    <div className="chart-legend-sharp">
+                      <span><span className="legend-dot" style={{ background: 'var(--primary-color)' }}></span> Revenue ($)</span>
+                    </div>
+                  </div>
+                  <div style={{ width: '100%', height: 280 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={monthlyRevenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ff4b2b" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="#ff4b2b" stopOpacity={0.0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} />
+                        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
+                        <Tooltip 
+                          contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px' }}
+                        />
+                        <Area type="monotone" dataKey="revenue" stroke="#ff4b2b" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="chart-card-sharp">
+                  <div className="chart-header">
+                    <h3>User Device Breakdown</h3>
+                  </div>
+                  <div style={{ width: '100%', height: 230 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={trafficDeviceData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={80}
+                          paddingAngle={4}
+                          dataKey="value"
+                        >
+                          {trafficDeviceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '12px', color: '#64748b', marginTop: '10px' }}>
+                    {trafficDeviceData.map((item) => (
+                      <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '8px', height: '8px', background: item.color, display: 'inline-block', borderRadius: '2px' }}></span>
+                        <b>{item.name}:</b> {item.value}%
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Transactions Table */}
+              <div className="table-card-sharp">
+                <div className="table-header-row">
+                  <h3>Recent System Transactions</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '6px 12px', borderRadius: '4px' }}>
+                    <Search size={14} color="#64748b" style={{ marginRight: '6px' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search transactions..." 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '12px', fontFamily: 'var(--font-family)' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="table-responsive-wrapper">
+                  <table className="sharp-table">
+                    <thead>
+                      <tr>
+                        <th>Reference</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTransactions.map((tx) => (
+                        <tr key={tx.id}>
+                          <td style={{ fontWeight: '700', color: 'var(--primary-color)' }}>{tx.id}</td>
+                          <td>
+                            <div className="user-cell-sharp">
+                              <div className="user-avatar-sharp">
+                                {tx.user.charAt(0)}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: '600' }}>{tx.user}</div>
+                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>{tx.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{tx.action}</td>
+                          <td style={{ fontWeight: '700' }}>{tx.amount}</td>
+                          <td>
+                            <span className={`status-tag-sharp ${tx.status}`}>
+                              {tx.status}
+                            </span>
+                          </td>
+                          <td style={{ color: '#64748b', fontSize: '12px' }}>{tx.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ================= TAB 2: USERS MANAGEMENT (LIVE MONGODB) ================= */}
+          {activeTab === 'users' && (
+            <div className="table-card-sharp">
+              <div className="table-header-row">
+                <div>
+                  <h3>Registered Users in MongoDB ({filteredDbUsers.length})</h3>
+                  <p style={{ fontSize: '12.5px', color: '#64748b', margin: '4px 0 0' }}>
+                    {isSuperAdmin ? '👑 You have Super Admin rights to promote or demote roles.' : '🔒 Role editing is restricted to Super Admin (admin@gmail.com).'}
+                  </p>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '7px 14px', borderRadius: '4px' }}>
+                    <Search size={14} color="#64748b" style={{ marginRight: '8px' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search by Name, Email, CNIC..." 
+                      value={usersSearch}
+                      onChange={(e) => setUsersSearch(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '12.5px', fontFamily: 'var(--font-family)', width: '220px' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {usersLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 10px', display: 'block' }} />
+                  Loading users from database...
+                </div>
+              ) : (
+                <div className="table-responsive-wrapper">
+                  <table className="sharp-table">
+                    <thead>
+                      <tr>
+                        <th>User Profile</th>
+                        <th>Email</th>
+                        <th>DOB</th>
+                        <th>CNIC</th>
+                        <th>Provider</th>
+                        <th>Current Role</th>
+                        <th>Role Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredDbUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                            No users found matching your search.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredDbUsers.map((u) => {
+                          const isTargetSuperAdmin = u.email?.toLowerCase() === 'admin@gmail.com';
+
+                          return (
+                            <tr key={u._id}>
+                              <td>
+                                <div className="user-cell-sharp">
+                                  {u.profilePic ? (
+                                    <img src={u.profilePic} alt="" className="user-avatar-sharp" style={{ objectFit: 'cover' }} />
+                                  ) : (
+                                    <div className="user-avatar-sharp">
+                                      {u.name?.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div style={{ fontWeight: '600', color: '#1e293b' }}>{u.name}</div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>ID: {u._id.slice(-6)}</div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td style={{ fontWeight: '500' }}>{u.email}</td>
+                              <td style={{ fontSize: '12.5px', color: '#64748b' }}>
+                                {u.dob ? new Date(u.dob).toLocaleDateString() : 'N/A'}
+                              </td>
+                              <td style={{ fontSize: '12.5px', color: '#64748b' }}>{u.cnic || 'N/A'}</td>
+                              
+                              <td>
+                                <span style={{ textTransform: 'capitalize', fontSize: '11.5px', background: '#f1f5f9', padding: '3px 8px', borderRadius: '2px', fontWeight: '600' }}>
+                                  {u.authProvider || 'local'}
+                                </span>
+                              </td>
+
+                              <td>
+                                {isTargetSuperAdmin ? (
+                                  <span className="status-tag-sharp" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                                    👑 Super Admin
+                                  </span>
+                                ) : (
+                                  <span className={`status-tag-sharp ${u.role === 'admin' ? 'completed' : 'pending'}`}>
+                                    {u.role?.toUpperCase() || 'USER'}
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Super Admin Role Control */}
+                              <td>
+                                {isTargetSuperAdmin ? (
+                                  <span style={{ fontSize: '11px', color: '#92400e', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Lock size={12} /> Permanent Locked
+                                  </span>
+                                ) : isSuperAdmin ? (
+                                  u.role === 'admin' ? (
+                                    <button 
+                                      className="action-btn-sharp" 
+                                      onClick={() => handleRoleChange(u, 'user')}
+                                      style={{ color: '#dc2626', borderColor: '#fca5a5' }}
+                                      title="Demote to standard user"
+                                    >
+                                      Demote to User
+                                    </button>
+                                  ) : (
+                                    <button 
+                                      className="action-btn-sharp" 
+                                      onClick={() => handleRoleChange(u, 'admin')}
+                                      style={{ color: '#16a34a', borderColor: '#86efac' }}
+                                      title="Promote to Admin"
+                                    >
+                                      Promote to Admin
+                                    </button>
+                                  )
+                                ) : (
+                                  <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>
+                                    Read-only
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {/* ================= TAB 3: PRODUCTS & STOCK ================= */}
+          {activeTab === 'products' && (
+            <div className="table-card-sharp">
+              <div className="table-header-row">
+                <h3>Product Inventory Management</h3>
+                <button className="btn-sharp primary" onClick={() => alert("Add Product modal will connect in CRUD template")}>
+                  <Plus size={14} /> Add Product
+                </button>
+              </div>
+              <p style={{ color: '#64748b', fontSize: '14px', padding: '20px 0' }}>
+                📦 Product inventory will connect with the <b>Universal CRUD Template</b> next!
+              </p>
+            </div>
+          )}
+
+          {/* ================= TAB 4: ANALYTICS ================= */}
+          {activeTab === 'analytics' && (
+            <div className="table-card-sharp">
+              <div className="table-header-row">
+                <h3>Advanced System Analytics & Logs</h3>
+              </div>
+              <p style={{ color: '#64748b', fontSize: '14px', padding: '20px 0' }}>
+                📈 Real-time metrics, server response times, and API usage analytics.
+              </p>
+            </div>
+          )}
+
+          {/* ================= TAB 5: SETTINGS ================= */}
+          {activeTab === 'settings' && (
+            <div className="table-card-sharp">
+              <div className="table-header-row">
+                <h3>Admin & Security Settings</h3>
+              </div>
+              <p style={{ color: '#64748b', fontSize: '14px', padding: '20px 0' }}>
+                ⚙️ Configure CORS policies, JWT expirations, and Cloudinary storage settings.
+              </p>
+            </div>
+          )}
 
         </main>
       </div>
