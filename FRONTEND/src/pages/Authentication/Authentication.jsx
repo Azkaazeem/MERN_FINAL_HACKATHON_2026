@@ -29,10 +29,10 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
 
-  // --- Form States ---
+  // --- Form States (Pre-filled with Demo Admin Credentials) ---
   const [loginData, setLoginData] = useState({
-    email: '',
-    password: ''
+    email: 'admin@gmail.com',
+    password: 'admin123@'
   });
 
   const [signupData, setSignupData] = useState({
