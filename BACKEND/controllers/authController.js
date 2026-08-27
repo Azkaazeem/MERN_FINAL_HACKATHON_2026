@@ -303,3 +303,57 @@ exports.githubAuth = async (req, res) => {
 exports.getMe = async (req, res) => {
   res.status(200).json({ success: true, user: req.user });
 };
+
+// @route   PUT /api/auth/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const { name, dob, cnic, profilePic, password } = req.body;
+
+    if (name) user.name = name;
+    if (dob) user.dob = dob;
+    if (cnic) user.cnic = cnic;
+
+    // If new base64 image is uploaded, upload to Cloudinary
+    if (profilePic && profilePic.startsWith('data:image')) {
+      try {
+        const uploadRes = await cloudinary.uploader.upload(profilePic, {
+          folder: 'hackathon_users',
+        });
+        user.profilePic = uploadRes.secure_url;
+      } catch (uploadErr) {
+        console.error('Cloudinary Profile Update Error:', uploadErr.message);
+      }
+    } else if (profilePic) {
+      user.profilePic = profilePic;
+    }
+
+    if (password && password.trim().length >= 6) {
+      user.password = password;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        dob: user.dob,
+        cnic: user.cnic,
+        profilePic: user.profilePic,
+        role: user.role,
+        authProvider: user.authProvider
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
