@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const axios = require('axios');
+const { cloudinary } = require('../config/cloudinary');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -20,6 +21,22 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
+    // Upload profile image to Cloudinary if Base64 data provided
+    let uploadedImageUrl = '';
+    if (profilePic && profilePic.startsWith('data:image')) {
+      try {
+        const uploadRes = await cloudinary.uploader.upload(profilePic, {
+          folder: 'hackathon_users',
+        });
+        uploadedImageUrl = uploadRes.secure_url;
+      } catch (uploadErr) {
+        console.error('Cloudinary Upload Error:', uploadErr.message);
+        uploadedImageUrl = '';
+      }
+    } else if (profilePic) {
+      uploadedImageUrl = profilePic;
+    }
+
     // By default, every user gets 'user' role. Admin role can be assigned in DB.
     const user = await User.create({
       name,
@@ -27,7 +44,7 @@ exports.register = async (req, res) => {
       password,
       dob,
       cnic,
-      profilePic,
+      profilePic: uploadedImageUrl,
       role: 'user',
       authProvider: 'local'
     });
@@ -132,7 +149,8 @@ exports.googleAuth = async (req, res) => {
         email,
         googleId,
         authProvider: 'google',
-        profilePic: picture || ''
+        profilePic: picture || '',
+        role: 'user'
       });
     } else {
       if (!user.googleId) user.googleId = googleId;
@@ -205,7 +223,7 @@ exports.githubAuth = async (req, res) => {
       });
     }
 
-    // Step 2: Fetch user profile from GitHub API (User-Agent header is MANDATORY for GitHub API)
+    // Step 2: Fetch user profile from GitHub API
     const userRes = await axios.get('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -248,7 +266,8 @@ exports.githubAuth = async (req, res) => {
         email,
         githubId,
         authProvider: 'github',
-        profilePic: githubUser.avatar_url || ''
+        profilePic: githubUser.avatar_url || '',
+        role: 'user'
       });
     } else {
       if (!user.githubId) user.githubId = githubId;
