@@ -6,10 +6,14 @@ import About from './pages/About/About';
 import Profile from './pages/Profile/Profile';
 import Admin from './pages/Admin/Admin';
 import ProtectedRoute from './components/ProtectedRoute';
+import CustomCursor from './components/CustomCursor/CustomCursor';
 
 function App() {
   return (
     <Router>
+      {/* Global Smooth Custom Cursor */}
+      <CustomCursor />
+      
       <Routes>
         {/* Public Auth Routes */}
         <Route path="/login" element={<Authentication defaultIsSignUp={false} />} />
