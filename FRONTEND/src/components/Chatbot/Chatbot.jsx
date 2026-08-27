@@ -138,7 +138,7 @@ const Chatbot = () => {
 
       {/* ================= 3. FLOATING ACTION BUTTON (FAB) ================= */}
       <button 
-        className="chatbot-fab-btn" 
+        className={`chatbot-fab-btn ${isOpen ? 'open' : ''}`} 
         onClick={toggleChat} 
         title={isOpen ? "Close Chat" : "Open AI Chatbot"}
       >
