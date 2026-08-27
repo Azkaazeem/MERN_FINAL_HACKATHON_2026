@@ -1,10 +1,7 @@
 import React from 'react';
 import Navbar from '../../components/Navbar';
-import { useAuth } from '../../context/AuthContext';
 
-const Admin = () => {
-  const { user } = useAuth();
-
+const About = () => {
   return (
     <div>
       <Navbar />
@@ -13,15 +10,15 @@ const Admin = () => {
         textAlign: 'center',
         fontFamily: 'Poppins, sans-serif'
       }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--primary-color, #ff4b2b)' }}>
-          Admin Dashboard
+        <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text-color, #333)' }}>
+          About Page
         </h1>
         <p style={{ color: '#666', marginTop: '10px' }}>
-          Welcome to the restricted Admin panel, <b>{user?.name || 'Admin'}</b>!
+          This is the about page. All details and content will be placed here.
         </p>
       </div>
     </div>
   );
 };
 
-export default Admin;
+export default About;
