@@ -18,8 +18,30 @@ connectDB();
 
 const app = express();
 
+// Allowed Frontend Origins (Production Vercel + Local Dev)
+const allowedOrigins = [
+  'https://mern-final-hackathon-2026-oqir.vercel.app',
+  'https://mern-final-hackathon-2026.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
+// CORS configuration supporting dynamic Vercel deployments and local development
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Standard Middlewares (Increase payload limit to support Base64 Profile Pictures)
-app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
