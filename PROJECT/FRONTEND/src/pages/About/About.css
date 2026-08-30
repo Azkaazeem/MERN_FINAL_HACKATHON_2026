@@ -1,0 +1,170 @@
+/* ==========================================================================
+   About.css - Senior Minimalist About & Founder Hub
+   ========================================================================== */
+
+.about-page-container {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  min-height: 100vh;
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.about-content-wrapper {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  flex: 1;
+}
+
+/* Hero Section */
+.about-hero {
+  text-align: center;
+  max-width: 750px;
+  margin: 0 auto 44px;
+}
+
+.about-hero h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-dark);
+  margin: 0 0 14px;
+  letter-spacing: -0.5px;
+}
+
+.gradient-text-about {
+  color: var(--primary-color);
+}
+
+.about-hero-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Founder Spotlight Card */
+.founder-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 36px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 36px;
+  margin-bottom: 40px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+@media (max-width: 850px) {
+  .founder-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}
+
+.founder-avatar-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.founder-img-wrapper {
+  width: 220px;
+  height: 220px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid var(--border-color);
+  background: var(--card-hover);
+}
+
+.founder-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.founder-info-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.founder-name {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+
+.founder-role-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 850px) {
+  .founder-role-tags {
+    justify-content: center;
+  }
+}
+
+.role-tag {
+  background: var(--card-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.role-tag.highlight {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--border-accent);
+  font-weight: 700;
+}
+
+.founder-bio {
+  font-size: 0.94rem;
+  color: var(--text-color);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.founder-socials {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 850px) {
+  .founder-socials {
+    justify-content: center;
+  }
+}
+
+.social-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-dark);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.social-link-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}

@@ -9,14 +9,19 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ 
+      name, 
+      email, 
+      password, 
+      role: role || (email.toLowerCase().includes('admin') ? 'admin' : email.toLowerCase().includes('worker') ? 'worker' : 'customer') 
+    });
 
     res.status(201).json({
       success: true,

@@ -10,13 +10,27 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkUser = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const savedUser = localStorage.getItem('user');
+
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {}
+      }
+
+      if (token && !token.startsWith('demo_token')) {
         try {
           const res = await API.get('/auth/me');
-          setUser(res.data.user);
+          if (res.data?.user) {
+            setUser(res.data.user);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+          }
         } catch (err) {
-          localStorage.removeItem('token');
-          setUser(null);
+          if (!savedUser) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
         }
       }
       setLoading(false);
@@ -26,15 +40,23 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData, token) => {
     if (token) localStorage.setItem('token', token);
-    setUser(userData);
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+    }
   };
 
   const updateUser = (userData) => {
-    setUser((prev) => ({ ...prev, ...userData }));
+    setUser((prev) => {
+      const updated = { ...prev, ...userData };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 

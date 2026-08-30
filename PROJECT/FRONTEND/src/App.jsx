@@ -1,9 +1,55 @@
-import React from 'react'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Authentication from './pages/Authentication/Authentication';
+import Home from './pages/Home/Home';
+import About from './pages/About/About';
+import Profile from './pages/Profile/Profile';
+import Admin from './pages/Admin/Admin';
+import Worker from './pages/Worker/Worker';
+import Analytics from './pages/Analytics/Analytics';
+import Alerts from './pages/Alerts/Alerts';
+import ProtectedRoute from './components/ProtectedRoute';
+import CustomCursor from './components/CustomCursor/CustomCursor';
+import Chatbot from './components/Chatbot/Chatbot';
 
-const App = () => {
+function App() {
   return (
-    <div>App</div>
-  )
+    <Router>
+      {/* Global Smooth Custom Cursor */}
+      <CustomCursor />
+
+      {/* Floating AI Chatbot Widget */}
+      <Chatbot />
+      
+      <Routes>
+        {/* Public Auth Routes */}
+        <Route path="/login" element={<Authentication defaultIsSignUp={false} />} />
+        <Route path="/register" element={<Authentication defaultIsSignUp={true} />} />
+
+        {/* Protected Customer & General Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/alerts" element={<Alerts />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
+
+        {/* Protected Worker Route (Worker & Admin) */}
+        <Route element={<ProtectedRoute workerOnly={true} />}>
+          <Route path="/worker" element={<Worker />} />
+        </Route>
+
+        {/* Protected Admin Route (STRICTLY Admin Only) */}
+        <Route element={<ProtectedRoute adminOnly={true} />}>
+          <Route path="/admin" element={<Admin />} />
+        </Route>
+
+        {/* Default fallback route */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
