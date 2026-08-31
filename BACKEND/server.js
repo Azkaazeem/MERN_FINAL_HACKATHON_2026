@@ -2,21 +2,25 @@ const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const User = require('./models/User');
 const seedInitialData = require('./config/seedData');
+const connectDB = require('./config/db');
 
 // Load environment variables immediately at the very top
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
-const connectDB = require('./config/db');
-const dns = require("dns");
-
-dns.setServers(['8.8.8.8', '1.1.1.1']); 
+try {
+  const dns = require("dns");
+  dns.setServers(['8.8.8.8', '1.1.1.1']); 
+} catch (e) {}
 
 // Connect Database & run automatic initial seed
 connectDB().then(() => {
   seedInitialData();
+}).catch(err => {
+  console.warn('Initial seed deferred:', err.message);
 });
 
 const app = express();
@@ -47,6 +51,19 @@ app.use(cors({
 // Standard Middlewares (Increase payload limit to support Base64 Profile Pictures & Attachments)
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ limit: '15mb', extended: true }));
+
+// Serverless DB Connection Middleware: Ensure MongoDB is connected for every incoming request
+app.use(async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    next();
+  } catch (err) {
+    console.error('Serverless connection middleware error:', err.message);
+    next();
+  }
+});
 
 // Core API Routes (100% Dynamic MongoDB Database Endpoints)
 app.use('/api/auth', require('./routes/authRoutes'));
