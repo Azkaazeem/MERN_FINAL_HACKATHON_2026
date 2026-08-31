@@ -691,6 +691,23 @@ const Home = () => {
                             </div>
                           </div>
                         </div>
+
+                        {/* Prominent Chat Trigger Button */}
+                        <div className="chc-footer-chat-row">
+                          <button 
+                            type="button" 
+                            className="home-open-chat-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveChatTicket(c);
+                            }}
+                            title="Open live conversation with assigned crew"
+                          >
+                            <MessageSquare size={13} className="cyan-icon" />
+                            <span>Live Chat with Assigned Officer</span>
+                            <span className="online-pill">● Online</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })

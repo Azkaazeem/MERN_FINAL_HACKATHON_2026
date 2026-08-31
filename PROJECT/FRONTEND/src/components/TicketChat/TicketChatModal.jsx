@@ -16,11 +16,25 @@ import {
   User, 
   Paperclip,
   Sparkles,
-  Volume2
+  Volume2,
+  MessageSquare,
+  Clock,
+  MapPin,
+  Building2,
+  CheckCircle2,
+  HelpCircle
 } from 'lucide-react';
 import './TicketChatModal.css';
 
 const DEFAULT_EMOJIS = ['👍', '⚠️', '🚨', '💧', '🚧', '⚡', '✅', '🙏', '🕒', '📸'];
+
+// Quick One-Click Suggested Prompts
+const QUICK_PROMPTS = [
+  'What is the estimated completion time?',
+  'Is the repair team currently on-site?',
+  'Please verify when the water/power will resume.',
+  'Attaching photo of recent damage.'
+];
 
 const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => {
   const { user } = useAuth();
@@ -31,10 +45,11 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [playingAudioId, setPlayingAudioId] = useState(null);
   const [selectedChatImage, setSelectedChatImage] = useState(null);
+  const [isAgentTyping, setIsAgentTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Load ticket conversation history from localStorage or seed initial messages
+  // Load ticket conversation history from localStorage
   useEffect(() => {
     if (!ticket) return;
     const storageKey = `ticket_chat_${ticket.id || ticket.ticketId || '101'}`;
@@ -53,17 +68,17 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
     }
   }, [ticket]);
 
-  // Save messages to persistent storage whenever updated
+  // Save messages to persistent storage
   useEffect(() => {
     if (!ticket || messages.length === 0) return;
     const storageKey = `ticket_chat_${ticket.id || ticket.ticketId || '101'}`;
     localStorage.setItem(storageKey, JSON.stringify(messages));
   }, [messages, ticket]);
 
-  // Scroll to bottom on new message
+  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOpen]);
+  }, [messages, isAgentTyping, isOpen]);
 
   // Voice recording timer
   useEffect(() => {
@@ -84,15 +99,15 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
       id: 'msg_sys_1',
       senderRole: 'system',
       senderName: 'NovaDesk AI Triage Engine',
-      text: `Ticket #${t.id || '101'} triaged as ${t.priority || 'High'} Priority. Automated dispatch routed to ${t.assigned_department || t.assignedDept || 'Municipal Works'}.`,
+      text: `Ticket #${t.id || '101'} triaged as ${t.priority || 'High'} Priority. Automated dispatch routed to ${t.assigned_department || t.assignedDept || 'Municipal Authority'}.`,
       time: '10:15 AM',
       type: 'system'
     },
     {
       id: 'msg_agent_1',
       senderRole: 'worker',
-      senderName: t.assignedWorker || 'Officer Tariq (Field Crew)',
-      text: `Assigned inspection order #${t.id || '101'}. Our mobile repair van is en route with required hydraulic machinery.`,
+      senderName: t.assignedWorker || 'Officer Tariq Mehmood (Field Crew)',
+      text: `Assigned inspection order #${t.id || '101'}. Our mobile repair van is currently en route with required hydraulic maintenance crew.`,
       time: '10:18 AM',
       type: 'text'
     },
@@ -100,7 +115,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
       id: 'msg_cust_1',
       senderRole: 'customer',
       senderName: t.citizen_name || user?.name || 'Citizen Reporter',
-      text: `Thank you Officer. Please be careful near the main street junction as water pressure is high.`,
+      text: `Thank you Officer. Please check the main junction valve as water flow is heavy.`,
       time: '10:22 AM',
       type: 'text'
     }
@@ -109,15 +124,15 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
   if (!isOpen || !ticket) return null;
 
   // Send Text Message
-  const handleSendMessage = (e) => {
-    e?.preventDefault();
-    if (!inputText.trim()) return;
+  const handleSendMessage = (textToSend = null) => {
+    const text = textToSend || inputText;
+    if (!text.trim()) return;
 
     const newMsg = {
       id: `msg_${Date.now()}`,
       senderRole: userRole === 'worker' ? 'worker' : 'customer',
-      senderName: user?.name || (userRole === 'worker' ? 'Assigned Field Officer' : 'Citizen User'),
-      text: inputText.trim(),
+      senderName: user?.name || (userRole === 'worker' ? 'Assigned Field Officer' : 'Citizen Reporter'),
+      text: text.trim(),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       type: 'text'
     };
@@ -125,6 +140,23 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
     setMessages(prev => [...prev, newMsg]);
     setInputText('');
     setShowEmojiPicker(false);
+
+    // Simulate Agent Auto-Reply if sent by customer
+    if (userRole === 'customer') {
+      setIsAgentTyping(true);
+      setTimeout(() => {
+        setIsAgentTyping(false);
+        const replyMsg = {
+          id: `msg_${Date.now() + 1}`,
+          senderRole: 'worker',
+          senderName: ticket.assignedWorker || 'Officer Tariq Mehmood (Field Crew)',
+          text: `Acknowledged! We have logged your update on Ticket #${ticket.id || '101'}. Crew is addressing the issue now.`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'text'
+        };
+        setMessages(prev => [...prev, replyMsg]);
+      }, 1500);
+    }
   };
 
   // Add Emoji
@@ -148,7 +180,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
       const newMsg = {
         id: `msg_${Date.now()}`,
         senderRole: userRole === 'worker' ? 'worker' : 'customer',
-        senderName: user?.name || (userRole === 'worker' ? 'Field Officer' : 'Citizen User'),
+        senderName: user?.name || (userRole === 'worker' ? 'Field Officer' : 'Citizen Reporter'),
         mediaUrl: reader.result,
         mediaName: file.name,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -164,15 +196,14 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
   const toggleVoiceRecording = () => {
     if (!isRecordingVoice) {
       setIsRecordingVoice(true);
-      toast('Recording voice note... Click again to send.', { icon: '🎙️' });
+      toast('Recording voice note... Click mic again to send.', { icon: '🎙️' });
     } else {
       setIsRecordingVoice(false);
-      // Create Voice Note Message
-      const durationSec = recordingSeconds > 0 ? recordingSeconds : 4;
+      const durationSec = recordingSeconds > 0 ? recordingSeconds : 5;
       const newMsg = {
         id: `msg_${Date.now()}`,
         senderRole: userRole === 'worker' ? 'worker' : 'customer',
-        senderName: user?.name || (userRole === 'worker' ? 'Field Officer' : 'Citizen User'),
+        senderName: user?.name || (userRole === 'worker' ? 'Field Officer' : 'Citizen Reporter'),
         duration: `0:${durationSec < 10 ? '0' : ''}${durationSec}`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'voice'
@@ -185,7 +216,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
   // Delete message
   const handleDeleteMessage = (msgId) => {
     setMessages(prev => prev.filter(m => m.id !== msgId));
-    toast.success('Message deleted from conversation history.');
+    toast.success('Message deleted.');
   };
 
   return (
@@ -194,27 +225,56 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
         
         {/* ================= MODAL HEADER ================= */}
         <div className="chat-dialog-header">
-          <div className="cdh-info">
-            <div className="cdh-top">
-              <span className="cdh-ticket-badge">Ticket #{ticket.id || ticket.ticketId}</span>
-              <span className={`cdh-priority-tag ${(ticket.priority || 'medium').toLowerCase()}`}>
-                {ticket.priority || 'Medium'} Priority
-              </span>
-              <span className="cdh-status-pill">{ticket.status || 'In Progress'}</span>
+          
+          <div className="chat-header-agent-profile">
+            <div className="agent-avatar-wrap">
+              <div className="agent-avatar-circle">
+                {userRole === 'worker' ? <User size={18} /> : <ShieldCheck size={18} />}
+              </div>
+              <span className="agent-status-dot" title="Officer Online & Connected" />
             </div>
-            <h3 className="cdh-title">{ticket.title}</h3>
-            <p className="cdh-sub">
-              {userRole === 'worker' ? 'Chatting with Citizen Reporter' : `Chatting with Assigned Field Officer (${ticket.assigned_department || ticket.assignedDept || 'Municipal Authority'})`}
-            </p>
+
+            <div className="agent-profile-text">
+              <div className="agent-name-row">
+                <h4>
+                  {userRole === 'worker' 
+                    ? (ticket.citizen_name || 'Citizen Reporter') 
+                    : (ticket.assignedWorker || 'Officer Tariq Mehmood (Field Crew)')}
+                </h4>
+                <span className="verified-badge">✓ Verified Staff</span>
+              </div>
+              <p className="agent-dept-sub">
+                {ticket.assigned_department || ticket.assignedDept || 'Municipal Authority'} &bull; Ticket #{ticket.id || ticket.ticketId}
+              </p>
+            </div>
           </div>
 
-          <button className="chat-close-btn" onClick={onClose} title="Close Chat Modal">
-            <X size={18} />
-          </button>
+          <div className="chat-header-actions">
+            <span className={`chat-priority-badge ${(ticket.priority || 'medium').toLowerCase()}`}>
+              {ticket.priority || 'Medium'} Priority
+            </span>
+            <button className="chat-close-btn" onClick={onClose} title="Close Chat (Esc)">
+              <X size={18} />
+            </button>
+          </div>
+
+        </div>
+
+        {/* ================= TICKET CONTEXT BANNER ================= */}
+        <div className="chat-ticket-context-bar">
+          <div className="ctc-subject">
+            <strong>Incident:</strong> <span>{ticket.title}</span>
+          </div>
+          <div className="ctc-meta">
+            <span>📍 {ticket.location || 'Central District'}</span>
+            <span>&bull;</span>
+            <span>Status: <strong style={{ color: '#00e5ff' }}>{ticket.status || 'In Progress'}</strong></span>
+          </div>
         </div>
 
         {/* ================= MESSAGE STREAM ================= */}
         <div className="chat-messages-container">
+          
           {messages.map((msg) => {
             const isMe = (userRole === 'worker' && msg.senderRole === 'worker') || (userRole === 'customer' && msg.senderRole === 'customer');
             const isSystem = msg.type === 'system';
@@ -243,7 +303,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
                           type="button" 
                           className="msg-delete-btn" 
                           onClick={() => handleDeleteMessage(msg.id)}
-                          title="Delete message"
+                          title="Delete / Unsend message"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -261,7 +321,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
                     <div className="msg-image-wrap" onClick={() => setSelectedChatImage(msg.mediaUrl)}>
                       <img src={msg.mediaUrl} alt="Chat Attachment" className="msg-img-preview" />
                       <div className="msg-img-overlay">
-                        <span>Click to enlarge photo</span>
+                        <span>🔍 Click to view large</span>
                       </div>
                     </div>
                   )}
@@ -285,7 +345,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
                         <span className={`bar ${playingAudioId === msg.id ? 'animating' : ''}`} />
                         <span className={`bar ${playingAudioId === msg.id ? 'animating' : ''}`} />
                       </div>
-                      <span className="voice-duration">{msg.duration || '0:06'}</span>
+                      <span className="voice-duration">🎙️ {msg.duration || '0:05'}</span>
                     </div>
                   )}
 
@@ -293,7 +353,37 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
               </div>
             );
           })}
+
+          {/* Typing Indicator */}
+          {isAgentTyping && (
+            <div className="chat-message-row incoming">
+              <div className="msg-bubble-card typing-bubble">
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+                <span className="typing-text">Officer is typing...</span>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
+        </div>
+
+        {/* ================= QUICK PROMPTS CHIPS ================= */}
+        <div className="quick-prompts-bar">
+          <span className="qp-label"><Sparkles size={11} /> Quick Questions:</span>
+          <div className="qp-chips-list">
+            {QUICK_PROMPTS.map((q, idx) => (
+              <button 
+                key={idx}
+                type="button" 
+                className="qp-chip-btn"
+                onClick={() => handleSendMessage(q)}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ================= EMOJI PALETTE POPUP ================= */}
@@ -313,7 +403,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
         )}
 
         {/* ================= INPUT FOOTER CONTROLS ================= */}
-        <form onSubmit={handleSendMessage} className="chat-input-footer">
+        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="chat-input-footer">
           
           {/* Action Tools: Emoji, Image Attachment, Voice Note */}
           <div className="chat-toolbar-left">
@@ -321,13 +411,13 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
               type="button" 
               className={`tool-icon-btn ${showEmojiPicker ? 'active' : ''}`}
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              title="Add Emoji"
+              title="Insert Emoji"
             >
-              <Smile size={18} />
+              <Smile size={19} />
             </button>
 
-            <label className="tool-icon-btn file-attach-label" title="Attach Photo Proof">
-              <ImageIcon size={18} />
+            <label className="tool-icon-btn file-attach-label" title="Attach Photo Proof (PNG, JPG)">
+              <ImageIcon size={19} />
               <input 
                 type="file" 
                 accept="image/png, image/jpeg, image/jpg" 
@@ -340,9 +430,9 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
               type="button" 
               className={`tool-icon-btn ${isRecordingVoice ? 'recording-active' : ''}`}
               onClick={toggleVoiceRecording}
-              title={isRecordingVoice ? 'Stop & Send Voice Note' : 'Record Voice Note'}
+              title={isRecordingVoice ? 'Stop & Send Voice Note' : 'Record Audio Note'}
             >
-              {isRecordingVoice ? <MicOff size={18} /> : <Mic size={18} />}
+              {isRecordingVoice ? <MicOff size={19} /> : <Mic size={19} />}
             </button>
           </div>
 
@@ -350,15 +440,16 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
           {isRecordingVoice ? (
             <div className="voice-recording-banner">
               <span className="rec-dot" />
-              <span>Recording Audio Note (0:0{recordingSeconds}) - Click mic icon to send</span>
+              <span>Recording Voice Note (0:0{recordingSeconds}s) — Click mic to send</span>
             </div>
           ) : (
             <input 
               type="text" 
               className="chat-text-input"
-              placeholder={userRole === 'worker' ? 'Reply to citizen with repair update...' : 'Message assigned field officer...'}
+              placeholder={userRole === 'worker' ? 'Type message or repair update to citizen...' : 'Type message to assigned field officer...'}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
+              autoFocus
             />
           )}
 

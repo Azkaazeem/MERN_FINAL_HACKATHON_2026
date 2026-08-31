@@ -681,6 +681,29 @@ const MyComplaints = () => {
                         </div>
                       </div>
 
+                      {/* Dedicated In-Ticket Chat Action Bar */}
+                      <div className="cvc-chat-cta-bar">
+                        <button 
+                          type="button" 
+                          className="prominent-ticket-chat-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveChatTicket(c);
+                          }}
+                          title="Open live chat with assigned field officer"
+                        >
+                          <div className="ptc-left">
+                            <MessageSquare size={15} className="chat-btn-icon" />
+                            <span className="ptc-main-text">Open Ticket Conversation</span>
+                            <span className="ptc-officer-text">&bull; {c.assigned_department}</span>
+                          </div>
+                          <div className="ptc-right">
+                            <span className="ptc-pulse-online">● Officer Connected</span>
+                            <ChevronRight size={14} />
+                          </div>
+                        </button>
+                      </div>
+
                       {/* Bottom: Progress Stepper */}
                       <div className="cvc-mini-stepper">
                         <div className="m-step done">
