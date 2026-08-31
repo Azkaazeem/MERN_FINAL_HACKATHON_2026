@@ -27,8 +27,10 @@ import {
   FileText,
   Upload,
   ZoomIn,
-  X
+  X,
+  MessageSquare
 } from 'lucide-react';
+import TicketChatModal from '../../components/TicketChat/TicketChatModal';
 import API from '../../api/axios';
 import './MyComplaints.css';
 
@@ -129,6 +131,7 @@ const MyComplaints = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [selectedImageModal, setSelectedImageModal] = useState(null);
+  const [activeChatTicket, setActiveChatTicket] = useState(null);
 
   // Fetch Database Complaints
   useEffect(() => {
@@ -612,9 +615,23 @@ const MyComplaints = () => {
                             {c.priority}
                           </span>
                         </div>
-                        <span className={`cvc-status-pill ${c.status?.toLowerCase().replace(' ', '-')}`}>
-                          {c.status}
-                        </span>
+                        <div className="cvc-header-actions">
+                          <button 
+                            type="button" 
+                            className="cvc-chat-action-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveChatTicket(c);
+                            }}
+                            title="Open live chat with assigned field officer"
+                          >
+                            <MessageSquare size={13} />
+                            <span>Live Chat</span>
+                          </button>
+                          <span className={`cvc-status-pill ${c.status?.toLowerCase().replace(' ', '-')}`}>
+                            {c.status}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Middle Body: Text + Right-Side Photo Proof */}
@@ -722,6 +739,14 @@ const MyComplaints = () => {
           </div>
         </div>
       )}
+
+      {/* ================= IN-TICKET LIVE CHAT MODAL ================= */}
+      <TicketChatModal 
+        ticket={activeChatTicket}
+        isOpen={!!activeChatTicket}
+        onClose={() => setActiveChatTicket(null)}
+        userRole="customer"
+      />
 
       </main>
 

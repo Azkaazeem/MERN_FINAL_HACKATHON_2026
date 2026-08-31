@@ -1494,3 +1494,32 @@
   justify-content: center;
   height: 16px;
 }
+
+/* Tracker Live Chat Button */
+.tracked-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tracker-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-color);
+  color: var(--primary-color);
+  padding: 4px 10px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tracker-chat-btn:hover {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border-color: var(--primary-color);
+}

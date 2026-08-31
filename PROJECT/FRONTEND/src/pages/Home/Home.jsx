@@ -30,8 +30,10 @@ import {
   Clock,
   Upload,
   ZoomIn,
-  X 
+  X,
+  MessageSquare 
 } from 'lucide-react';
+import TicketChatModal from '../../components/TicketChat/TicketChatModal';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import API from '../../api/axios';
 import './Home.css';
@@ -62,6 +64,7 @@ const Home = () => {
   const [trackedComplaint, setTrackedComplaint] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImageModal, setSelectedImageModal] = useState(null);
+  const [activeChatTicket, setActiveChatTicket] = useState(null);
 
   // Local Complaints List for Instant Feedback
   const [submittedComplaints, setSubmittedComplaints] = useState([
@@ -753,8 +756,19 @@ const Home = () => {
                   <span className="ticket-category-tag">{trackedComplaint.category}</span>
                   <span className={`priority-tag ${trackedComplaint.priority.toLowerCase()}`}>{trackedComplaint.priority} Priority</span>
                 </div>
-                <div className={`status-pill ${trackedComplaint.status.toLowerCase().replace(' ', '-')}`}>
-                  {trackedComplaint.status}
+                <div className="tracked-header-right">
+                  <button 
+                    type="button" 
+                    className="tracker-chat-btn"
+                    onClick={() => setActiveChatTicket(trackedComplaint)}
+                    title="Open live chat with assigned field officer"
+                  >
+                    <MessageSquare size={14} />
+                    <span>Live Ticket Chat</span>
+                  </button>
+                  <div className={`status-pill ${trackedComplaint.status.toLowerCase().replace(' ', '-')}`}>
+                    {trackedComplaint.status}
+                  </div>
                 </div>
               </div>
 
@@ -947,6 +961,14 @@ const Home = () => {
           </div>
         </div>
       )}
+
+      {/* ================= IN-TICKET LIVE CHAT MODAL ================= */}
+      <TicketChatModal 
+        ticket={activeChatTicket}
+        isOpen={!!activeChatTicket}
+        onClose={() => setActiveChatTicket(null)}
+        userRole="customer"
+      />
 
       </main>
 

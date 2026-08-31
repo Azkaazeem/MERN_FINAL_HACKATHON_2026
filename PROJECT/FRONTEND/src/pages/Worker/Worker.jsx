@@ -20,8 +20,10 @@ import {
   ShieldAlert,
   HardHat,
   Filter,
-  CheckCircle
+  CheckCircle,
+  MessageSquare
 } from 'lucide-react';
+import TicketChatModal from '../../components/TicketChat/TicketChatModal';
 import './Worker.css';
 
 const Worker = () => {
@@ -33,6 +35,7 @@ const Worker = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isResolving, setIsResolving] = useState(false);
+  const [activeChatTicket, setActiveChatTicket] = useState(null);
 
   // Fetch real complaints from Database
   const fetchWorkerTasks = async () => {
@@ -389,6 +392,14 @@ const Worker = () => {
             </div>
           </div>
         )}
+      {/* ================= IN-TICKET LIVE CHAT MODAL (AGENT ROLE) ================= */}
+      <TicketChatModal 
+        ticket={activeChatTicket}
+        isOpen={!!activeChatTicket}
+        onClose={() => setActiveChatTicket(null)}
+        userRole="worker"
+      />
+
       </main>
 
       <Footer />
