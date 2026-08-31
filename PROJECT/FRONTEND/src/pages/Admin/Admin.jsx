@@ -15,6 +15,8 @@ import {
   Clock, 
   AlertTriangle,
   ShieldCheck,
+  Shield,
+  User,
   Lock,
   RefreshCw,
   MapPin,
@@ -200,14 +202,29 @@ const Admin = () => {
     fetchDbUsers();
   }, []);
 
-  // Handle Role Change
+  // Handle Role Change (with Master Admin Protection)
   const handleRoleChange = (targetUser, newRole) => {
+    const isTargetSuper = 
+      targetUser.email?.toLowerCase() === 'amin@gmail.com' ||
+      targetUser.email?.toLowerCase() === 'admin@gmail.com' ||
+      targetUser.name?.toLowerCase() === 'admin' ||
+      targetUser.role === 'administrator';
+
+    if (isTargetSuper) {
+      return Swal.fire({
+        icon: 'warning',
+        title: 'Master Admin Protected',
+        text: 'This primary master administrator is protected and cannot be changed.',
+        confirmButtonColor: '#00e5ff'
+      });
+    }
+
     Swal.fire({
       title: `Change Role to ${newRole.toUpperCase()}?`,
       text: `Update ${targetUser.name}'s system role to ${newRole.toUpperCase()}?`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#06b6d4',
+      confirmButtonColor: '#00e5ff',
       cancelButtonColor: '#64748b',
       confirmButtonText: `Yes, Make ${newRole.toUpperCase()}`
     }).then(async (result) => {
@@ -581,57 +598,120 @@ const Admin = () => {
                 </button>
               </div>
 
-              <div className="table-wrapper-card">
-                <table className="admin-table">
+              <div className="table-wrapper-card users-table-card">
+                <table className="admin-table modern-user-table">
                   <thead>
                     <tr>
-                      <th>User Name</th>
-                      <th>Email</th>
-                      <th>Provider</th>
+                      <th>User Profile</th>
+                      <th>Email Address</th>
+                      <th>Auth Provider</th>
                       <th>Current Role</th>
-                      <th>Change Role Action</th>
+                      <th>Role Permissions & Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredUsers.map(u => {
-                      const isSuper = u.email?.toLowerCase() === 'admin@gmail.com';
+                      const isSuper = 
+                        u.email?.toLowerCase() === 'amin@gmail.com' ||
+                        u.email?.toLowerCase() === 'admin@gmail.com' ||
+                        u.name?.toLowerCase() === 'admin' ||
+                        u.role === 'administrator';
+                      
+                      const normRole = (u.role || 'customer').toLowerCase();
+
                       return (
-                        <tr key={u._id}>
-                          <td className="font-semibold">{u.name}</td>
-                          <td>{u.email}</td>
-                          <td className="capitalize">{u.authProvider || 'local'}</td>
+                        <tr key={u._id} className={isSuper ? 'master-admin-row' : ''}>
+                          {/* User Profile column with avatar */}
                           <td>
-                            <span className="role-tag-pill">
-                              {u.role?.toUpperCase() || 'CUSTOMER'}
+                            <div className="user-profile-meta-cell">
+                              <div className={`user-table-avatar ${isSuper ? 'super-avatar' : ''}`}>
+                                {u.profilePic ? (
+                                  <img src={u.profilePic} alt={u.name} />
+                                ) : (
+                                  <span>{(u.name || 'U').charAt(0).toUpperCase()}</span>
+                                )}
+                              </div>
+                              <div className="user-name-wrapper">
+                                <span className="user-name-title">{u.name}</span>
+                                {isSuper && <span className="master-sub-tag">Master Account</span>}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Email */}
+                          <td className="user-email-cell">
+                            <span className="email-text">{u.email}</span>
+                          </td>
+
+                          {/* Provider */}
+                          <td>
+                            <span className={`provider-pill provider-${(u.authProvider || 'local').toLowerCase()}`}>
+                              {u.authProvider || 'Local'}
                             </span>
                           </td>
+
+                          {/* Current Role Badge */}
                           <td>
                             {isSuper ? (
-                              <span className="locked-pill"><Lock size={12} /> Super Admin Locked</span>
+                              <span className="modern-role-badge badge-master-admin">
+                                <Shield size={13} />
+                                <span>MASTER ADMIN</span>
+                              </span>
+                            ) : normRole === 'admin' ? (
+                              <span className="modern-role-badge badge-admin">
+                                <ShieldCheck size={13} />
+                                <span>ADMIN</span>
+                              </span>
+                            ) : normRole === 'worker' ? (
+                              <span className="modern-role-badge badge-worker">
+                                <HardHat size={13} />
+                                <span>WORKER</span>
+                              </span>
                             ) : (
-                              <div className="role-switcher-group">
-                                {u.role !== 'customer' && u.role !== 'user' && (
+                              <span className="modern-role-badge badge-customer">
+                                <User size={13} />
+                                <span>CUSTOMER</span>
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Change Role Action */}
+                          <td>
+                            {isSuper ? (
+                              <div className="master-admin-locked-pill" title="Permanent Master Administrator">
+                                <Lock size={13} />
+                                <span>Protected (Permanent Role)</span>
+                              </div>
+                            ) : (
+                              <div className="modern-role-actions-bar">
+                                {normRole !== 'customer' && (
                                   <button 
-                                    className="role-switch-btn" 
+                                    className="role-pill-action btn-make-customer" 
                                     onClick={() => handleRoleChange(u, 'customer')}
+                                    title="Set role to Citizen/Customer"
                                   >
-                                    Customer
+                                    <User size={12} />
+                                    <span>Customer</span>
                                   </button>
                                 )}
-                                {u.role !== 'worker' && (
+                                {normRole !== 'worker' && (
                                   <button 
-                                    className="role-switch-btn" 
+                                    className="role-pill-action btn-make-worker" 
                                     onClick={() => handleRoleChange(u, 'worker')}
+                                    title="Set role to Field Support Worker"
                                   >
-                                    Worker
+                                    <HardHat size={12} />
+                                    <span>Worker</span>
                                   </button>
                                 )}
-                                {u.role !== 'admin' && (
+                                {normRole !== 'admin' && (
                                   <button 
-                                    className="role-switch-btn" 
+                                    className="role-pill-action btn-make-admin" 
                                     onClick={() => handleRoleChange(u, 'admin')}
+                                    title="Promote to System Administrator"
                                   >
-                                    Admin
+                                    <ShieldCheck size={12} />
+                                    <span>Admin</span>
                                   </button>
                                 )}
                               </div>

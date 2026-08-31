@@ -397,46 +397,241 @@
 }
 
 /* Role Management */
-.role-tag-pill {
-  font-size: 0.74rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--card-hover);
-  border: 1px solid var(--border-color);
+/* ================= MODERN USER & ROLE MANAGEMENT TABLE ================= */
+.users-table-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  overflow-x: auto;
 }
 
-.locked-pill {
+.modern-user-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.modern-user-table th {
+  background-color: var(--card-hover);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.modern-user-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.15s ease;
+}
+
+.modern-user-table tbody tr:hover td {
+  background-color: rgba(0, 229, 255, 0.03);
+}
+
+.modern-user-table tbody tr.master-admin-row td {
+  background-color: rgba(245, 158, 11, 0.03);
+}
+
+.modern-user-table tbody tr.master-admin-row:hover td {
+  background-color: rgba(245, 158, 11, 0.06);
+}
+
+/* User Profile Column */
+.user-profile-meta-cell {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: #92400e;
-  background: #fef3c7;
-  padding: 3px 8px;
-  border-radius: 4px;
+  gap: 12px;
 }
 
-.role-switcher-group {
+.user-table-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 15px;
   display: flex;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
 }
 
-.role-switch-btn {
+.user-table-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-table-avatar.super-avatar {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.user-name-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.master-sub-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #d97706;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Email Column */
+.user-email-cell .email-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+}
+
+/* Provider Pill */
+.provider-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 12px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
   color: var(--text-dark);
+}
+
+.provider-pill.provider-google {
+  border-color: rgba(66, 133, 244, 0.4);
+  color: #2563eb;
+  background: rgba(66, 133, 244, 0.08);
+}
+
+.provider-pill.provider-github {
+  border-color: var(--border-color);
+  color: var(--text-dark);
+}
+
+/* Modern Role Badges */
+.modern-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.modern-role-badge.badge-master-admin {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.15);
+}
+
+.modern-role-badge.badge-admin {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-glow);
+}
+
+[data-theme="dark"] .modern-role-badge.badge-admin {
+  color: var(--primary-color);
+}
+
+.modern-role-badge.badge-worker {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.modern-role-badge.badge-customer {
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.25);
+}
+
+/* Master Admin Protected Pill */
+.master-admin-locked-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px dashed rgba(245, 158, 11, 0.5);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: not-allowed;
+}
+
+/* Modern Role Action Buttons */
+.modern-role-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.role-pill-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font-family: var(--font-family);
   transition: all 0.15s ease;
 }
 
-.role-switch-btn:hover {
+.role-pill-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.role-pill-action.btn-make-customer:hover {
+  border-color: #64748b;
+  color: #475569;
+  background: rgba(100, 116, 139, 0.1);
+}
+
+.role-pill-action.btn-make-worker:hover {
+  border-color: #059669;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.role-pill-action.btn-make-admin:hover {
   border-color: var(--primary-color);
+  color: var(--primary-dark);
+  background: var(--primary-light);
+}
+
+[data-theme="dark"] .role-pill-action.btn-make-admin:hover {
   color: var(--primary-color);
 }
 
