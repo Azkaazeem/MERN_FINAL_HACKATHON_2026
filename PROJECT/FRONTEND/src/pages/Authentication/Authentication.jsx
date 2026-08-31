@@ -122,11 +122,14 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         toast.success(res.data.message || 'Login successful!');
         handleAuthSuccess(res.data.user, res.data.token, res.data.user.role || loginData.role);
       } else {
-        toast.error(res.data?.message || 'Login failed. Please check credentials.');
+        toast.error(res.data?.message || 'Login failed.');
       }
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Invalid email or password. Please check your credentials.';
-      toast.error(errMsg);
+      if (!err.response || err.message === 'Network Error') {
+        toast.error('Cannot connect to backend server! Please make sure backend is running on port 5000.');
+      } else {
+        toast.error(err.response.data?.message || 'Invalid email or password. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -164,8 +167,11 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         toast.error(res.data?.message || 'Failed to create account.');
       }
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Failed to register. Email may already exist in database.';
-      toast.error(errMsg);
+      if (!err.response || err.message === 'Network Error') {
+        toast.error('Cannot connect to backend server! Please make sure backend is running on port 5000.');
+      } else {
+        toast.error(err.response.data?.message || 'Registration failed. Email might already exist.');
+      }
     } finally {
       setLoading(false);
     }
