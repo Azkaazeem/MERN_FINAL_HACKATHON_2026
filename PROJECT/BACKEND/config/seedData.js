@@ -5,11 +5,18 @@ const AnalyticsStat = require('../models/AnalyticsStat');
 const Complaint = require('../models/Complaint');
 const ChatMessage = require('../models/ChatMessage');
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
 
 const seedInitialData = async () => {
   try {
-    // 1. Seed Departments
+    // 1. Explicitly create all collections so they are listed in MongoDB Atlas Data Explorer
+    await User.createCollection().catch(() => {});
+    await Complaint.createCollection().catch(() => {});
+    await Department.createCollection().catch(() => {});
+    await ChatMessage.createCollection().catch(() => {});
+    await DistrictTelemetry.createCollection().catch(() => {});
+    await AnalyticsStat.createCollection().catch(() => {});
+
+    // 2. Seed Real Municipal Departments
     const deptCount = await Department.countDocuments();
     if (deptCount === 0) {
       await Department.insertMany([
@@ -18,7 +25,7 @@ const seedInitialData = async () => {
           code: 'WSSB',
           onTimeRate: 98.6,
           avgHours: '2.4 hrs',
-          resolvedTotal: 1240,
+          resolvedTotal: 0,
           score: 99,
           headOfficer: 'Chief Engineer Tariq Mehmood',
           activeFleet: '14 Rapid Response Vans'
@@ -28,7 +35,7 @@ const seedInitialData = async () => {
           code: 'POWER',
           onTimeRate: 97.4,
           avgHours: '1.2 hrs',
-          resolvedTotal: 980,
+          resolvedTotal: 0,
           score: 96,
           headOfficer: 'Engr. Kamran Alvi',
           activeFleet: '8 Emergency Line Trucks'
@@ -38,7 +45,7 @@ const seedInitialData = async () => {
           code: 'SWMA',
           onTimeRate: 96.1,
           avgHours: '3.1 hrs',
-          resolvedTotal: 1450,
+          resolvedTotal: 0,
           score: 94,
           headOfficer: 'Director Zubair Haider',
           activeFleet: '22 Compact Garbage Trucks'
@@ -48,7 +55,7 @@ const seedInitialData = async () => {
           code: 'WORKS',
           onTimeRate: 94.8,
           avgHours: '5.2 hrs',
-          resolvedTotal: 890,
+          resolvedTotal: 0,
           score: 91,
           headOfficer: 'Engr. Farhan Lodhi',
           activeFleet: '6 Heavy Asphalt Rollers'
@@ -57,18 +64,18 @@ const seedInitialData = async () => {
       console.log('[SEED] Municipal Departments seeded into Database.');
     }
 
-    // 2. Clean up demo telemetry and analytics collections
+    // 3. Clean up demo telemetry and analytics collections
     await DistrictTelemetry.deleteMany({});
     await AnalyticsStat.deleteMany({});
     
-    // 3. Keep complaints empty - No demo complaints seeded
+    // 4. Keep complaints empty - No demo complaints seeded
     await Complaint.deleteMany({
       $or: [
         { ticketId: { $in: ['101', '102', '103', '104', 'TKT-8942', 'TKT-8939', 'TKT-8931', 'TKT-8924'] } },
         { citizenEmail: { $in: ['akash@example.com', 'sara@example.com', 'hamza@example.com', 'ayesha@example.com'] } }
       ]
     });
-    console.log('[SEED] Demo complaints & mock analytics cleared. 100% dynamic DB mode active.');
+    console.log('[SEED] All MongoDB Collections initialized & demo complaints cleared.');
 
   } catch (err) {
     console.error('[SEED ERROR]:', err.message);
