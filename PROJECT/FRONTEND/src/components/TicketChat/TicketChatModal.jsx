@@ -244,22 +244,18 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
           <div className="chat-header-agent-profile">
             <div className="agent-avatar-wrap">
               <div className="agent-avatar-circle">
-                {userRole === 'worker' ? <User size={18} /> : <ShieldCheck size={18} />}
+                <Building2 size={18} />
               </div>
-              <span className="agent-status-dot" title="Officer Online & Connected" />
+              <span className="agent-status-dot" title="Live Civic Channel" />
             </div>
 
             <div className="agent-profile-text">
               <div className="agent-name-row">
-                <h4>
-                  {userRole === 'worker' 
-                    ? (ticket.citizen_name || 'Citizen Reporter') 
-                    : (ticket.assignedWorker || 'Officer Tariq Mehmood (Field Crew)')}
-                </h4>
-                <span className="verified-badge">✓ Verified Staff</span>
+                <h4>{ticket.title || 'Civic Help Desk'}</h4>
+                <span className="verified-badge">Official Channel</span>
               </div>
               <p className="agent-dept-sub">
-                {ticket.assigned_department || ticket.assignedDept || 'Municipal Authority'} &bull; Ticket #{ticket.id || ticket.ticketId}
+                {ticket.assigned_department || ticket.assignedDept || ticket.category || 'Municipal Support'} &bull; Ticket #{ticket.id || ticket.ticketId}
               </p>
             </div>
           </div>

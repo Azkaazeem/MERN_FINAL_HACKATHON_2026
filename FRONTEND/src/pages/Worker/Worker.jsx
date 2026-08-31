@@ -21,7 +21,10 @@ import {
   HardHat,
   Filter,
   CheckCircle,
-  MessageSquare
+  MessageSquare,
+  Building2,
+  Layers,
+  Award
 } from 'lucide-react';
 import TicketChatModal from '../../components/TicketChat/TicketChatModal';
 import './Worker.css';
@@ -31,11 +34,24 @@ const Worker = () => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [departmentScope, setDepartmentScope] = useState('my_dept'); // 'my_dept' or 'all'
   const [filter, setFilter] = useState('All');
   const [selectedTask, setSelectedTask] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isResolving, setIsResolving] = useState(false);
   const [activeChatTicket, setActiveChatTicket] = useState(null);
+
+  const workerDept = user?.department || 'General Civic Support';
+
+  // Helper: map department to category keywords
+  const getDeptCategoryMatch = (dept) => {
+    if (!dept) return 'All';
+    if (dept.includes('Water')) return 'Water & Drainage';
+    if (dept.includes('Power') || dept.includes('Grid')) return 'Electricity & Power';
+    if (dept.includes('Waste') || dept.includes('Sanitation')) return 'Waste & Sanitation';
+    if (dept.includes('Roads') || dept.includes('Asphalt') || dept.includes('Municipal Works')) return 'Roads & Infrastructure';
+    return 'All';
+  };
 
   // Fetch real complaints from Database
   const fetchWorkerTasks = async () => {
@@ -47,13 +63,14 @@ const Worker = () => {
         const mapped = data.map(c => ({
           id: c.ticketId || c._id || (Math.floor(100 + Math.random() * 900)).toString(),
           title: c.title,
-          category: c.category,
-          priority: c.priority,
-          status: c.status,
-          assignedDept: c.department || c.assigned_department || 'Municipal Works',
+          category: c.category || 'General Civic',
+          priority: c.priority || 'Medium',
+          status: c.status === 'Open' ? 'Pending' : (c.status || 'Pending'),
+          assignedDept: c.department || c.assigned_department || 'General Civic Support',
           location: c.location || 'Central District',
           slaRemaining: c.status === 'Resolved' ? 'Completed' : (c.priority === 'Critical' ? '1 hr 45 min' : '14 hrs'),
-          timeAgo: 'Just now'
+          timeAgo: 'Just now',
+          citizenName: c.citizenName || c.citizen_name || 'Citizen Reporter'
         }));
         setTasks(mapped);
       }
@@ -80,13 +97,15 @@ const Worker = () => {
       return;
     }
     Swal.fire({
-      title: 'Update Work Order Status?',
-      text: `Change task ${taskId} to "${newStatus}" and log timestamp in database?`,
+      title: 'Start Complaint Work Order?',
+      text: `Change complaint ${taskId} to "${newStatus}" and begin field repair?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#00e5ff',
       cancelButtonColor: '#64748b',
-      confirmButtonText: 'Yes, Start Order'
+      confirmButtonText: 'Yes, Start Order',
+      background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
+      color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f8fafc' : '#0f172a'
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -99,10 +118,12 @@ const Worker = () => {
         fetchWorkerTasks();
         Swal.fire({
           icon: 'success',
-          title: 'Work Order Activated in Database!',
-          text: `Task ${taskId} is now In Progress.`,
+          title: 'Work Order Activated',
+          text: `Complaint ${taskId} is now In Progress.`,
           timer: 1500,
-          showConfirmButton: false
+          showConfirmButton: false,
+          background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
+          color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f8fafc' : '#0f172a'
         });
       }
     });
@@ -136,24 +157,42 @@ const Worker = () => {
     
     Swal.fire({
       icon: 'success',
-      title: 'Resolution Saved to Database!',
+      title: 'Complaint Marked Resolved!',
       html: `
         <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
-          <p><strong>Order ID:</strong> ${selectedTask.id}</p>
-          <p><strong>Status:</strong> <span style="color: #10b981; font-weight: bold;">RESOLVED &amp; CLOSED IN DB</span></p>
-          <p><strong>Notes:</strong> ${resolutionNotes || 'Field inspection completed.'}</p>
-          <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Citizen notified &amp; SLA compliance logged in database.</p>
+          <p><strong>Complaint ID:</strong> ${selectedTask.id}</p>
+          <p><strong>Status:</strong> <span style="color: #10b981; font-weight: bold;">RESOLVED &amp; CLOSED</span></p>
+          <p><strong>Notes:</strong> ${resolutionNotes || 'Field repair completed successfully.'}</p>
+          <div style="background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; padding: 10px; margin-top: 10px;">
+            <strong style="color: #00e5ff;">Government Payout Logged:</strong><br/>
+            <span style="font-size: 12.5px; color: #64748b;">+50 Municipal Karma Credits & Task Honorarium logged for ${user?.name || 'Officer'}.</span>
+          </div>
         </div>
       `,
       confirmButtonColor: '#00e5ff',
-      confirmButtonText: 'Great, Next Task'
+      confirmButtonText: 'Next Complaint',
+      background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
+      color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f8fafc' : '#0f172a'
     });
 
     setResolutionNotes('');
     setSelectedTask(null);
   };
 
+  // Filter tasks based on Department Scope & Status
   const filteredTasks = tasks.filter(t => {
+    // 1. Department Filter
+    if (departmentScope === 'my_dept') {
+      const matchedCat = getDeptCategoryMatch(workerDept);
+      const isDeptMatch = t.assignedDept?.toLowerCase().includes(workerDept.toLowerCase()) || 
+                          workerDept.toLowerCase().includes(t.assignedDept?.toLowerCase());
+      const isCatMatch = matchedCat !== 'All' && t.category === matchedCat;
+      if (!isDeptMatch && !isCatMatch && workerDept !== 'General Civic Support') {
+        return false;
+      }
+    }
+
+    // 2. Status Filter
     if (filter === 'All') return true;
     if (filter === 'In Progress') return t.status === 'In Progress';
     if (filter === 'Pending') return t.status === 'Pending';
@@ -171,10 +210,10 @@ const Worker = () => {
         <section className="worker-hero-section">
           <div className="worker-hero-content">
             <h1>
-              Welcome, <span className="highlight-text">{user?.name || 'Field Officer'}</span>
+              Field Operations: <span className="highlight-text">{user?.name || 'Field Officer'}</span>
             </h1>
             <p className="worker-subtitle">
-              Real-time civic work orders dispatched via AI Radar. Accept tasks, update field progress, and submit proof of resolution.
+              Department: <strong>{workerDept}</strong> &bull; Live citizen complaints feed. Chat directly with citizens, initiate repair orders, and earn municipal credits.
             </p>
           </div>
 
@@ -185,7 +224,7 @@ const Worker = () => {
               </div>
               <div className="stat-info">
                 <span className="stat-num">{totalTasks}</span>
-                <span className="stat-label">Assigned Orders</span>
+                <span className="stat-label">Total Complaints</span>
               </div>
             </div>
 
@@ -205,7 +244,7 @@ const Worker = () => {
               </div>
               <div className="stat-info">
                 <span className="stat-num">{resolvedCount}</span>
-                <span className="stat-label">Resolved Today</span>
+                <span className="stat-label">Resolved</span>
               </div>
             </div>
 
@@ -215,54 +254,83 @@ const Worker = () => {
               </div>
               <div className="stat-info">
                 <span className="stat-num">{criticalCount}</span>
-                <span className="stat-label">Critical Emergency</span>
+                <span className="stat-label">Critical Incidents</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ================= CONTROLS & FILTER TABS ================= */}
-        <div className="worker-filter-bar">
-          <div className="filter-tabs">
-            {['All', 'In Progress', 'Pending', 'Critical', 'Resolved'].map(tab => (
-              <button
-                key={tab}
-                className={`filter-tab-btn ${filter === tab ? 'active' : ''}`}
-                onClick={() => setFilter(tab)}
-              >
-                {tab}
-                <span className="filter-count">
-                  {tab === 'All' ? tasks.length :
-                   tab === 'Critical' ? tasks.filter(t => t.priority === 'Critical').length :
-                   tasks.filter(t => t.status === tab).length}
-                </span>
-              </button>
-            ))}
+        {/* ================= DEPARTMENT SCOPE TOGGLE & STATUS TABS ================= */}
+        <div className="worker-controls-container">
+          
+          {/* Scope Selector */}
+          <div className="worker-scope-pills">
+            <button 
+              type="button" 
+              className={`scope-pill-btn ${departmentScope === 'my_dept' ? 'active' : ''}`}
+              onClick={() => setDepartmentScope('my_dept')}
+            >
+              <Building2 size={15} />
+              <span>My Department Feed ({workerDept.split('(')[0].trim()})</span>
+            </button>
+            <button 
+              type="button" 
+              className={`scope-pill-btn ${departmentScope === 'all' ? 'active' : ''}`}
+              onClick={() => setDepartmentScope('all')}
+            >
+              <Layers size={15} />
+              <span>All Municipal Complaints</span>
+            </button>
           </div>
 
-          <button 
-            className="emergency-sos-btn"
-            onClick={() => {
-              Swal.fire({
-                title: 'Emergency Backup Requested!',
-                text: 'High-priority alert dispatched to Central Control Room & District Engineering Fleet with your current GPS coordinates.',
-                icon: 'warning',
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Understood'
-              });
-            }}
-          >
-            <ShieldAlert size={16} />
-            <span>Request Emergency Backup</span>
-          </button>
+          {/* Status Filter Bar */}
+          <div className="worker-filter-bar">
+            <div className="filter-tabs">
+              {['All', 'In Progress', 'Pending', 'Critical', 'Resolved'].map(tab => (
+                <button
+                  key={tab}
+                  className={`filter-tab-btn ${filter === tab ? 'active' : ''}`}
+                  onClick={() => setFilter(tab)}
+                >
+                  {tab}
+                  <span className="filter-count">
+                    {tab === 'All' ? filteredTasks.length :
+                     tab === 'Critical' ? filteredTasks.filter(t => t.priority === 'Critical').length :
+                     filteredTasks.filter(t => t.status === tab).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <button 
+              className="emergency-sos-btn"
+              onClick={() => {
+                Swal.fire({
+                  title: 'Emergency Backup Requested!',
+                  text: 'High-priority alert dispatched to Central Control Room & District Engineering Fleet with your current GPS coordinates.',
+                  icon: 'warning',
+                  confirmButtonColor: '#ef4444',
+                  confirmButtonText: 'Understood'
+                });
+              }}
+            >
+              <ShieldAlert size={16} />
+              <span>Request Emergency Backup</span>
+            </button>
+          </div>
+
         </div>
 
         {/* ================= TASK CARDS LIST ================= */}
         <section className="tasks-grid">
           {filteredTasks.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '44px 20px', gridColumn: '1 / -1', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-              <p style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-dark)', margin: '0 0 6px' }}>No field work orders found in database (Count: 0).</p>
-              <p style={{ fontSize: '13px', margin: 0 }}>Any new citizen complaint submitted will automatically be dispatched here.</p>
+              <p style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-dark)', margin: '0 0 6px' }}>
+                No active complaints found in this category.
+              </p>
+              <p style={{ fontSize: '13px', margin: 0 }}>
+                {departmentScope === 'my_dept' ? 'Switch to "All Municipal Complaints" above to view citywide issues.' : 'No complaints logged currently.'}
+              </p>
             </div>
           ) : (
             filteredTasks.map(task => (
@@ -295,27 +363,39 @@ const Worker = () => {
               <div className="ai-diagnosis-box">
                 <div className="ai-badge">
                   <Sparkles size={13} />
-                  <span>AI Field Diagnosis</span>
+                  <span>Category &amp; Department</span>
                 </div>
-                <p>{task.aiSummary}</p>
-                <div className="dept-tag">Assigned: {task.assignedDept}</div>
+                <p>Category: <strong>{task.category}</strong> &bull; Reporter: {task.citizenName}</p>
+                <div className="dept-tag">Assigned Dept: {task.assignedDept}</div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons: Live Chat with Citizen on EVERY complaint card */}
               <div className="task-actions-row">
+                <button 
+                  type="button"
+                  className="action-btn chat-citizen-btn"
+                  onClick={() => setActiveChatTicket(task)}
+                  title="Open live chat conversation with reporting citizen"
+                >
+                  <MessageSquare size={15} />
+                  <span>Chat with Citizen</span>
+                </button>
+
                 {task.status === 'Pending' && (
                   <button 
+                    type="button"
                     className="action-btn start-btn"
                     onClick={() => handleStatusChange(task.id, 'In Progress')}
                   >
                     <Wrench size={15} />
-                    <span>Start Work Order</span>
+                    <span>Start Repair</span>
                   </button>
                 )}
 
                 {task.status === 'In Progress' && (
                   <>
                     <button 
+                      type="button"
                       className="action-btn resolve-btn"
                       onClick={() => {
                         setSelectedTask(task);
@@ -326,8 +406,9 @@ const Worker = () => {
                       <span>Submit Resolution</span>
                     </button>
                     <button 
+                      type="button"
                       className="action-btn photo-btn"
-                      onClick={() => toast.success('Site Inspection Photo Uploaded & Tagged with GPS!')}
+                      onClick={() => toast.success('Site Inspection Photo Attached!')}
                       title="Upload Field Photo"
                     >
                       <Camera size={15} />
@@ -338,7 +419,7 @@ const Worker = () => {
                 {task.status === 'Resolved' && (
                   <div className="resolved-status-indicator">
                     <CheckCircle2 size={16} />
-                    <span>Work Completed & Closed</span>
+                    <span>Work Completed &amp; Payout Logged</span>
                   </div>
                 )}
               </div>
@@ -361,7 +442,7 @@ const Worker = () => {
                 <p className="modal-task-title">{selectedTask.title}</p>
                 
                 <div className="form-group">
-                  <label>Materials Used & Work Summary:</label>
+                  <label>Materials Used &amp; Work Summary:</label>
                   <textarea 
                     rows={3} 
                     placeholder="e.g. Replaced 4-inch PVC pipe, welded joints, tested water pressure, asphalt patched."
@@ -392,13 +473,14 @@ const Worker = () => {
             </div>
           </div>
         )}
-      {/* ================= IN-TICKET LIVE CHAT MODAL (AGENT ROLE) ================= */}
-      <TicketChatModal 
-        ticket={activeChatTicket}
-        isOpen={!!activeChatTicket}
-        onClose={() => setActiveChatTicket(null)}
-        userRole="worker"
-      />
+
+        {/* ================= IN-TICKET LIVE CHAT MODAL (AGENT / WORKER ROLE) ================= */}
+        <TicketChatModal 
+          ticket={activeChatTicket}
+          isOpen={!!activeChatTicket}
+          onClose={() => setActiveChatTicket(null)}
+          userRole="worker"
+        />
 
       </main>
 
