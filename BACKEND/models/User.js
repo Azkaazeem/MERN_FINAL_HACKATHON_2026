@@ -12,7 +12,8 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
             unique: true,
-            lowercase: true
+            lowercase: true,
+            trim: true
         },
         password: {
             type: String,
@@ -30,7 +31,7 @@ const userSchema = new mongoose.Schema(
         },
         department: {
             type: String,
-            default: 'General Civic'
+            default: 'General Civic Support'
         },
         profilePic: {
             type: String,
@@ -56,15 +57,37 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+// Pre-save hook: Hash password if modified and not already hashed
+userSchema.pre('save', async function () {
+    if (!this.isModified('password')) return;
+    
+    // Avoid double-hashing if already a bcrypt hash
+    if (
+        this.password &&
+        (this.password.startsWith('$2a$') ||
+         this.password.startsWith('$2b$') ||
+         this.password.startsWith('$2y$'))
+    ) {
+        return;
+    }
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
 });
 
+// Compare password supporting both bcrypt hash and plain text fallback
 userSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+    if (!enteredPassword || !this.password) return false;
+    
+    if (
+        this.password.startsWith('$2a$') ||
+        this.password.startsWith('$2b$') ||
+        this.password.startsWith('$2y$')
+    ) {
+        return await bcrypt.compare(enteredPassword, this.password);
+    }
+    
+    return enteredPassword === this.password;
 };
 
 module.exports = mongoose.model('User', userSchema);
