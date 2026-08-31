@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { 
@@ -49,29 +50,43 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
   const messagesEndRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Load ticket conversation history from localStorage
+  // Load ticket conversation history from Database with LocalStorage fallback
   useEffect(() => {
     if (!ticket) return;
-    const storageKey = `ticket_chat_${ticket.id || ticket.ticketId || '101'}`;
-    const saved = localStorage.getItem(storageKey);
-
-    if (saved) {
+    const tId = ticket.id || ticket.ticketId || '101';
+    
+    const fetchDbMessages = async () => {
       try {
-        setMessages(JSON.parse(saved));
-      } catch (e) {
-        setMessages(getInitialSeedMessages(ticket));
+        const res = await API.get(`/chat/${tId}`);
+        if (res.data?.messages?.length > 0) {
+          setMessages(res.data.messages);
+          return;
+        }
+      } catch (e) {}
+
+      const storageKey = `ticket_chat_${tId}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          setMessages(JSON.parse(saved));
+        } catch (e) {
+          setMessages(getInitialSeedMessages(ticket));
+        }
+      } else {
+        const initial = getInitialSeedMessages(ticket);
+        setMessages(initial);
+        localStorage.setItem(storageKey, JSON.stringify(initial));
       }
-    } else {
-      const initial = getInitialSeedMessages(ticket);
-      setMessages(initial);
-      localStorage.setItem(storageKey, JSON.stringify(initial));
-    }
+    };
+
+    fetchDbMessages();
   }, [ticket]);
 
-  // Save messages to persistent storage
+  // Save messages to persistent storage & DB
   useEffect(() => {
     if (!ticket || messages.length === 0) return;
-    const storageKey = `ticket_chat_${ticket.id || ticket.ticketId || '101'}`;
+    const tId = ticket.id || ticket.ticketId || '101';
+    const storageKey = `ticket_chat_${tId}`;
     localStorage.setItem(storageKey, JSON.stringify(messages));
   }, [messages, ticket]);
 

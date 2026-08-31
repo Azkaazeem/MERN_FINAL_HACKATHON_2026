@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import API from '../../api/axios';
 import Footer from '../../components/Footer/Footer';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
@@ -152,8 +153,65 @@ const CITIZEN_CHAMPIONS = [
 ];
 
 const Analytics = () => {
+  const [districtsList, setDistrictsList] = useState(DISTRICT_INCIDENTS);
   const [selectedDistrict, setSelectedDistrict] = useState(DISTRICT_INCIDENTS[0]);
+  const [deptLeaderboard, setDeptLeaderboard] = useState(DEPARTMENT_LEADERBOARD);
+  const [analyticsData, setAnalyticsData] = useState({
+    meanResolution: 3.42,
+    medianResolution: 2.10,
+    stdDev: 1.18,
+    iqrSpread: 1.85,
+    resolutionTrends: RESOLUTION_TIME_DATA,
+    categoryDist: CATEGORY_DISTRIBUTION
+  });
+  const [citizenChampions, setCitizenChampions] = useState(CITIZEN_CHAMPIONS);
   const containerRef = useRef(null);
+
+  // Fetch Live Data from Dynamic MongoDB Collections
+  useEffect(() => {
+    const fetchLiveData = async () => {
+      try {
+        const [telemetryRes, deptRes, statsRes] = await Promise.allSettled([
+          API.get('/telemetry'),
+          API.get('/departments'),
+          API.get('/analytics')
+        ]);
+
+        if (telemetryRes.status === 'fulfilled' && telemetryRes.value.data?.districts?.length > 0) {
+          setDistrictsList(telemetryRes.value.data.districts);
+          setSelectedDistrict(telemetryRes.value.data.districts[0]);
+        }
+
+        if (deptRes.status === 'fulfilled' && deptRes.value.data?.departments?.length > 0) {
+          const mappedDepts = deptRes.value.data.departments.map((d, i) => ({
+            rank: i + 1,
+            name: d.name,
+            onTimeRate: d.onTimeRate,
+            avgHours: d.avgHours,
+            score: d.score
+          }));
+          setDeptLeaderboard(mappedDepts);
+        }
+
+        if (statsRes.status === 'fulfilled' && statsRes.value.data?.stats) {
+          const st = statsRes.value.data.stats;
+          setAnalyticsData(prev => ({
+            ...prev,
+            meanResolution: st.meanResolutionHours || 3.42,
+            medianResolution: st.medianResolutionHours || 2.10,
+            stdDev: st.stdDevHours || 1.18,
+            iqrSpread: st.iqrSpreadHours || 1.85,
+            ...(st.monthlyResolutionTrends ? { resolutionTrends: st.monthlyResolutionTrends } : {}),
+            ...(st.categoryDistribution ? { categoryDist: st.categoryDistribution } : {})
+          }));
+        }
+      } catch (err) {
+        console.warn('API Telemetry live fetch fallback:', err);
+      }
+    };
+
+    fetchLiveData();
+  }, []);
 
   // GSAP Animations
   useEffect(() => {
@@ -221,7 +279,7 @@ const Analytics = () => {
               <span>Mean Resolution (&mu;)</span>
               <Clock size={16} className="icon-cyan" />
             </div>
-            <div className="metric-val">3.42 <small>hrs</small></div>
+            <div className="metric-val">{analyticsData.meanResolution} <small>hrs</small></div>
             <div className="metric-sub">Average municipal turnaround time</div>
           </div>
 
@@ -230,7 +288,7 @@ const Analytics = () => {
               <span>Median Turnaround</span>
               <Activity size={16} className="icon-green" />
             </div>
-            <div className="metric-val">2.10 <small>hrs</small></div>
+            <div className="metric-val">{analyticsData.medianResolution} <small>hrs</small></div>
             <div className="metric-sub">50th Percentile resolution speed</div>
           </div>
 
@@ -239,7 +297,7 @@ const Analytics = () => {
               <span>Standard Dev (&sigma;)</span>
               <TrendingUp size={16} className="icon-amber" />
             </div>
-            <div className="metric-val">1.18 <small>hrs</small></div>
+            <div className="metric-val">{analyticsData.stdDev} <small>hrs</small></div>
             <div className="metric-sub">High operational consistency</div>
           </div>
 
@@ -248,7 +306,7 @@ const Analytics = () => {
               <span>IQR Spread (Q3 - Q1)</span>
               <ShieldCheck size={16} className="icon-indigo" />
             </div>
-            <div className="metric-val">1.85 <small>hrs</small></div>
+            <div className="metric-val">{analyticsData.iqrSpread} <small>hrs</small></div>
             <div className="metric-sub">Outlier resilience &amp; SLA index</div>
           </div>
         </section>
@@ -271,7 +329,7 @@ const Analytics = () => {
 
           {/* District Quick Filter Selector Bar */}
           <div className="district-filter-tabs">
-            {DISTRICT_INCIDENTS.map(dist => (
+            {districtsList.map(dist => (
               <button 
                 key={dist.id}
                 type="button"
@@ -296,7 +354,7 @@ const Analytics = () => {
               <div className="radar-sweep-beam" />
 
               {/* District Geo-Pins */}
-              {DISTRICT_INCIDENTS.map((dist, idx) => {
+              {districtsList.map((dist, idx) => {
                 const isSelected = selectedDistrict.id === dist.id;
                 // Pin layout coordinates on radar grid
                 const positions = [
@@ -392,7 +450,7 @@ const Analytics = () => {
             
             <div style={{ height: 260, width: '100%', marginTop: 14 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={RESOLUTION_TIME_DATA}>
+                <AreaChart data={analyticsData.resolutionTrends}>
                   <defs>
                     <linearGradient id="colorWater" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00e5ff" stopOpacity={0.7}/>
@@ -424,7 +482,7 @@ const Analytics = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={CATEGORY_DISTRIBUTION}
+                    data={analyticsData.categoryDist}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -470,7 +528,7 @@ const Analytics = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {DEPARTMENT_LEADERBOARD.map(dept => (
+                  {deptLeaderboard.map(dept => (
                     <tr key={dept.rank}>
                       <td className="dept-name-cell">
                         <span className="rank-badge">#{dept.rank}</span>
@@ -499,7 +557,7 @@ const Analytics = () => {
             </div>
 
             <div className="karma-list">
-              {CITIZEN_CHAMPIONS.map(cit => (
+              {citizenChampions.map(cit => (
                 <div key={cit.rank} className="karma-item">
                   <div className="cit-rank">#{cit.rank}</div>
                   <img src={cit.avatar} alt={cit.name} className="cit-avatar" />

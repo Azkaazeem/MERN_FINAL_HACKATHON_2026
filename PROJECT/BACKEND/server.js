@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const cors = require('cors');
 const User = require('./models/User');
+const seedInitialData = require('./config/seedData');
 
 // Load environment variables immediately at the very top
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -13,8 +14,10 @@ const dns = require("dns");
 
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
-// Connect Database
-connectDB();
+// Connect Database & run automatic initial seed
+connectDB().then(() => {
+  seedInitialData();
+});
 
 const app = express();
 
@@ -41,13 +44,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Standard Middlewares (Increase payload limit to support Base64 Profile Pictures)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// Standard Middlewares (Increase payload limit to support Base64 Profile Pictures & Attachments)
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
-// API Routes
+// Core API Routes (100% Dynamic MongoDB Database Endpoints)
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/complaints', require('./routes/complaintRoutes'));
+app.use('/api/departments', require('./routes/departmentRoutes'));
+app.use('/api/telemetry', require('./routes/telemetryRoutes'));
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 
 // Admin User Management Routes
 app.get('/api/admin/users', async (req, res) => {
@@ -71,7 +78,7 @@ app.put('/api/admin/users/:id/role', async (req, res) => {
 
 // Health check route
 app.get('/', (req, res) => {
-  res.send('CivicAI Municipal API is running smoothly...');
+  res.send('CivicAI Municipal API with Live Dynamic MongoDB Collections is running smoothly...');
 });
 
 const PORT = process.env.PORT || 5000;
@@ -79,7 +86,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`==========================================================`);
     console.log(`[INFO] Server listening on port ${PORT}`);
-    console.log(`[INFO] API available at: http://localhost:${PORT}`);
+    console.log(`[INFO] Dynamic MongoDB API available at: http://localhost:${PORT}`);
     console.log(`==========================================================`);
   });
 }

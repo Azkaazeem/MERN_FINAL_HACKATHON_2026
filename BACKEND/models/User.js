@@ -16,51 +16,26 @@ const userSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: function () {
-                return this.authProvider === 'local';
-            },
+            required: true,
             minlength: 6
-        },
-        authProvider: {
-            type: String,
-            enum: ['local', 'google', 'github'],
-            default: 'local'
-        },
-        googleId: {
-            type: String
-        },
-        githubId: {
-            type: String
-        },
-        dob: {
-            type: String
-        },
-        cnic: {
-            type: String
-        },
-        profilePic: {
-            type: String,
-            default: ''
         },
         role: {
             type: String,
-            enum: ['user', 'admin'],
-            default: 'user'
+            enum: ['user', 'admin', 'customer', 'worker'],
+            default: 'customer'
         }
     },
     { timestamps: true }
 );
 
-// SAVE PASSWORD BEFORE HASHING
-userSchema.pre('save', async function () {
-    if (!this.password || !this.isModified('password')) return;
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    next();
 });
 
-// PASSWORD COMPARISON METHOD
 userSchema.methods.matchPassword = async function (enteredPassword) {
-    if (!this.password) return false;
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
