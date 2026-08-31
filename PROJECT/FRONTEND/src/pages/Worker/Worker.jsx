@@ -58,10 +58,11 @@ const Worker = () => {
     try {
       setTasksLoading(true);
       const res = await API.get('/complaints');
-      const data = res.data?.data || res.data || [];
-      if (Array.isArray(data) && data.length > 0) {
+      const data = res.data?.complaints || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(data)) {
         const mapped = data.map(c => ({
           id: c.ticketId || c._id || (Math.floor(100 + Math.random() * 900)).toString(),
+          ticketId: c.ticketId || c._id,
           title: c.title,
           category: c.category || 'General Civic',
           priority: c.priority || 'Medium',
@@ -85,11 +86,41 @@ const Worker = () => {
     fetchWorkerTasks();
   }, []);
 
-  // Stats calculation directly from DB tasks
-  const totalTasks = tasks.length;
-  const inProgressCount = tasks.filter(t => t.status === 'In Progress').length;
-  const resolvedCount = tasks.filter(t => t.status === 'Resolved').length;
-  const criticalCount = tasks.filter(t => t.priority === 'Critical' && t.status !== 'Resolved').length;
+  // Department/Category match helper
+  const isComplaintInWorkerDept = (task, dept) => {
+    if (!dept || dept === 'General Civic Support') return true;
+    const deptLower = dept.toLowerCase();
+    const cCat = (task.category || '').toLowerCase();
+    const cDept = (task.assignedDept || '').toLowerCase();
+    const cTitle = (task.title || '').toLowerCase();
+
+    // Water & Sewerage Board
+    if (deptLower.includes('water') || deptLower.includes('sewer') || deptLower.includes('wssb')) {
+      return cCat.includes('water') || cDept.includes('water') || cDept.includes('wssb') || cTitle.includes('water') || cCat.includes('drain') || cCat.includes('sanitat') || cTitle.includes('pipe') || cTitle.includes('leak') || cTitle.includes('sewer');
+    }
+    // Power / Electricity
+    if (deptLower.includes('power') || deptLower.includes('grid') || deptLower.includes('elect')) {
+      return cCat.includes('power') || cCat.includes('elect') || cDept.includes('power') || cTitle.includes('power') || cTitle.includes('wire') || cTitle.includes('light');
+    }
+    // Waste / Sanitation
+    if (deptLower.includes('waste') || deptLower.includes('sanitat') || deptLower.includes('swma')) {
+      return cCat.includes('waste') || cCat.includes('garbage') || cDept.includes('waste') || cTitle.includes('trash') || cTitle.includes('dumpster');
+    }
+    // Roads / Infrastructure
+    if (deptLower.includes('road') || deptLower.includes('asphalt') || deptLower.includes('infrastructure')) {
+      return cCat.includes('road') || cCat.includes('infra') || cDept.includes('road') || cTitle.includes('pothole') || cTitle.includes('street');
+    }
+    return true;
+  };
+
+  const departmentTasks = tasks.filter(t => isComplaintInWorkerDept(t, workerDept));
+  const activeScopedTasks = departmentScope === 'my_dept' ? departmentTasks : tasks;
+
+  // Stats calculation dynamically from active scope
+  const totalTasks = activeScopedTasks.length;
+  const inProgressCount = activeScopedTasks.filter(t => t.status === 'In Progress').length;
+  const resolvedCount = activeScopedTasks.filter(t => t.status === 'Resolved').length;
+  const criticalCount = activeScopedTasks.filter(t => t.priority === 'Critical' && t.status !== 'Resolved').length;
 
   const handleStatusChange = async (taskId, newStatus) => {
     if (!user) {
@@ -180,19 +211,7 @@ const Worker = () => {
   };
 
   // Filter tasks based on Department Scope & Status
-  const filteredTasks = tasks.filter(t => {
-    // 1. Department Filter
-    if (departmentScope === 'my_dept') {
-      const matchedCat = getDeptCategoryMatch(workerDept);
-      const isDeptMatch = t.assignedDept?.toLowerCase().includes(workerDept.toLowerCase()) || 
-                          workerDept.toLowerCase().includes(t.assignedDept?.toLowerCase());
-      const isCatMatch = matchedCat !== 'All' && t.category === matchedCat;
-      if (!isDeptMatch && !isCatMatch && workerDept !== 'General Civic Support') {
-        return false;
-      }
-    }
-
-    // 2. Status Filter
+  const filteredTasks = activeScopedTasks.filter(t => {
     if (filter === 'All') return true;
     if (filter === 'In Progress') return t.status === 'In Progress';
     if (filter === 'Pending') return t.status === 'Pending';
