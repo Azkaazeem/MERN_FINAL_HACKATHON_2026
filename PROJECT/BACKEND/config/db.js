@@ -20,7 +20,13 @@ const connectDB = async () => {
   }
 
   if (!cached.promise) {
-    const mongoUri = process.env.MONGO_URI || DEFAULT_MONGO_URI;
+    let mongoUri = process.env.MONGO_URI || DEFAULT_MONGO_URI;
+    
+    // Auto-repair if Vercel Environment Variable is missing cluster shard id 'clkrb0s'
+    if (mongoUri.includes('@cluster0.mongodb.net')) {
+      mongoUri = mongoUri.replace('@cluster0.mongodb.net', '@cluster0.clkrb0s.mongodb.net');
+    }
+
     const opts = {
       bufferCommands: false,
       serverSelectionTimeoutMS: 8000,
