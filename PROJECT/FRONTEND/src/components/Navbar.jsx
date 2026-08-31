@@ -133,9 +133,6 @@ const Navbar = () => {
             GIS Analytics
           </NavLink>
 
-          <NavLink to="/alerts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            Public Alerts
-          </NavLink>
 
           <NavLink to="/about" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             About
@@ -313,14 +310,6 @@ const Navbar = () => {
                 <div className="drawer-link-meta">
                   <span className="link-title">GIS Analytics &amp; Heatmap</span>
                   <span className="link-desc">District Telemetry &amp; Resolution Metrics</span>
-                </div>
-              </NavLink>
-
-              <NavLink to="/alerts" className="mobile-nav-item" onClick={closeAllMenus}>
-                <Bell size={18} />
-                <div className="drawer-link-meta">
-                  <span className="link-title">Public Advisories &amp; Alerts</span>
-                  <span className="link-desc">Emergency Outages &amp; Broadcasts</span>
                 </div>
               </NavLink>
 

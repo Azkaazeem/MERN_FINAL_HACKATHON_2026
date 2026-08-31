@@ -59,8 +59,8 @@ const Footer = () => {
             <Link to="/analytics" className="footer-nav-btn" onClick={scrollToTop}>
               <span>Analytics</span>
             </Link>
-            <Link to="/alerts" className="footer-nav-btn" onClick={scrollToTop}>
-              <span>Alerts</span>
+            <Link to="/my-complaints" className="footer-nav-btn" onClick={scrollToTop}>
+              <span>Complaints Vault</span>
             </Link>
             {user?.role === 'admin' && (
               <Link to="/admin" className="footer-nav-btn admin-btn" onClick={scrollToTop}>

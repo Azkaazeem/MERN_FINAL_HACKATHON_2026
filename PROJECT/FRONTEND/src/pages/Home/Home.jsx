@@ -872,18 +872,18 @@ const Home = () => {
               </Link>
             </div>
 
-            {/* Directory Card 2: Public Alerts */}
+            {/* Directory Card 2: Dedicated Complaints Vault & Live Chat */}
             <div className="directory-module-card">
               <div className="card-top-icon">
-                <Bell size={24} />
+                <MessageSquare size={24} />
               </div>
-              <h3>Public Emergency Alerts &amp; Utility Outages</h3>
+              <h3>Citizen Ticket Vault &amp; Live Officer Chat</h3>
               <p>
-                Live municipal broadcasts regarding planned pipeline maintenance, power grid load alerts,
-                monsoon advisories, and 24/7 direct toll-free emergency helplines.
+                Dedicated split-view complaint vault featuring real-time keyword search, status filtering,
+                and direct two-way live messaging with assigned municipal field crew.
               </p>
-              <Link to="/alerts" className="dir-action-link">
-                <span>View Public Advisories &amp; Outages</span>
+              <Link to="/my-complaints" className="dir-action-link">
+                <span>Open Citizen Vault &amp; Chat</span>
                 <ArrowRight size={15} />
               </Link>
             </div>
