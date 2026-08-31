@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ['user', 'admin', 'customer', 'worker'],
+            enum: ['user', 'admin', 'administrator', 'customer', 'worker', 'agent'],
             default: 'customer'
         },
         dob: {

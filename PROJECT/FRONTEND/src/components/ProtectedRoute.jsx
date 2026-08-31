@@ -8,7 +8,7 @@ const ProtectedRoute = ({ adminOnly = false, workerOnly = false, allowedRoles = 
   // Wait for initial auth check
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'Poppins, sans-serif' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
         Loading...
       </div>
     );
@@ -19,19 +19,27 @@ const ProtectedRoute = ({ adminOnly = false, workerOnly = false, allowedRoles = 
     return <Navigate to="/login" replace />;
   }
 
-  // Role checks
-  const role = user.role?.toLowerCase() || 'customer';
+  // Normalize role checks (supports 'admin' and 'administrator')
+  const role = (user.role || '').toLowerCase().trim();
+  const isAdmin = role === 'admin' || role === 'administrator';
+  const isWorker = role === 'worker' || role === 'agent' || role === 'field worker';
 
-  if (adminOnly && role !== 'admin') {
+  if (adminOnly && !isAdmin) {
     return <Navigate to="/home" replace />;
   }
 
-  if (workerOnly && role !== 'worker' && role !== 'admin') {
+  if (workerOnly && !isWorker && !isAdmin) {
     return <Navigate to="/home" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/home" replace />;
+  if (allowedRoles) {
+    const isAllowed = allowedRoles.some(r => {
+      const nr = r.toLowerCase().trim();
+      return nr === role || (nr === 'admin' && isAdmin) || (nr === 'worker' && isWorker);
+    });
+    if (!isAllowed) {
+      return <Navigate to="/home" replace />;
+    }
   }
 
   return <Outlet />;

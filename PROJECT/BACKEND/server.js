@@ -12,11 +12,7 @@ dotenv.config();
 const connectDB = require('./config/db');
 const dns = require("dns");
 
-dns.setServers(['8.8.8.8', '1.1.1.1']);
-
-import dns from 'dns'
-dns.setServers(['8.8.8.8', '1.1.1.1'])
-dotenv.config();
+dns.setServers(['8.8.8.8', '1.1.1.1']); 
 
 // Connect Database & run automatic initial seed
 connectDB().then(() => {

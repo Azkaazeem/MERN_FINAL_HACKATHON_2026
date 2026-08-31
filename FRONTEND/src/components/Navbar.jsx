@@ -60,14 +60,14 @@ const Navbar = () => {
     setProfileDropdownOpen(false);
     setMobileMenuOpen(false);
     Swal.fire({
-      title: 'Log Out of NovaDesk?',
-      text: 'You will need to sign in again to access your portal.',
-      icon: 'warning',
+      title: 'Confirm Logout',
+      text: 'Are you sure you want to sign out from NovaDesk?',
+      icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#00e5ff',
+      confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
-      confirmButtonText: 'Yes, Log Out',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: 'Yes, Sign Out',
+      cancelButtonText: 'Stay',
       background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
       color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f8fafc' : '#0f172a'
     }).then((result) => {
@@ -75,8 +75,8 @@ const Navbar = () => {
         logout();
         Swal.fire({
           icon: 'success',
-          title: 'Logged Out',
-          text: 'You have been successfully logged out.',
+          title: 'Signed Out',
+          text: 'You have been safely signed out.',
           timer: 1500,
           showConfirmButton: false,
           background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
@@ -100,7 +100,11 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   };
 
-  const homeLink = user?.role === 'admin' ? '/admin' : user?.role === 'worker' ? '/worker' : '/home';
+  const userRole = (user?.role || '').toLowerCase().trim();
+  const isAdmin = userRole === 'admin' || userRole === 'administrator';
+  const isWorker = userRole === 'worker' || userRole === 'agent';
+
+  const homeLink = isAdmin ? '/admin' : isWorker ? '/worker' : '/home';
 
   return (
     <header className="navbar-header">
@@ -123,16 +127,22 @@ const Navbar = () => {
           </NavLink>
 
           {/* Admin Navigation Tab (Only for Admin, with clean text) */}
-          {user?.role === 'admin' && (
+          {isAdmin && (
             <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               Admin
+            </NavLink>
+          )}
+
+          {/* Worker Navigation Tab */}
+          {isWorker && (
+            <NavLink to="/worker" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              Worker
             </NavLink>
           )}
 
           <NavLink to="/analytics" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             GIS Analytics
           </NavLink>
-
 
           <NavLink to="/about" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             About
@@ -179,87 +189,81 @@ const Navbar = () => {
               setMobileMenuOpen(!mobileMenuOpen);
               setProfileDropdownOpen(false);
             }}
-            title="Open Full Navigation Menu"
-            aria-label="Toggle Navigation Menu"
+            aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          {/* Profile Popover Menu */}
+          {/* Profile Dropdown Menu */}
           {profileDropdownOpen && (
-            <div className="profile-dropdown-menu">
-              
-              {/* User Header Info in Dropdown */}
+            <div className="profile-dropdown-card">
               {user ? (
-                <div className="dropdown-user-header">
-                  <div className="dropdown-avatar-wrap">
-                    {user?.profilePic ? (
-                      <img src={user.profilePic} alt="Avatar" className="user-avatar-img large" />
-                    ) : (
-                      <div className="user-avatar-fallback large">
-                        {user?.name ? user.name.charAt(0).toUpperCase() : <UserIcon size={18} />}
-                      </div>
+                <>
+                  <div className="dropdown-user-header">
+                    <div className="dropdown-user-avatar">
+                      {user?.profilePic ? (
+                        <img src={user.profilePic} alt="Avatar" />
+                      ) : (
+                        <div className="avatar-letter">
+                          {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="dropdown-user-details">
+                      <h4 className="dropdown-user-name">{user?.name || 'Citizen User'}</h4>
+                      <p className="dropdown-user-email">{user?.email || 'citizen@novadesk.com'}</p>
+                      <span className={`dropdown-role-badge badge-${user?.role || 'customer'}`}>
+                        {(user?.role || 'Customer').toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="dropdown-divider" />
+
+                  <div className="dropdown-menu-list">
+                    <Link to="/profile" className="dropdown-item" onClick={closeAllMenus}>
+                      <UserIcon size={15} />
+                      <span>My Profile & Settings</span>
+                    </Link>
+
+                    {isAdmin && (
+                      <Link to="/admin" className="dropdown-item" onClick={closeAllMenus}>
+                        <Shield size={15} />
+                        <span>Admin Console</span>
+                      </Link>
                     )}
+
+                    {isWorker && (
+                      <Link to="/worker" className="dropdown-item" onClick={closeAllMenus}>
+                        <Wrench size={15} />
+                        <span>Worker Operations</span>
+                      </Link>
+                    )}
+
+                    <Link to="/my-complaints" className="dropdown-item" onClick={closeAllMenus}>
+                      <FileText size={15} />
+                      <span>My Complaints Vault</span>
+                    </Link>
+
+                    <button className="dropdown-item logout-item" onClick={handleLogout}>
+                      <LogOut size={15} />
+                      <span>Sign Out</span>
+                    </button>
                   </div>
-                  <div className="dropdown-user-info">
-                    <h4 className="dropdown-user-name">{user?.name || 'User'}</h4>
-                    <span className="dropdown-user-email">{user?.email || 'user@example.com'}</span>
-                    <span className="dropdown-role-badge">{user?.role || 'Customer'}</span>
-                  </div>
-                </div>
+                </>
               ) : (
-                <div className="dropdown-user-header">
-                  <div className="dropdown-user-info">
-                    <h4 className="dropdown-user-name">Welcome Guest</h4>
-                    <span className="dropdown-user-email">Sign in to track your support tickets</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="dropdown-divider" />
-
-              {/* My Complaints Vault Link */}
-              <NavLink to="/my-complaints" className="dropdown-item" onClick={closeAllMenus}>
-                <FileText size={16} /> <span>My Complaints Vault</span>
-              </NavLink>
-
-              {/* Profile Link (if authenticated) */}
-              {user && (
-                <NavLink to="/profile" className="dropdown-item" onClick={closeAllMenus}>
-                  <UserIcon size={16} /> <span>My Profile</span>
-                </NavLink>
-              )}
-
-              {/* Theme Toggle Item */}
-              <button className="dropdown-item theme-option-item" onClick={toggleTheme}>
-                <div className="dropdown-item-left">
-                  {isDark ? <Sun size={16} className="icon-cyan" /> : <Moon size={16} className="icon-cyan" />}
-                  <span>{isDark ? 'Switch to Light' : 'Switch to Dark'}</span>
-                </div>
-                <span className="theme-status-pill">{isDark ? 'Dark' : 'Light'}</span>
-              </button>
-
-              <div className="dropdown-divider" />
-
-              {/* Auth Action: Logout or Sign In / Up */}
-              {user ? (
-                <button className="dropdown-item logout-item" onClick={handleLogout}>
-                  <LogOut size={16} />
-                  <span>Log Out</span>
-                </button>
-              ) : (
-                <div className="dropdown-auth-actions">
-                  <NavLink to="/login" className="dropdown-btn-signin" onClick={closeAllMenus}>
+                <div className="dropdown-guest-box">
+                  <p className="guest-prompt">Sign in to report incidents, track issues, and access your profile.</p>
+                  <Link to="/login" className="dropdown-auth-btn login-btn" onClick={closeAllMenus}>
                     <LogIn size={15} />
                     <span>Sign In</span>
-                  </NavLink>
-                  <NavLink to="/register" className="dropdown-btn-signup" onClick={closeAllMenus}>
+                  </Link>
+                  <Link to="/register" className="dropdown-auth-btn register-btn" onClick={closeAllMenus}>
                     <UserPlus size={15} />
-                    <span>Sign Up</span>
-                  </NavLink>
+                    <span>Create Account</span>
+                  </Link>
                 </div>
               )}
-
             </div>
           )}
 
@@ -267,127 +271,111 @@ const Navbar = () => {
 
       </div>
 
-      {/* ================= UNIVERSAL SLIDE DRAWER ================= */}
+      {/* Full-width Responsive Mobile & Tablet Navigation Drawer */}
       {mobileMenuOpen && (
         <div className="mobile-drawer-overlay" onClick={closeAllMenus}>
           <div className="mobile-drawer-content" ref={mobileMenuRef} onClick={(e) => e.stopPropagation()}>
             
-            {/* Drawer Header */}
-            <div className="drawer-header-top">
-              <div className="drawer-brand-header">
-                <img src={logoImg} alt="NovaDesk Logo" className="drawer-logo-img" />
-                <div className="drawer-brand-info">
-                  <span className="drawer-brand-name">NovaDesk</span>
-                  <span className="drawer-brand-tagline">AI Support Desk</span>
-                </div>
+            <div className="mobile-drawer-header">
+              <div className="mobile-brand">
+                <img src={logoImg} alt="NovaDesk" className="mobile-logo-img" />
+                <span className="mobile-brand-title">NovaDesk</span>
               </div>
-              <button className="drawer-close-btn" onClick={closeAllMenus} title="Close Menu">
-                <X size={18} />
+              <button className="mobile-drawer-close" onClick={closeAllMenus} aria-label="Close menu">
+                <X size={20} />
               </button>
             </div>
 
-            {/* Top Navigation Links Module */}
-            <div className="mobile-nav-links-module">
-              <span className="drawer-section-heading">Platform Modules</span>
-              <NavLink to="/home" className="mobile-nav-item" onClick={closeAllMenus}>
-                <Home size={18} />
-                <div className="drawer-link-meta">
-                  <span className="link-title">Customer Portal</span>
-                  <span className="link-desc">AI Incident Logging &amp; Tracking</span>
+            {/* Mobile User Profile Section */}
+            {user ? (
+              <div className="mobile-user-card">
+                <div className="mobile-user-avatar">
+                  {user?.profilePic ? (
+                    <img src={user.profilePic} alt="Avatar" />
+                  ) : (
+                    <div className="avatar-letter">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
                 </div>
+                <div className="mobile-user-meta">
+                  <span className="mobile-user-name">{user?.name || 'Citizen User'}</span>
+                  <span className="mobile-user-email">{user?.email}</span>
+                  <span className={`mobile-role-pill pill-${user?.role || 'customer'}`}>
+                    {(user?.role || 'Customer').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="mobile-guest-card">
+                <p>Welcome to NovaDesk Civic Portal</p>
+                <div className="mobile-guest-actions">
+                  <Link to="/login" className="mobile-btn-primary" onClick={closeAllMenus}>
+                    Sign In
+                  </Link>
+                  <Link to="/register" className="mobile-btn-secondary" onClick={closeAllMenus}>
+                    Create Account
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Links in Mobile Drawer */}
+            <div className="mobile-nav-list">
+              <NavLink to="/home" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeAllMenus}>
+                <Home size={17} />
+                <span>Customer Portal</span>
               </NavLink>
 
-              <NavLink to="/my-complaints" className="mobile-nav-item" onClick={closeAllMenus}>
-                <FileText size={18} />
-                <div className="drawer-link-meta">
-                  <span className="link-title">My Complaints Vault</span>
-                  <span className="link-desc">Split Form &amp; Searchable History</span>
-                </div>
+              <NavLink to="/my-complaints" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeAllMenus}>
+                <FileText size={17} />
+                <span>My Complaints</span>
               </NavLink>
 
-              <NavLink to="/analytics" className="mobile-nav-item" onClick={closeAllMenus}>
-                <BarChart3 size={18} />
-                <div className="drawer-link-meta">
-                  <span className="link-title">GIS Analytics &amp; Heatmap</span>
-                  <span className="link-desc">District Telemetry &amp; Resolution Metrics</span>
-                </div>
+              {isAdmin && (
+                <NavLink to="/admin" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeAllMenus}>
+                  <Shield size={17} />
+                  <span>Admin Console</span>
+                </NavLink>
+              )}
+
+              {isWorker && (
+                <NavLink to="/worker" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeAllMenus}>
+                  <Wrench size={17} />
+                  <span>Worker Operations</span>
+                </NavLink>
+              )}
+
+              <NavLink to="/analytics" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeAllMenus}>
+                <BarChart3 size={17} />
+                <span>GIS Analytics</span>
               </NavLink>
 
-              <NavLink to="/about" className="mobile-nav-item" onClick={closeAllMenus}>
-                <Info size={18} />
-                <div className="drawer-link-meta">
-                  <span className="link-title">About &amp; Guaranteed SLAs</span>
-                  <span className="link-desc">Platform Specs &amp; Architecture</span>
-                </div>
+              <NavLink to="/about" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeAllMenus}>
+                <Info size={17} />
+                <span>About</span>
               </NavLink>
 
-              <NavLink to="/profile" className="mobile-nav-item" onClick={closeAllMenus}>
-                <UserIcon size={18} />
-                <div className="drawer-link-meta">
-                  <span className="link-title">User Account &amp; Profile</span>
-                  <span className="link-desc">Manage Security &amp; Preferences</span>
-                </div>
-              </NavLink>
-
-              {user?.role === 'admin' && (
-                <NavLink to="/admin" className="mobile-nav-item admin-highlight" onClick={closeAllMenus}>
-                  <Shield size={18} />
-                  <div className="drawer-link-meta">
-                    <span className="link-title">Admin Command Console</span>
-                    <span className="link-desc">Staff Management &amp; Triage</span>
-                  </div>
+              {user && (
+                <NavLink to="/profile" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={closeAllMenus}>
+                  <UserIcon size={17} />
+                  <span>Profile & Settings</span>
                 </NavLink>
               )}
             </div>
 
-            {/* HORIZONTAL LINE DIVIDER */}
-            <hr className="drawer-horizontal-divider" />
-
-            {/* Bottom Rightbar & Account Controls Module */}
-            <div className="mobile-rightbar-module">
-              <span className="drawer-section-heading">Account &amp; Appearance</span>
-              
-              {/* User Greeting Box */}
-              <div className="mobile-user-card">
-                <div className="mobile-avatar">
-                  {user?.profilePic ? (
-                    <img src={user.profilePic} alt="Avatar" className="user-avatar-img" />
-                  ) : (
-                    <div className="user-avatar-fallback">
-                      {user?.name ? user.name.charAt(0).toUpperCase() : <UserIcon size={16} />}
-                    </div>
-                  )}
-                </div>
-                <div className="mobile-user-details">
-                  <h4 className="mobile-user-name">{user ? user.name : 'Guest User'}</h4>
-                  <span className="mobile-user-role">{user ? user.role.toUpperCase() : 'Public Guest Mode'}</span>
-                </div>
-              </div>
-
-              {/* Theme Toggle Button */}
-              <button className="mobile-action-btn theme-switch" onClick={toggleTheme}>
-                <div className="btn-left">
-                  {isDark ? <Sun size={17} className="icon-cyan" /> : <Moon size={17} className="icon-cyan" />}
-                  <span>Theme Appearance</span>
-                </div>
-                <span className="pill-state">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
+            {/* Bottom Controls */}
+            <div className="mobile-drawer-footer">
+              <button className="mobile-theme-btn" onClick={toggleTheme}>
+                {isDark ? <Sun size={17} /> : <Moon size={17} />}
+                <span>{isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}</span>
               </button>
 
-              {/* Auth Button */}
-              {user ? (
-                <button className="mobile-action-btn logout" onClick={handleLogout}>
+              {user && (
+                <button className="mobile-logout-btn" onClick={handleLogout}>
                   <LogOut size={17} />
-                  <span>Log Out of NovaDesk</span>
+                  <span>Sign Out</span>
                 </button>
-              ) : (
-                <div className="mobile-auth-grid">
-                  <NavLink to="/login" className="mobile-auth-btn signin" onClick={closeAllMenus}>
-                    <LogIn size={16} /> <span>Sign In</span>
-                  </NavLink>
-                  <NavLink to="/register" className="mobile-auth-btn signup" onClick={closeAllMenus}>
-                    <UserPlus size={16} /> <span>Sign Up</span>
-                  </NavLink>
-                </div>
               )}
             </div>
 
