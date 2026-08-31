@@ -464,34 +464,22 @@
   color: var(--primary-color);
 }
 
-/* Emoji Palette */
-.chat-emoji-palette {
+/* Emoji Palette Popup Container */
+.chat-emoji-palette-picker {
   position: absolute;
-  bottom: 64px;
-  left: 20px;
-  background: var(--bg-card);
+  bottom: 72px;
+  left: 16px;
+  z-index: 99999;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+  border-radius: 12px;
+  overflow: hidden;
   border: 1px solid var(--border-color);
-  padding: 8px;
-  border-radius: var(--border-radius-sm);
-  display: flex;
-  gap: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  z-index: 100;
+  animation: fadeInDropdown 0.18s ease-out;
 }
 
-.emoji-btn {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: transform 0.15s ease;
-}
-
-.emoji-btn:hover {
-  transform: scale(1.25);
-  background: var(--input-bg);
+@keyframes fadeInDropdown {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Input Footer */

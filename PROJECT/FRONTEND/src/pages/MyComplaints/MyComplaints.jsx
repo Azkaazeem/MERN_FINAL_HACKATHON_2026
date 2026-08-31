@@ -30,7 +30,10 @@ import {
   X,
   MessageSquare,
   User,
-  Globe
+  Globe,
+  Star,
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 import TicketChatModal from '../../components/TicketChat/TicketChatModal';
 import API from '../../api/axios';
@@ -64,6 +67,69 @@ const MyComplaints = () => {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [selectedImageModal, setSelectedImageModal] = useState(null);
   const [activeChatTicket, setActiveChatTicket] = useState(null);
+
+  // Rate Worker Modal State
+  const [ratingModalTicket, setRatingModalTicket] = useState(null);
+  const [selectedStars, setSelectedStars] = useState(5);
+  const [hoveredStars, setHoveredStars] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+
+  const handleOpenRatingModal = (ticket) => {
+    setRatingModalTicket(ticket);
+    const saved = localStorage.getItem(`ticket_rating_${ticket.id || ticket.ticketId}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSelectedStars(parsed.stars || 5);
+        setFeedbackComment(parsed.comment || '');
+      } catch (e) {
+        setSelectedStars(5);
+        setFeedbackComment('');
+      }
+    } else {
+      setSelectedStars(5);
+      setFeedbackComment('');
+    }
+  };
+
+  const handleSubmitRating = async (e) => {
+    e.preventDefault();
+    if (!ratingModalTicket) return;
+    setIsSubmittingRating(true);
+
+    try {
+      const ticketId = ratingModalTicket.id || ratingModalTicket.ticketId;
+      localStorage.setItem(`ticket_rating_${ticketId}`, JSON.stringify({
+        stars: selectedStars,
+        comment: feedbackComment,
+        ratedAt: new Date().toISOString()
+      }));
+
+      setComplaints(prev => prev.map(c => {
+        if (c.id === ratingModalTicket.id || c.ticketId === ratingModalTicket.ticketId) {
+          return { ...c, userRating: selectedStars, userComment: feedbackComment };
+        }
+        return c;
+      }));
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Rating Submitted Successfully',
+        text: `Thank you! You rated ${selectedStars} Stars for this municipal service.`,
+        confirmButtonColor: '#00e5ff',
+        background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
+        color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f8fafc' : '#0f172a'
+      });
+
+      setRatingModalTicket(null);
+      setFeedbackComment('');
+    } catch (err) {
+      toast.error('Failed to save rating.');
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
 
   // Sync user info into form
   useEffect(() => {
@@ -644,6 +710,22 @@ const MyComplaints = () => {
                             <MessageSquare size={13} />
                             <span>Live Chat</span>
                           </button>
+
+                          {c.status === 'Resolved' && (
+                            <button
+                              type="button"
+                              className="cvc-rate-action-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenRatingModal(c);
+                              }}
+                              title="Rate this completed service"
+                            >
+                              <Star size={13} fill="#f59e0b" color="#f59e0b" />
+                              <span>{c.userRating ? `Rated (${c.userRating}★)` : 'Rate Worker'}</span>
+                            </button>
+                          )}
+
                           <span className={`cvc-status-pill ${c.status?.toLowerCase().replace(' ', '-')}`}>
                             {c.status}
                           </span>
@@ -786,6 +868,96 @@ const MyComplaints = () => {
         onClose={() => setActiveChatTicket(null)}
         userRole="customer"
       />
+
+      {/* ================= SERVICE RATING MODAL (Lucide Stars, No Text Emojis) ================= */}
+      {ratingModalTicket && (
+        <div className="rating-lightbox-modal" onClick={() => setRatingModalTicket(null)}>
+          <div className="rating-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="rating-dialog-header">
+              <div className="rating-header-left">
+                <Award size={18} className="cyan-icon" />
+                <span>Rate Service Quality</span>
+              </div>
+              <button 
+                type="button"
+                className="rating-close-btn" 
+                onClick={() => setRatingModalTicket(null)}
+                title="Close Rating"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitRating} className="rating-dialog-body">
+              <div className="rating-ticket-summary">
+                <p className="rts-title">{ratingModalTicket.title}</p>
+                <p className="rts-dept"><Building2 size={13} /> {ratingModalTicket.assigned_department}</p>
+              </div>
+
+              <div className="rating-stars-picker-wrap">
+                <label className="rating-stars-label">Select Star Rating:</label>
+                <div className="interactive-stars-row">
+                  {[1, 2, 3, 4, 5].map((starNum) => {
+                    const isFilled = starNum <= (hoveredStars || selectedStars);
+                    return (
+                      <button
+                        type="button"
+                        key={starNum}
+                        className={`star-pill-btn ${isFilled ? 'filled' : ''}`}
+                        onMouseEnter={() => setHoveredStars(starNum)}
+                        onMouseLeave={() => setHoveredStars(0)}
+                        onClick={() => setSelectedStars(starNum)}
+                        title={`${starNum} Stars`}
+                      >
+                        <Star 
+                          size={28} 
+                          fill={isFilled ? '#f59e0b' : 'none'} 
+                          color={isFilled ? '#f59e0b' : '#94a3b8'} 
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="stars-count-caption">
+                  {selectedStars === 5 ? 'Excellent & Fast Service' : 
+                   selectedStars === 4 ? 'Good Quality Service' : 
+                   selectedStars === 3 ? 'Average Service' : 
+                   selectedStars === 2 ? 'Needs Improvement' : 'Unsatisfactory'}
+                </span>
+              </div>
+
+              <div className="rating-textarea-wrap">
+                <label htmlFor="rating-comment">Citizen Feedback (Optional):</label>
+                <textarea
+                  id="rating-comment"
+                  rows="3"
+                  placeholder="Share your thoughts about how the issue was handled..."
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                />
+              </div>
+
+              <div className="rating-actions-footer">
+                <button 
+                  type="button" 
+                  className="rating-cancel-btn" 
+                  onClick={() => setRatingModalTicket(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="rating-submit-btn" 
+                  disabled={isSubmittingRating}
+                >
+                  <ShieldCheck size={16} />
+                  <span>Submit Rating</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       </main>
 

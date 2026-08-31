@@ -23,11 +23,11 @@ import {
   MapPin,
   Building2,
   CheckCircle2,
-  HelpCircle
+  HelpCircle,
+  Search
 } from 'lucide-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import './TicketChatModal.css';
-
-const DEFAULT_EMOJIS = ['👍', '⚠️', '🚨', '💧', '🚧', '⚡', '✅', '🙏', '🕒', '📸'];
 
 // Quick One-Click Suggested Prompts
 const QUICK_PROMPTS = [
@@ -336,7 +336,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
                     <div className="msg-image-wrap" onClick={() => setSelectedChatImage(msg.mediaUrl)}>
                       <img src={msg.mediaUrl} alt="Chat Attachment" className="msg-img-preview" />
                       <div className="msg-img-overlay">
-                        <span>🔍 Click to view large</span>
+                        <span><Search size={13} /> Click to view large</span>
                       </div>
                     </div>
                   )}
@@ -360,7 +360,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
                         <span className={`bar ${playingAudioId === msg.id ? 'animating' : ''}`} />
                         <span className={`bar ${playingAudioId === msg.id ? 'animating' : ''}`} />
                       </div>
-                      <span className="voice-duration">🎙️ {msg.duration || '0:05'}</span>
+                      <span className="voice-duration"><Mic size={12} /> {msg.duration || '0:05'}</span>
                     </div>
                   )}
 
@@ -401,19 +401,21 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
           </div>
         </div>
 
-        {/* ================= EMOJI PALETTE POPUP ================= */}
+        {/* ================= FULL CATEGORIZED EMOJI PICKER POPUP ================= */}
         {showEmojiPicker && (
-          <div className="chat-emoji-palette">
-            {DEFAULT_EMOJIS.map(em => (
-              <button 
-                key={em} 
-                type="button" 
-                className="emoji-btn" 
-                onClick={() => handleAddEmoji(em)}
-              >
-                {em}
-              </button>
-            ))}
+          <div className="chat-emoji-palette-picker">
+            <EmojiPicker
+              onEmojiClick={(emojiData) => {
+                handleAddEmoji(emojiData.emoji);
+                setShowEmojiPicker(false);
+              }}
+              autoFocusSearch={false}
+              theme={document.documentElement.getAttribute('data-theme') === 'dark' ? Theme.DARK : Theme.LIGHT}
+              width={320}
+              height={360}
+              searchPlaceHolder="Search all emojis..."
+              previewConfig={{ showPreview: false }}
+            />
           </div>
         )}
 
