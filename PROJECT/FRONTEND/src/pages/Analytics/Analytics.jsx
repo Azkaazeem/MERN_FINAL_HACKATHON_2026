@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer/Footer';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
@@ -48,21 +47,10 @@ const RESOLUTION_TIME_DATA = [
 ];
 
 const CATEGORY_DISTRIBUTION = [
-  { name: 'Water & Drainage', value: 420, color: '#0891b2' },
-  { name: 'Roads & Infra', value: 310, color: '#06b6d4' },
-  { name: 'Waste & Sanitation', value: 280, color: '#38bdf8' },
-  { name: 'Electricity & Power', value: 240, color: '#475569' },
-  { name: 'Public Safety', value: 150, color: '#64748b' },
-  { name: 'Environment', value: 90, color: '#94a3b8' }
-];
-
-const DISTRICT_INCIDENTS = [
-  { id: 'PIN-1', lat: '24.8607° N', lng: '67.0011° E', district: 'District South', area: 'Clifton & Saddar', active: 18, resolved: 142, risk: 'Low', color: '#0891b2' },
-  { id: 'PIN-2', lat: '24.9200° N', lng: '67.0900° E', district: 'District East', area: 'Gulshan & University Rd', active: 34, resolved: 198, risk: 'Medium', color: '#0891b2' },
-  { id: 'PIN-3', lat: '24.9300° N', lng: '67.0400° E', district: 'District Central', area: 'Nazimabad & Federal B', active: 46, resolved: 280, risk: 'High', color: '#0891b2' },
-  { id: 'PIN-4', lat: '24.8300° N', lng: '67.1200° E', district: 'District Korangi', area: 'Industrial Area & Creek', active: 29, resolved: 165, risk: 'Medium', color: '#0891b2' },
-  { id: 'PIN-5', lat: '24.8900° N', lng: '66.9800° E', district: 'District Keamari', area: 'Harbor & Hawksbay', active: 12, resolved: 88, risk: 'Low', color: '#0891b2' },
-  { id: 'PIN-6', lat: '24.9700° N', lng: '67.1800° E', district: 'District Malir', area: 'Airport & Model Colony', active: 22, resolved: 110, risk: 'Low', color: '#0891b2' }
+  { name: 'Water & Sewerage', value: 420, color: '#00e5ff' },
+  { name: 'Roads & Asphalt', value: 360, color: '#3b82f6' },
+  { name: 'Solid Waste & Bins', value: 480, color: '#10b981' },
+  { name: 'Electrical Hazards', value: 230, color: '#f59e0b' }
 ];
 
 const DEPARTMENT_LEADERBOARD = [
@@ -73,19 +61,74 @@ const DEPARTMENT_LEADERBOARD = [
 ];
 
 const CITIZEN_CHAMPIONS = [
-  { rank: 1, name: 'Akash Ahmed', karma: 1850, verifiedReports: 38, badge: '👑 Civic Grandmaster', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100' },
-  { rank: 2, name: 'Sara Khan', karma: 1420, verifiedReports: 29, badge: '💧 Water Sentinel', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100' },
-  { rank: 3, name: 'Hamza Tariq', karma: 1180, verifiedReports: 24, badge: '🛣️ Road Guardian', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100' },
-  { rank: 4, name: 'Ayesha Siddiqui', karma: 950, verifiedReports: 19, badge: '⚡ Safety Scout', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100' }
+  { rank: 1, name: 'Akash Ahmed', karma: 1850, verifiedReports: 38, badge: 'Civic Grandmaster', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100' },
+  { rank: 2, name: 'Sara Khan', karma: 1420, verifiedReports: 29, badge: 'Water Sentinel', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100' },
+  { rank: 3, name: 'Hamza Tariq', karma: 1180, verifiedReports: 24, badge: 'Road Guardian', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100' },
+  { rank: 4, name: 'Ayesha Siddiqui', karma: 950, verifiedReports: 19, badge: 'Safety Scout', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100' }
 ];
 
 const Analytics = () => {
   const [selectedDistrict, setSelectedDistrict] = useState(DISTRICT_INCIDENTS[2]);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.analytics-hero h1', { opacity: 0, y: 22, duration: 0.6, ease: 'power3.out' });
+      gsap.from('.stat-metric-card', {
+        opacity: 0,
+        y: 20,
+        duration: 0.5,
+        stagger: 0.08,
+        delay: 0.15,
+        ease: 'power2.out'
+      });
+
+      gsap.from('.gis-heatmap-section', {
+        scrollTrigger: {
+          trigger: '.gis-heatmap-section',
+          start: 'top 85%',
+          toggleActions: 'play none none none'
+        },
+        opacity: 0,
+        y: 30,
+        duration: 0.65,
+        ease: 'power2.out'
+      });
+
+      gsap.from('.chart-card', {
+        scrollTrigger: {
+          trigger: '.charts-grid-row',
+          start: 'top 85%',
+          toggleActions: 'play none none none'
+        },
+        opacity: 0,
+        y: 28,
+        duration: 0.6,
+        stagger: 0.12,
+        ease: 'power2.out'
+      });
+
+      gsap.from('.leaderboard-card', {
+        scrollTrigger: {
+          trigger: '.leaderboards-grid',
+          start: 'top 85%',
+          toggleActions: 'play none none none'
+        },
+        opacity: 0,
+        y: 25,
+        duration: 0.6,
+        stagger: 0.12,
+        ease: 'power2.out'
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
 
   const handleInspectDistrict = (dist) => {
     setSelectedDistrict(dist);
     Swal.fire({
-      title: `📍 ${dist.district} GIS Telemetry`,
+      title: `${dist.district} GIS Telemetry`,
       html: `
         <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
           <p><strong>Sector:</strong> ${dist.area}</p>
@@ -93,35 +136,30 @@ const Analytics = () => {
           <p><strong>Active Unresolved Tickets:</strong> <span style="color: #ef4444; font-weight: bold;">${dist.active}</span></p>
           <p><strong>Total Resolved (30 Days):</strong> <span style="color: #10b981; font-weight: bold;">${dist.resolved}</span></p>
           <p><strong>Regional Risk Index:</strong> <span style="color: ${dist.color}; font-weight: bold;">${dist.risk}</span></p>
-          <p style="margin-top: 10px; font-size: 12px; color: #64748b;">📡 AI Dispatch Fleet actively patrolling this sector.</p>
+          <p style="margin-top: 10px; font-size: 12px; color: #64748b;">AI Dispatch Fleet actively patrolling this sector.</p>
         </div>
       `,
-      confirmButtonColor: '#06b6d4',
+      confirmButtonColor: '#00e5ff',
       confirmButtonText: 'Deploy Additional Patrol'
     });
   };
 
   return (
-    <div className="analytics-page-wrapper">
+    <div className="analytics-page-wrapper" ref={containerRef}>
       <Toaster position="top-right" />
-      <Navbar />
 
       <main className="analytics-main-container">
         {/* ================= HERO HEADER ================= */}
         <section className="analytics-hero">
-          <div className="analytics-badge">
-            <Activity size={16} />
-            <span>Open Civic Intelligence &amp; GIS Analytics</span>
-          </div>
           <h1>
             Municipal Transparency <span className="cyan-gradient">&amp; Telemetry Hub</span>
           </h1>
           <p className="analytics-subtitle">
-            Live geospatial fault heatmaps, statistical reliability metrics (&mu;, &sigma;, IQR), and municipal performance leaderboards.
+            Live geospatial fault heatmaps, statistical reliability metrics, and municipal performance leaderboards.
           </p>
         </section>
 
-        {/* ================= STATISTICAL BENCHMARKS (15 Marks PDF Rubric) ================= */}
+        {/* ================= STATISTICAL BENCHMARKS ================= */}
         <section className="stats-metric-strip">
           <div className="stat-metric-card">
             <div className="metric-header">
@@ -164,7 +202,7 @@ const Analytics = () => {
         <section className="gis-heatmap-section">
           <div className="section-title-row">
             <div>
-              <h2>🗺️ Live Municipal GIS Incident Heatmap</h2>
+              <h2>Live Municipal GIS Incident Heatmap</h2>
               <p>Real-time telemetry pins across Karachi metropolitan districts</p>
             </div>
             <span className="live-pulse-badge">● LIVE GIS FEED</span>
@@ -235,15 +273,15 @@ const Analytics = () => {
         <section className="charts-grid-row">
           {/* Resolution Speed Trends */}
           <div className="chart-card">
-            <h3>📈 Monthly Resolution Speed (Hours by Domain)</h3>
+            <h3>Monthly Resolution Speed (Hours by Domain)</h3>
             <p className="chart-subtitle">Lower is faster (Demonstrating continuous AI optimization)</p>
             <div style={{ height: 280, width: '100%', marginTop: 16 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={RESOLUTION_TIME_DATA}>
                   <defs>
                     <linearGradient id="colorWater" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#00e5ff" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#00e5ff" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorRoad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
@@ -255,7 +293,7 @@ const Analytics = () => {
                   <YAxis stroke="#94a3b8" />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: 8, color: '#fff' }} />
                   <Legend />
-                  <Area type="monotone" dataKey="Water & Drainage" stroke="#06b6d4" fillOpacity={1} fill="url(#colorWater)" />
+                  <Area type="monotone" dataKey="Water & Drainage" stroke="#00e5ff" fillOpacity={1} fill="url(#colorWater)" />
                   <Area type="monotone" dataKey="Roads & Infra" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRoad)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -264,7 +302,7 @@ const Analytics = () => {
 
           {/* Category Distribution Pie */}
           <div className="chart-card">
-            <h3>📊 Complaint Volume by Domain</h3>
+            <h3>Complaint Volume by Domain</h3>
             <p className="chart-subtitle">Breakdown across 1,490 logged tickets</p>
             <div style={{ height: 280, width: '100%', marginTop: 16 }}>
               <ResponsiveContainer width="100%" height="100%">

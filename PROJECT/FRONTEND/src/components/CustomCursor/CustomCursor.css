@@ -1,4 +1,80 @@
-/* CustomCursor.css */
+/* ==========================================================================
+   CustomCursor.css - GSAP High-Performance Custom Cursor
+   ========================================================================== */
+
 .custom-cursor-container {
-  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999999;
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
+
+.custom-cursor-container.visible {
+  opacity: 1;
+}
+
+/* Inner Precise Dot */
+.custom-cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, background-color 0.2s ease, width 0.15s ease, height 0.15s ease;
+  box-shadow: 0 0 8px var(--primary-color);
+}
+
+.custom-cursor-dot.hover {
+  width: 6px;
+  height: 6px;
+  background-color: #ffffff;
+  box-shadow: 0 0 10px var(--primary-color);
+}
+
+.custom-cursor-dot.active {
+  transform: translate(-50%, -50%) scale(0.6);
+}
+
+/* Fluid Trailing Ring */
+.custom-cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--primary-color);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, background-color 0.2s ease, width 0.2s ease, height 0.2s ease;
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.custom-cursor-ring.hover {
+  width: 46px;
+  height: 46px;
+  background-color: var(--primary-light);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 20px var(--primary-glow);
+}
+
+.custom-cursor-ring.active {
+  transform: translate(-50%, -50%) scale(0.8);
+}
+
+/* Hide on touch devices */
+@media (pointer: coarse), (hover: none) {
+  .custom-cursor-container {
+    display: none !important;
+  }
+}
+

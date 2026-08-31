@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
+import { showAuthAlert } from '../../utils/authAlert';
 import API from '../../api/axios';
 import toast, { Toaster } from 'react-hot-toast';
+import { gsap } from 'gsap';
 import { 
   User, 
   Mail, 
@@ -20,7 +22,22 @@ import './Profile.css';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.profile-card', {
+        opacity: 0,
+        y: 24,
+        duration: 0.6,
+        ease: 'power3.out'
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -59,6 +76,10 @@ const Profile = () => {
 
   // Handle Profile Picture Selection
   const handleImageChange = (e) => {
+    if (!user) {
+      showAuthAlert(navigate, 'update profile avatar');
+      return;
+    }
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -75,6 +96,10 @@ const Profile = () => {
   // Handle Form Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!user) {
+      showAuthAlert(navigate, 'update profile details');
+      return;
+    }
 
     // Password validation (if user entered password)
     if (formData.password) {
@@ -115,7 +140,7 @@ const Profile = () => {
         cnic: formData.cnic,
         profilePic: formData.profilePic
       });
-      toast.success('🎉 Profile updated successfully!');
+      toast.success('Profile updated successfully!');
       setFormData((prev) => ({
         ...prev,
         password: '',
@@ -127,8 +152,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="profile-page-container">
-      <Navbar />
+    <div className="profile-page-container" ref={containerRef}>
       <Toaster position="top-right" />
 
       <div className="profile-content-wrapper">

@@ -1,31 +1,35 @@
-import React, { useState } from 'react';
-import Navbar from '../../components/Navbar';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/Footer/Footer';
-import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
+import { showAuthAlert } from '../../utils/authAlert';
 import toast, { Toaster } from 'react-hot-toast';
+import Swal from 'sweetalert2';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { 
-  Bell, 
   AlertTriangle, 
-  ShieldAlert, 
   Radio, 
+  Bell, 
   PhoneCall, 
-  Calendar, 
-  MapPin, 
-  Send, 
-  CheckCircle2, 
-  Clock, 
   Droplet, 
   Zap, 
+  ShieldAlert, 
   Car, 
-  Sparkles,
+  Send, 
+  Clock, 
+  MapPin, 
+  Phone,
   Info
 } from 'lucide-react';
 import './Alerts.css';
 
+gsap.registerPlugin(ScrollTrigger);
+
 const ACTIVE_ADVISORIES = [
   {
     id: 'ADV-401',
-    title: '⚠️ Heavy Rainfall & Urban Flash Flood Advisory',
+    title: 'Heavy Rainfall & Urban Flash Flood Advisory',
     category: 'Weather & Safety',
     severity: 'High',
     affectedAreas: 'District South, Clifton, Korangi Creek, Nazimabad',
@@ -34,7 +38,7 @@ const ACTIVE_ADVISORIES = [
   },
   {
     id: 'ADV-398',
-    title: '💧 Main Water Conduit Maintenance (6-Hour Planned Outage)',
+    title: 'Main Water Conduit Maintenance (6-Hour Planned Outage)',
     category: 'Water Supply',
     severity: 'Medium',
     affectedAreas: 'Gulshan-e-Iqbal Block 4 to 10, University Road',
@@ -43,7 +47,7 @@ const ACTIVE_ADVISORIES = [
   },
   {
     id: 'ADV-395',
-    title: '🛣️ Shahrah-e-Faisal Flyover Asphalt Resurfacing',
+    title: 'Shahrah-e-Faisal Flyover Asphalt Resurfacing',
     category: 'Traffic & Roads',
     severity: 'Low',
     affectedAreas: 'Airport to Baloch Colony Section',
@@ -53,18 +57,60 @@ const ACTIVE_ADVISORIES = [
 ];
 
 const EMERGENCY_HELPLINES = [
-  { name: 'Water & Sewerage Emergency (WSSB)', number: '1334', icon: Droplet, color: '#06b6d4' },
+  { name: 'Water & Sewerage Emergency (WSSB)', number: '1334', icon: Droplet, color: '#00e5ff' },
   { name: 'Electric Fault Emergency Line', number: '118', icon: Zap, color: '#f59e0b' },
   { name: 'Rescue & Paramedic Services', number: '1122', icon: ShieldAlert, color: '#ef4444' },
   { name: 'Traffic Police Helpline', number: '915', icon: Car, color: '#3b82f6' }
 ];
 
 const Alerts = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedArea, setSelectedArea] = useState('All Districts');
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.alerts-hero h1', { opacity: 0, y: 22, duration: 0.6, ease: 'power3.out' });
+      gsap.from('.alerts-subtitle', { opacity: 0, y: 16, duration: 0.6, delay: 0.1, ease: 'power2.out' });
+
+      gsap.from('.advisory-card', {
+        scrollTrigger: {
+          trigger: '.advisories-feed-section',
+          start: 'top 85%',
+          toggleActions: 'play none none none'
+        },
+        opacity: 0,
+        y: 28,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: 'power2.out'
+      });
+
+      gsap.from('.subscription-card, .helplines-card', {
+        scrollTrigger: {
+          trigger: '.two-col-grid',
+          start: 'top 85%',
+          toggleActions: 'play none none none'
+        },
+        opacity: 0,
+        y: 30,
+        duration: 0.65,
+        stagger: 0.15,
+        ease: 'power2.out'
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
 
   const handleSubscribe = (e) => {
     e.preventDefault();
+    if (!user) {
+      showAuthAlert(navigate, 'subscribe to real-time SMS emergency broadcasts');
+      return;
+    }
     if (!phoneNumber) {
       toast.error('Please enter a valid phone number.');
       return;
@@ -72,16 +118,16 @@ const Alerts = () => {
 
     Swal.fire({
       icon: 'success',
-      title: '🔔 Subscribed to Civic Alerts!',
+      title: 'Subscribed to Civic Alerts!',
       html: `
         <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
           <p><strong>Mobile Number:</strong> ${phoneNumber}</p>
           <p><strong>Subscription Radius:</strong> ${selectedArea}</p>
-          <p style="margin-top: 8px; color: #10b981; font-weight: bold;">✅ Free SMS broadcast active.</p>
+          <p style="margin-top: 8px; color: #10b981; font-weight: bold;">Free SMS broadcast active.</p>
           <p style="color: #64748b; font-size: 12px;">You will receive real-time municipal emergency notifications and scheduled water/power advisories.</p>
         </div>
       `,
-      confirmButtonColor: '#06b6d4',
+      confirmButtonColor: '#00e5ff',
       confirmButtonText: 'Great!'
     });
 
@@ -89,17 +135,12 @@ const Alerts = () => {
   };
 
   return (
-    <div className="alerts-page-wrapper">
+    <div className="alerts-page-wrapper" ref={containerRef}>
       <Toaster position="top-right" />
-      <Navbar />
 
       <main className="alerts-main-container">
         {/* Hero Section */}
         <section className="alerts-hero">
-          <div className="alerts-badge">
-            <Radio size={16} className="text-red-500 animate-pulse" />
-            <span>24/7 Municipal Broadcast &amp; Emergency Hub</span>
-          </div>
           <h1>
             Public Advisories <span className="cyan-gradient">&amp; Emergency Alerts</span>
           </h1>
@@ -111,7 +152,7 @@ const Alerts = () => {
         {/* Live Advisories Feed */}
         <section className="advisories-feed-section">
           <div className="feed-header">
-            <h2>📢 Active Public Advisories ({ACTIVE_ADVISORIES.length})</h2>
+            <h2>Active Public Advisories ({ACTIVE_ADVISORIES.length})</h2>
             <span className="live-indicator">● LIVE DISPATCH</span>
           </div>
 
@@ -156,67 +197,59 @@ const Alerts = () => {
             </p>
 
             <form onSubmit={handleSubscribe} className="sub-form">
-              <div className="form-group-sub">
-                <label>Select Your District:</label>
-                <select 
-                  value={selectedArea} 
-                  onChange={e => setSelectedArea(e.target.value)}
-                  className="sub-select"
-                >
-                  <option value="All Districts">All Karachi Districts (Citywide)</option>
-                  <option value="District South (Clifton/Saddar)">District South (Clifton/Saddar)</option>
-                  <option value="District East (Gulshan/University)">District East (Gulshan/University)</option>
-                  <option value="District Central (Nazimabad/FB Area)">District Central (Nazimabad/FB Area)</option>
-                  <option value="District Korangi (Industrial/Creek)">District Korangi (Industrial/Creek)</option>
-                  <option value="District Malir (Airport/Model Colony)">District Malir (Airport/Model Colony)</option>
-                </select>
-              </div>
-
-              <div className="form-group-sub">
-                <label>Mobile Number (For SMS Alerts):</label>
+              <div className="form-inputs-row">
                 <input 
                   type="tel" 
                   placeholder="0300-1234567" 
                   value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value)}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
                   className="sub-input"
                   required
                 />
+                <select 
+                  value={selectedArea} 
+                  onChange={(e) => setSelectedArea(e.target.value)}
+                  className="sub-select"
+                >
+                  <option value="All Districts">All Districts (Citywide)</option>
+                  <option value="District South (Clifton/Saddar)">District South</option>
+                  <option value="District East (Gulshan/Jamshed)">District East</option>
+                  <option value="District Central (Nazimabad)">District Central</option>
+                  <option value="District Korangi">District Korangi</option>
+                  <option value="District Malir">District Malir</option>
+                </select>
+                <button type="submit" className="sub-submit-btn">
+                  <Send size={15} />
+                  <span>Subscribe</span>
+                </button>
               </div>
-
-              <button type="submit" className="sub-btn">
-                <Send size={15} />
-                <span>Activate Free SMS Alerts</span>
-              </button>
             </form>
           </div>
 
-          {/* Emergency Helplines Directory */}
+          {/* Emergency Helplines Card */}
           <div className="helplines-card">
             <div className="sub-card-header">
-              <PhoneCall size={20} className="text-red-400" />
-              <h3>Direct Municipal Emergency Helplines</h3>
+              <PhoneCall size={20} className="text-cyan-400" />
+              <h3>Direct 24/7 Emergency Helplines</h3>
             </div>
             <p className="sub-card-desc">
-              Direct hotlines with 24/7 dedicated dispatch response operators.
+              Direct toll-free citizen connections to emergency municipal dispatch units.
             </p>
 
             <div className="helplines-list">
-              {EMERGENCY_HELPLINES.map((h, i) => {
-                const Icon = h.icon;
+              {EMERGENCY_HELPLINES.map((hl, i) => {
+                const IconComponent = hl.icon;
                 return (
-                  <div key={i} className="helpline-item">
-                    <div className="hl-icon-wrap" style={{ background: `${h.color}18`, color: h.color }}>
-                      <Icon size={18} />
-                    </div>
+                  <a key={i} href={`tel:${hl.number}`} className="helpline-item">
                     <div className="hl-info">
-                      <div className="hl-name">{h.name}</div>
-                      <div className="hl-sub">Toll-Free Government Hotline</div>
+                      <IconComponent size={18} style={{ color: hl.color }} />
+                      <span className="hl-name">{hl.name}</span>
                     </div>
-                    <a href={`tel:${h.number}`} className="hl-number-btn" style={{ borderColor: h.color, color: h.color }}>
-                      📞 {h.number}
-                    </a>
-                  </div>
+                    <span className="hl-number">
+                      <Phone size={13} className="mr-1 inline" />
+                      {hl.number}
+                    </span>
+                  </a>
                 );
               })}
             </div>

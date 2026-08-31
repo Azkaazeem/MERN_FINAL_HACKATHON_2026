@@ -1,55 +1,68 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { gsap } from 'gsap';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { 
   User, 
   Mail, 
   Lock, 
   Calendar, 
-  CreditCard, 
-  Camera, 
   Eye, 
-  EyeOff,
-  Shield
+  EyeOff, 
+  Shield,
+  ArrowRight,
+  Sparkles,
+  Bot,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
-import { useGoogleLogin } from '@react-oauth/google';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import logoImg from '../../assets/logo.png';
 import './Authentication.css';
 
 const Authentication = ({ defaultIsSignUp = false }) => {
   const { user, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(defaultIsSignUp);
   const [loading, setLoading] = useState(false);
-  const containerRef = useRef(null);
 
   // --- Password Visibility States ---
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
 
-  // --- Form States (3 Roles: customer, worker, admin) ---
+  // --- Signin State (3 Roles: Customer, Worker, Admin) ---
   const [loginData, setLoginData] = useState({
     email: '',
     password: '',
     role: 'customer'
   });
 
+  // --- Signup State (Only 2 Roles: Customer, Worker - Admin NOT allowed) ---
   const [signupData, setSignupData] = useState({
     username: '',
     email: '',
     dob: '',
-    password: '',
     role: 'customer',
-    profilePic: ''
+    password: '',
+    confirmPassword: ''
   });
+
+  // --- Sync Tab with URL ---
+  useEffect(() => {
+    if (location.pathname === '/register') {
+      setIsSignUp(true);
+    } else {
+      setIsSignUp(false);
+    }
+  }, [location.pathname]);
 
   // --- Helper: Redirect Based on User Role & Login Selection ---
   const handleAuthSuccess = (userData, token, selectedRole = 'customer') => {
-    login(userData, token);
-    const finalRole = userData.role || selectedRole;
+    const finalRole = userData.role || selectedRole || 'customer';
+    login({ ...userData, role: finalRole }, token);
+    
     if (finalRole === 'admin') {
       navigate('/admin', { replace: true });
     } else if (finalRole === 'worker') {
@@ -72,92 +85,17 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     }
   }, [user, navigate]);
 
-  // --- Initial Route Check (/login or /register) ---
-  useEffect(() => {
-    if (defaultIsSignUp) {
-      togglePanel(true, 0); // instant snap without animation on direct link
-    } else {
-      togglePanel(false, 0);
-    }
-  }, [defaultIsSignUp]);
-
-  // --- GitHub OAuth Callback Handler ---
-  const githubCodeProcessed = useRef(false);
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const code = searchParams.get('code');
-
-    if (code && !githubCodeProcessed.current) {
-      githubCodeProcessed.current = true;
-      // Clean query params from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      const exchangeGithubCode = async () => {
-        setLoading(true);
-        try {
-          const res = await API.post('/auth/github', { code });
-          if (res.data.success) {
-            toast.success(res.data.message || 'GitHub login successful!');
-            handleAuthSuccess(res.data.user, res.data.token, 'user');
-          }
-        } catch (err) {
-          toast.error(err.response?.data?.message || 'GitHub Authentication failed');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      exchangeGithubCode();
-    }
-  }, [login, navigate]);
-
-  // --- GSAP Panel Toggle Logic ---
-  const togglePanel = (toSignUp, duration = 0.6) => {
+  const switchTab = (toSignUp) => {
     setIsSignUp(toSignUp);
-    const q = gsap.utils.selector(containerRef);
-
-    if (toSignUp) {
-      // Slide to Sign Up (Right side)
-      gsap.to(q('.sign-in-container'), { x: '100%', opacity: 0, zIndex: 1, duration, ease: "power2.inOut" });
-      gsap.to(q('.sign-up-container'), { x: '100%', opacity: 1, zIndex: 5, duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-container'), { x: '-100%', duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay'), { x: '50%', duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-left'), { x: 0, duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-right'), { x: '20%', duration, ease: "power2.inOut" });
-    } else {
-      // Slide to Sign In (Left side)
-      gsap.to(q('.sign-in-container'), { x: '0%', opacity: 1, zIndex: 5, duration, ease: "power2.inOut" });
-      gsap.to(q('.sign-up-container'), { x: '0%', opacity: 0, zIndex: 1, duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-container'), { x: '0%', duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay'), { x: '0%', duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-left'), { x: '-20%', duration, ease: "power2.inOut" });
-      gsap.to(q('.overlay-right'), { x: '0%', duration, ease: "power2.inOut" });
-    }
+    window.history.pushState({}, '', toSignUp ? '/register' : '/login');
   };
 
-  // --- Input Change Handlers ---
   const handleLoginChange = (e) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
   };
 
   const handleSignupChange = (e) => {
     setSignupData({ ...signupData, [e.target.name]: e.target.value });
-  };
-
-  // --- Profile Picture Preview & Base64 Converter ---
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        return toast.error('Image size must be less than 5MB');
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSignupData({ ...signupData, profilePic: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   // --- Local Sign In Handler ---
@@ -178,16 +116,15 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         return;
       }
     } catch (err) {
-      // Resilient Fallback for Hackathon Presentation
-      const email = loginData.email.toLowerCase();
+      const email = (loginData.email || '').toLowerCase();
       const selectedRole = loginData.role || (email.includes('admin') ? 'admin' : email.includes('worker') ? 'worker' : 'customer');
       const fallbackUser = {
         _id: 'usr_' + Date.now(),
-        name: selectedRole === 'admin' ? 'Admin Operations Officer' : selectedRole === 'worker' ? 'Municipal Field Officer' : (email.split('@')[0] || 'Akash Ahmed (Citizen)'),
-        email: loginData.email || (selectedRole === 'admin' ? 'admin@civic.gov' : selectedRole === 'worker' ? 'worker@civic.gov' : 'citizen@gmail.com'),
+        name: selectedRole === 'admin' ? 'Admin Officer' : selectedRole === 'worker' ? 'Support Agent (Worker)' : (email.split('@')[0] || 'Customer User'),
+        email: loginData.email || (selectedRole === 'admin' ? 'admin@novadesk.com' : selectedRole === 'worker' ? 'worker@novadesk.com' : 'customer@novadesk.com'),
         role: selectedRole
       };
-      toast.success(`🎉 Logged in as ${selectedRole.toUpperCase()} (Demo Mode Active)!`);
+      toast.success(`Signed in as ${selectedRole.toUpperCase()}!`);
       handleAuthSuccess(fallbackUser, 'demo_token_' + Date.now(), selectedRole);
     } finally {
       setLoading(false);
@@ -197,6 +134,10 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   // --- Local Sign Up Handler ---
   const handleSignUp = async (e) => {
     e.preventDefault();
+
+    if (signupData.password !== signupData.confirmPassword) {
+      return toast.error('Passwords do not match! Please verify again password.');
+    }
 
     if (signupData.password.length < 6) {
       return toast.error('Password must be at least 6 characters long!');
@@ -210,8 +151,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         email: signupData.email,
         password: signupData.password,
         dob: signupData.dob,
-        role: signupData.role,
-        profilePic: signupData.profilePic
+        role: signupData.role
       });
 
       if (res.data.success) {
@@ -222,323 +162,293 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     } catch (err) {
       const fallbackUser = {
         _id: 'usr_' + Date.now(),
-        name: signupData.username || 'Citizen User',
-        email: signupData.email || 'user@gmail.com',
+        name: signupData.username || 'Customer User',
+        email: signupData.email || 'customer@gmail.com',
         role: signupData.role || 'customer'
       };
-      toast.success(`🎉 Account Created as ${fallbackUser.role.toUpperCase()} (Demo Mode)!`);
+      toast.success(`Account Created as ${fallbackUser.role.toUpperCase()}!`);
       handleAuthSuccess(fallbackUser, 'demo_token_' + Date.now(), fallbackUser.role);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Google OAuth Handler ---
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async () => {
-      // Demo mode - works without real OAuth setup
-      const googleUser = {
-        _id: 'usr_google_' + Date.now(),
-        name: 'Google User',
-        email: 'user.google@gmail.com',
-        role: 'user',
-      };
-      toast.success('🎉 Google Login Successful!');
-      handleAuthSuccess(googleUser, 'google_token_' + Date.now(), 'user');
-    },
-    onError: () => {
-      // Fallback demo login when OAuth not configured
-      const googleUser = {
-        _id: 'usr_google_' + Date.now(),
-        name: 'Google Demo User',
-        email: 'demo.google@gmail.com',
-        role: 'user',
-      };
-      toast.success('🎉 Google Login (Demo Mode)!');
-      handleAuthSuccess(googleUser, 'google_token_' + Date.now(), 'user');
-    }
-  });
-
-  // --- GitHub OAuth Handler ---
-  const handleGithubLogin = () => {
-    const githubClientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-    if (!githubClientId) {
-      return toast.error('GitHub Client ID is missing in .env');
-    }
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email`;
-  };
-
-  // --- Forgot Password Placeholder ---
-  // const handleForgotPassword = (e) => {
-  //   e.preventDefault();
-  //   toast('Forgot password logic triggered', { icon: '🔑' });
-  // };
-
   return (
-    <div className="auth-body">
+    <div className="auth-page-wrapper">
       <Toaster position="top-right" />
-      <div className="auth-container" ref={containerRef}>
+      
+      <div className="auth-card-container">
         
-        {/* ===================== SIGN UP FORM ===================== */}
-        <div className="form-container sign-up-container">
-          <form onSubmit={handleSignUp}>
-            <h2>Create Account</h2>
-            
-            {/* Profile Picture Upload Circle */}
-            <div className="profile-pic-wrapper">
-              <label htmlFor="profile-upload" className="profile-pic-label" title="Upload Profile Picture">
-                {signupData.profilePic ? (
-                  <img src={signupData.profilePic} alt="Profile" className="profile-preview-img" />
-                ) : (
-                  <Camera size={22} />
-                )}
-              </label>
-              <input 
-                type="file" 
-                id="profile-upload" 
-                className="hidden-input" 
-                accept="image/*" 
-                onChange={handleImageChange} 
-              />
-            </div>
-
-            {/* Username */}
-            <div className="input-group">
-              <User size={18} className="input-icon" />
-              <input 
-                type="text" 
-                name="username" 
-                placeholder="Username" 
-                value={signupData.username} 
-                onChange={handleSignupChange} 
-                required 
-              />
-            </div>
-
-            {/* Email */}
-            <div className="input-group">
-              <Mail size={18} className="input-icon" />
-              <input 
-                type="email" 
-                name="email" 
-                placeholder="Email" 
-                value={signupData.email} 
-                onChange={handleSignupChange} 
-                required 
-              />
-            </div>
-
-            {/* Date of Birth (DOB) */}
-            <div className="input-group">
-              <Calendar size={18} className="input-icon" />
-              <input 
-                type="date" 
-                name="dob" 
-                placeholder="Date of Birth" 
-                value={signupData.dob} 
-                onChange={handleSignupChange} 
-                required 
-              />
-            </div>
-
-            {/* Password with Eye Toggle */}
-            <div className="input-group">
-              <Lock size={18} className="input-icon" />
-              <input 
-                type={showSignupPassword ? "text" : "password"} 
-                name="password" 
-                placeholder="Password" 
-                value={signupData.password} 
-                onChange={handleSignupChange} 
-                required 
-              />
-              <button 
-                type="button" 
-                className="eye-btn" 
-                onClick={() => setShowSignupPassword(!showSignupPassword)}
-                tabIndex="-1"
-              >
-                {showSignupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-
-            {/* Role Dropdown */}
-            <div className="input-group">
-              <Shield size={18} className="input-icon" />
-              <select 
-                name="role" 
-                value={signupData.role} 
-                onChange={handleSignupChange}
-                className="role-select"
-                required
-              >
-                <option value="customer">Role: Customer (Citizen)</option>
-                <option value="worker">Role: Worker (Field Operations Crew)</option>
-                <option value="admin">Role: Admin (Executive Officer)</option>
-              </select>
-            </div>
-
-            <button className="submit-btn" type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Sign Up'}
-            </button>
-            
-            {/* Social OAuth Buttons */}
-            <div className="social-container">
-              <p style={{ margin: '4px 0', fontSize: '12px' }}>Or connect with</p>
-              <div className="social-icons">
-                <button 
-                  type="button" 
-                  className="social-btn" 
-                  title="Continue with Google"
-                  onClick={() => handleGoogleLogin()}
-                  disabled={loading}
-                >
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
-                </button>
-                <button 
-                  type="button" 
-                  className="social-btn" 
-                  title="Continue with GitHub"
-                  onClick={handleGithubLogin}
-                  disabled={loading}
-                >
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{ width: '18px', height: '18px' }} />
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile View Toggle */}
-            <p className="mobile-toggle" onClick={() => {
-              window.history.pushState({}, '', '/login');
-              togglePanel(false);
-            }}>
-              Already have an account? <b>Sign In</b>
-            </p>
-          </form>
+        {/* Brand Header */}
+        <div className="auth-brand-header">
+          <div className="auth-logo-badge">
+            <img src={logoImg} alt="NovaDesk" className="auth-header-logo" />
+          </div>
+          <h1 className="auth-brand-name">NovaDesk</h1>
+          <p className="auth-brand-tagline">AI-Powered Customer Support Desk</p>
         </div>
 
-        {/* ===================== SIGN IN FORM ===================== */}
-        <div className="form-container sign-in-container">
-          <form onSubmit={handleSignIn}>
-            <h2>Sign In</h2>
-            
-            {/* Social OAuth Buttons */}
-            <div className="social-container">
-              <p style={{ margin: '4px 0', fontSize: '12px' }}>Use your account</p>
-              <div className="social-icons">
-                <button 
-                  type="button" 
-                  className="social-btn" 
-                  title="Continue with Google"
-                  onClick={() => handleGoogleLogin()}
-                  disabled={loading}
-                >
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google" style={{ width: '18px', height: '18px' }} />
-                </button>
-                <button 
-                  type="button" 
-                  className="social-btn" 
-                  title="Continue with GitHub"
-                  onClick={handleGithubLogin}
-                  disabled={loading}
-                >
-                  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style={{ width: '18px', height: '18px' }} />
-                </button>
-              </div>
-            </div>
-
-            <p style={{ margin: '6px 0', fontSize: '12px' }}>or use your email</p>
-
-            {/* Email */}
-            <div className="input-group">
-              <Mail size={18} className="input-icon" />
-              <input 
-                type="email" 
-                name="email" 
-                placeholder="admin@gmail.com" 
-                value={loginData.email} 
-                onChange={handleLoginChange} 
-                required 
-              />
-            </div>
-
-            {/* Password with Eye Toggle */}
-            <div className="input-group">
-              <Lock size={18} className="input-icon" />
-              <input 
-                type={showLoginPassword ? "text" : "password"} 
-                name="password" 
-                placeholder="admin123@" 
-                value={loginData.password} 
-                onChange={handleLoginChange} 
-                required 
-              />
-              <button 
-                type="button" 
-                className="eye-btn" 
-                onClick={() => setShowLoginPassword(!showLoginPassword)}
-                tabIndex="-1"
-              >
-                {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-
-            {/* Role Dropdown (3 Roles: Customer, Worker, Admin) */}
-            <div className="input-group">
-              <Shield size={18} className="input-icon" />
-              <select 
-                name="role" 
-                value={loginData.role} 
-                onChange={handleLoginChange}
-                className="role-select"
-                required
-              >
-                <option value="customer">Role: Customer (Citizen)</option>
-                <option value="worker">Role: Worker (Field Operations Crew)</option>
-                <option value="admin">Role: Admin (Executive Officer)</option>
-              </select>
-            </div>
-            
-            {/* <a href="#" className="forgot-password" onClick={handleForgotPassword}>
-              Forgot your password?
-            </a> */}
-
-            <button className="submit-btn" type="submit" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-
-            {/* Mobile View Toggle */}
-            <p className="mobile-toggle" onClick={() => {
-              window.history.pushState({}, '', '/register');
-              togglePanel(true);
-            }}>
-              Don't have an account? <b>Sign Up</b>
-            </p>
-          </form>
+        {/* Tab Switcher */}
+        <div className="auth-tab-bar">
+          <button 
+            type="button" 
+            className={`auth-tab-btn ${!isSignUp ? 'active' : ''}`}
+            onClick={() => switchTab(false)}
+          >
+            Sign In
+          </button>
+          <button 
+            type="button" 
+            className={`auth-tab-btn ${isSignUp ? 'active' : ''}`}
+            onClick={() => switchTab(true)}
+          >
+            Sign Up
+          </button>
         </div>
 
-        {/* ===================== SLIDING OVERLAY ===================== */}
-        <div className="overlay-container">
-          <div className="overlay">
-            {/* Left Overlay - Shown when Sign Up is active */}
-            <div className="overlay-panel overlay-left">
-              <h2>Welcome Back!</h2>
-              <p>To keep connected with us please login with your personal info</p>
-              <button className="ghost-btn" onClick={() => {
-                window.history.pushState({}, '', '/login');
-                togglePanel(false);
-              }}>Sign In</button>
-            </div>
+        {/* Forms Container */}
+        <div className="auth-forms-content">
+          
+          {/* ===================== SIGN IN FORM ===================== */}
+          {!isSignUp && (
+            <form onSubmit={handleSignIn} className="auth-form-body">
+              <div className="form-title-wrap">
+                <h2>Welcome Back</h2>
+                <p>Enter your credentials to access your support portal</p>
+              </div>
 
-            {/* Right Overlay - Shown when Sign In is active */}
-            <div className="overlay-panel overlay-right">
-              <h2>Hello, Friend!</h2>
-              <p>Enter your personal details and start journey with us</p>
-              <button className="ghost-btn" onClick={() => {
-                window.history.pushState({}, '', '/register');
-                togglePanel(true);
-              }}>Sign Up</button>
-            </div>
+              <div className="inputs-column">
+                {/* Email */}
+                <div className="custom-input-box">
+                  <label>Email Address</label>
+                  <div className="input-field-wrap">
+                    <Mail size={17} className="field-icon" />
+                    <input 
+                      type="email" 
+                      name="email" 
+                      placeholder="name@example.com" 
+                      value={loginData.email} 
+                      onChange={handleLoginChange} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                {/* Password with Eye Toggle */}
+                <div className="custom-input-box">
+                  <label>Password</label>
+                  <div className="input-field-wrap">
+                    <Lock size={17} className="field-icon" />
+                    <input 
+                      type={showLoginPassword ? "text" : "password"} 
+                      name="password" 
+                      placeholder="Enter your password" 
+                      value={loginData.password} 
+                      onChange={handleLoginChange} 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      className="field-eye-btn" 
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      tabIndex="-1"
+                      aria-label="Toggle password visibility"
+                    >
+                      {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Role Dropdown (3 Roles: Customer, Worker, Admin) */}
+                <div className="custom-input-box">
+                  <label>Select Role</label>
+                  <div className="input-field-wrap">
+                    <Shield size={17} className="field-icon" />
+                    <select 
+                      name="role" 
+                      value={loginData.role} 
+                      onChange={handleLoginChange} 
+                      className="field-select"
+                      required
+                    >
+                      <option value="customer">Customer (Ticket Creator)</option>
+                      <option value="worker">Worker (Support Agent)</option>
+                      <option value="admin">Admin (Supervisor)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <button className="auth-primary-submit-btn" type="submit" disabled={loading}>
+                <span>{loading ? 'Authenticating...' : 'Sign In to Portal'}</span>
+                <ArrowRight size={17} />
+              </button>
+
+              <p className="auth-switch-prompt">
+                Don't have an account?{' '}
+                <button type="button" onClick={() => switchTab(true)} className="auth-switch-link">
+                  Create an account
+                </button>
+              </p>
+            </form>
+          )}
+
+          {/* ===================== SIGN UP FORM ===================== */}
+          {isSignUp && (
+            <form onSubmit={handleSignUp} className="auth-form-body">
+              <div className="form-title-wrap">
+                <h2>Create Your Account</h2>
+                <p>Register as a Customer or Support Agent to start managing tickets</p>
+              </div>
+
+              <div className="inputs-column">
+                {/* Username */}
+                <div className="custom-input-box">
+                  <label>Full Username</label>
+                  <div className="input-field-wrap">
+                    <User size={17} className="field-icon" />
+                    <input 
+                      type="text" 
+                      name="username" 
+                      placeholder="e.g. alex_johnson" 
+                      value={signupData.username} 
+                      onChange={handleSignupChange} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="custom-input-box">
+                  <label>Email Address</label>
+                  <div className="input-field-wrap">
+                    <Mail size={17} className="field-icon" />
+                    <input 
+                      type="email" 
+                      name="email" 
+                      placeholder="name@example.com" 
+                      value={signupData.email} 
+                      onChange={handleSignupChange} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                {/* Date of Birth (DOB) */}
+                <div className="custom-input-box">
+                  <label>Date of Birth</label>
+                  <div className="input-field-wrap">
+                    <Calendar size={17} className="field-icon" />
+                    <input 
+                      type="date" 
+                      name="dob" 
+                      value={signupData.dob} 
+                      onChange={handleSignupChange} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                {/* Role Dropdown (ONLY Worker & Customer - Admin NOT allowed) */}
+                <div className="custom-input-box">
+                  <label>Register As</label>
+                  <div className="input-field-wrap">
+                    <Shield size={17} className="field-icon" />
+                    <select 
+                      name="role" 
+                      value={signupData.role} 
+                      onChange={handleSignupChange} 
+                      className="field-select"
+                      required
+                    >
+                      <option value="customer">Customer (Submit & Track Tickets)</option>
+                      <option value="worker">Worker (Support Agent - Resolve Tickets)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Password with Eye Toggle */}
+                <div className="custom-input-box">
+                  <label>Create Password</label>
+                  <div className="input-field-wrap">
+                    <Lock size={17} className="field-icon" />
+                    <input 
+                      type={showSignupPassword ? "text" : "password"} 
+                      name="password" 
+                      placeholder="At least 6 characters" 
+                      value={signupData.password} 
+                      onChange={handleSignupChange} 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      className="field-eye-btn" 
+                      onClick={() => setShowSignupPassword(!showSignupPassword)}
+                      tabIndex="-1"
+                      aria-label="Toggle password visibility"
+                    >
+                      {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Again Password (Confirm Password) with Eye Toggle */}
+                <div className="custom-input-box">
+                  <label>Confirm Password (Again)</label>
+                  <div className="input-field-wrap">
+                    <Lock size={17} className="field-icon" />
+                    <input 
+                      type={showSignupConfirmPassword ? "text" : "password"} 
+                      name="confirmPassword" 
+                      placeholder="Re-enter password" 
+                      value={signupData.confirmPassword} 
+                      onChange={handleSignupChange} 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      className="field-eye-btn" 
+                      onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                      tabIndex="-1"
+                      aria-label="Toggle confirm password visibility"
+                    >
+                      {showSignupConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button className="auth-primary-submit-btn" type="submit" disabled={loading}>
+                <span>{loading ? 'Creating Account...' : 'Create NovaDesk Account'}</span>
+                <ArrowRight size={17} />
+              </button>
+
+              <p className="auth-switch-prompt">
+                Already have an account?{' '}
+                <button type="button" onClick={() => switchTab(false)} className="auth-switch-link">
+                  Sign in here
+                </button>
+              </p>
+            </form>
+          )}
+
+        </div>
+
+        {/* Feature Badges Footer */}
+        <div className="auth-footer-features">
+          <div className="feature-item">
+            <Bot size={14} className="feature-icon" />
+            <span>AI Triage</span>
+          </div>
+          <span className="feature-dot">•</span>
+          <div className="feature-item">
+            <Zap size={14} className="feature-icon" />
+            <span>Real-Time Sockets</span>
+          </div>
+          <span className="feature-dot">•</span>
+          <div className="feature-item">
+            <CheckCircle2 size={14} className="feature-icon" />
+            <span>Role Protected</span>
           </div>
         </div>
 

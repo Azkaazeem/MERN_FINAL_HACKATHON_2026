@@ -8,15 +8,20 @@ import Admin from './pages/Admin/Admin';
 import Worker from './pages/Worker/Worker';
 import Analytics from './pages/Analytics/Analytics';
 import Alerts from './pages/Alerts/Alerts';
+import MyComplaints from './pages/MyComplaints/MyComplaints';
 import ProtectedRoute from './components/ProtectedRoute';
 import CustomCursor from './components/CustomCursor/CustomCursor';
 import Chatbot from './components/Chatbot/Chatbot';
+import Navbar from './components/Navbar';
 
 function App() {
   return (
     <Router>
       {/* Global Smooth Custom Cursor */}
       <CustomCursor />
+
+      {/* Global Navigation Bar across all pages */}
+      <Navbar />
 
       {/* Floating AI Chatbot Widget */}
       <Chatbot />
@@ -26,27 +31,23 @@ function App() {
         <Route path="/login" element={<Authentication defaultIsSignUp={false} />} />
         <Route path="/register" element={<Authentication defaultIsSignUp={true} />} />
 
-        {/* Protected Customer & General Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/home" element={<Home />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/profile" element={<Profile />} />
-        </Route>
-
-        {/* Protected Worker Route (Worker & Admin) */}
-        <Route element={<ProtectedRoute workerOnly={true} />}>
-          <Route path="/worker" element={<Worker />} />
-        </Route>
+        {/* Public & Customer Accessible Pages (Anonymous User has access to all pages) */}
+        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/alerts" element={<Alerts />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/my-complaints" element={<MyComplaints />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/worker" element={<Worker />} />
 
         {/* Protected Admin Route (STRICTLY Admin Only) */}
         <Route element={<ProtectedRoute adminOnly={true} />}>
           <Route path="/admin" element={<Admin />} />
         </Route>
 
-        {/* Default fallback route */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Default fallback route -> home */}
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Router>
   );

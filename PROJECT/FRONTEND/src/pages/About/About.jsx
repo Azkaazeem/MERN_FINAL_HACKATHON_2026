@@ -1,7 +1,8 @@
-import React from 'react';
-import Navbar from '../../components/Navbar';
+import React, { useEffect, useRef } from 'react';
 import Footer from '../../components/Footer/Footer';
 import profileImg from '../../assets/profile img.png';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { 
   Globe, 
   Mail, 
@@ -12,12 +13,47 @@ import {
 } from 'lucide-react';
 import './About.css';
 
-const About = () => {
-  return (
-    <div className="about-page-container">
-      {/* Top Navigation */}
-      <Navbar />
+gsap.registerPlugin(ScrollTrigger);
 
+const About = () => {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.about-hero h1', { opacity: 0, y: 24, duration: 0.7, ease: 'power3.out' });
+      gsap.from('.about-hero-subtitle', { opacity: 0, y: 16, duration: 0.7, delay: 0.15, ease: 'power2.out' });
+      
+      gsap.from('.founder-card', {
+        scrollTrigger: {
+          trigger: '.founder-card',
+          start: 'top 85%',
+          toggleActions: 'play none none none'
+        },
+        opacity: 0,
+        y: 35,
+        duration: 0.75,
+        ease: 'power2.out'
+      });
+
+      gsap.from('.tech-stack-card', {
+        scrollTrigger: {
+          trigger: '.tech-stack-section',
+          start: 'top 85%',
+          toggleActions: 'play none none none'
+        },
+        opacity: 0,
+        y: 25,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: 'power2.out'
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <div className="about-page-container" ref={containerRef}>
       <div className="about-content-wrapper">
         
         {/* ================= HERO SECTION ================= */}

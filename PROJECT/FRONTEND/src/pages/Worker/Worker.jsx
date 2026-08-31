@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
+import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
+import { showAuthAlert } from '../../utils/authAlert';
 import API from '../../api/axios';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
@@ -25,6 +26,7 @@ import './Worker.css';
 
 const Worker = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [filter, setFilter] = useState('All');
@@ -34,28 +36,26 @@ const Worker = () => {
 
   // Fetch real complaints from Database
   const fetchWorkerTasks = async () => {
-    setTasksLoading(true);
     try {
+      setTasksLoading(true);
       const res = await API.get('/complaints');
-      if (res.data.success && res.data.complaints) {
-        const mapped = res.data.complaints.map(c => ({
-          id: c.ticketId || c._id,
-          _id: c._id,
+      const data = res.data?.data || res.data || [];
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map(c => ({
+          id: c.ticketId || c._id || (Math.floor(100 + Math.random() * 900)).toString(),
           title: c.title,
           category: c.category,
           priority: c.priority,
           status: c.status,
-          location: c.location,
-          assignedDept: c.department,
-          aiSummary: c.aiSummary || 'Automated municipal inspection required.',
-          slaRemaining: c.status === 'Resolved' ? 'Completed' : c.priority === 'Critical' ? '1h 45m' : '4h 12m',
-          citizenContact: c.citizenContact || '0300-0000000',
-          date: new Date(c.createdAt || Date.now()).toLocaleString('en-GB')
+          assignedDept: c.department || c.assigned_department || 'Municipal Works',
+          location: c.location || 'Central District',
+          slaRemaining: c.status === 'Resolved' ? 'Completed' : (c.priority === 'Critical' ? '1 hr 45 min' : '14 hrs'),
+          timeAgo: 'Just now'
         }));
         setTasks(mapped);
       }
-    } catch (err) {
-      setTasks([]);
+    } catch (e) {
+      console.warn('API fetch tasks fallback:', e);
     } finally {
       setTasksLoading(false);
     }
@@ -71,13 +71,17 @@ const Worker = () => {
   const resolvedCount = tasks.filter(t => t.status === 'Resolved').length;
   const criticalCount = tasks.filter(t => t.priority === 'Critical' && t.status !== 'Resolved').length;
 
-  const handleStatusChange = (taskId, newStatus) => {
+  const handleStatusChange = async (taskId, newStatus) => {
+    if (!user) {
+      showAuthAlert(navigate, 'activate or update field work orders');
+      return;
+    }
     Swal.fire({
-      title: `Start Work on ${taskId}?`,
-      text: 'This will notify the citizen and start your active SLA timer in database.',
-      icon: 'info',
+      title: 'Update Work Order Status?',
+      text: `Change task ${taskId} to "${newStatus}" and log timestamp in database?`,
+      icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#06b6d4',
+      confirmButtonColor: '#00e5ff',
       cancelButtonColor: '#64748b',
       confirmButtonText: 'Yes, Start Order'
     }).then(async (result) => {
@@ -103,6 +107,10 @@ const Worker = () => {
 
   const handleCompleteTask = async (e) => {
     e.preventDefault();
+    if (!user) {
+      showAuthAlert(navigate, 'submit work order resolution proof');
+      return;
+    }
     if (!selectedTask) return;
     
     try {
@@ -125,16 +133,16 @@ const Worker = () => {
     
     Swal.fire({
       icon: 'success',
-      title: '🎉 Resolution Saved to Database!',
+      title: 'Resolution Saved to Database!',
       html: `
         <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
           <p><strong>Order ID:</strong> ${selectedTask.id}</p>
           <p><strong>Status:</strong> <span style="color: #10b981; font-weight: bold;">RESOLVED &amp; CLOSED IN DB</span></p>
           <p><strong>Notes:</strong> ${resolutionNotes || 'Field inspection completed.'}</p>
-          <p style="font-size: 12px; color: #64748b; margin-top: 8px;">✅ Citizen notified &amp; SLA compliance logged in database.</p>
+          <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Citizen notified &amp; SLA compliance logged in database.</p>
         </div>
       `,
-      confirmButtonColor: '#06b6d4',
+      confirmButtonColor: '#00e5ff',
       confirmButtonText: 'Great, Next Task'
     });
 
@@ -154,16 +162,11 @@ const Worker = () => {
   return (
     <div className="worker-page-container">
       <Toaster position="top-right" />
-      <Navbar />
 
       <main className="worker-main-content">
         {/* ================= HERO HEADER ================= */}
         <section className="worker-hero-section">
           <div className="worker-hero-content">
-            <div className="worker-badge">
-              <HardHat size={16} />
-              <span>Municipal Field Crew Console</span>
-            </div>
             <h1>
               Welcome, <span className="highlight-text">{user?.name || 'Field Officer'}</span>
             </h1>
@@ -238,7 +241,7 @@ const Worker = () => {
             className="emergency-sos-btn"
             onClick={() => {
               Swal.fire({
-                title: '🚨 Emergency Backup Requested!',
+                title: 'Emergency Backup Requested!',
                 text: 'High-priority alert dispatched to Central Control Room & District Engineering Fleet with your current GPS coordinates.',
                 icon: 'warning',
                 confirmButtonColor: '#ef4444',
@@ -265,7 +268,6 @@ const Worker = () => {
                 <div className="task-id-badge">
                   <span className="ticket-tag">{task.id}</span>
                   <span className={`priority-tag ${task.priority.toLowerCase()}`}>
-                    {task.priority === 'Critical' && '🔥 '}
                     {task.priority} Priority
                   </span>
                 </div>
@@ -322,7 +324,7 @@ const Worker = () => {
                     </button>
                     <button 
                       className="action-btn photo-btn"
-                      onClick={() => toast.success('📸 Site Inspection Photo Uploaded & Tagged with GPS!')}
+                      onClick={() => toast.success('Site Inspection Photo Uploaded & Tagged with GPS!')}
                       title="Upload Field Photo"
                     >
                       <Camera size={15} />
@@ -347,7 +349,9 @@ const Worker = () => {
             <div className="resolution-modal" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <h3>Submit Work Resolution for {selectedTask.id}</h3>
-                <button className="close-modal-btn" onClick={() => setIsResolving(false)}>✕</button>
+                <button className="close-modal-btn" onClick={() => setIsResolving(false)}>
+                  <X size={16} />
+                </button>
               </div>
 
               <form onSubmit={handleCompleteTask}>
@@ -366,7 +370,7 @@ const Worker = () => {
 
                 <div className="form-group">
                   <label>Upload Resolution Photo Proof:</label>
-                  <div className="upload-box-field" onClick={() => toast.success('📸 Photo Attached: resolution_proof.jpg')}>
+                  <div className="upload-box-field" onClick={() => toast.success('Photo Attached: resolution_proof.jpg')}>
                     <Camera size={24} />
                     <span>Click to Capture / Attach Before-After Photo</span>
                   </div>

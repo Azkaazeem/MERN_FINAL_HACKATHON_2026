@@ -47,10 +47,10 @@
   overflow: hidden;
 }
 
-/* Top Banner with Vibrant Cyan Gradient */
+/* Top Banner with Solid Cyan */
 .profile-banner {
   height: 110px;
-  background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+  background-color: var(--primary-color);
   position: relative;
 }
 
@@ -85,7 +85,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+  background-color: var(--primary-color);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -285,11 +285,11 @@
 
 /* Submit Button */
 .profile-submit-btn {
-  background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+  background-color: var(--primary-color);
   color: #ffffff;
   border: none;
   padding: 13px;
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   font-size: 0.94rem;
   font-weight: 700;
   cursor: pointer;
@@ -299,12 +299,12 @@
   gap: 8px;
   margin-top: 10px;
   box-shadow: 0 4px 14px var(--primary-glow);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .profile-submit-btn:hover:not(:disabled) {
+  background-color: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px var(--primary-glow);
 }
 
 .profile-submit-btn:disabled {

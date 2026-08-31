@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../api/axios';
@@ -247,7 +246,7 @@ const Admin = () => {
   // Inspect Complaint Details
   const handleInspectComplaint = (c) => {
     Swal.fire({
-      title: `📋 Ticket Details: ${c.id}`,
+      title: `Ticket Details: ${c.id}`,
       html: `
         <div style="text-align: left; font-size: 13px; line-height: 1.6;">
           <p><strong>Title:</strong> ${c.title}</p>
@@ -284,7 +283,6 @@ const Admin = () => {
   return (
     <div className="admin-layout-container">
       <Toaster position="top-right" />
-      <Navbar />
 
       <div className="admin-main-body">
         {/* ================= MINIMALIST SIDEBAR ================= */}
@@ -376,7 +374,7 @@ const Admin = () => {
 
               {/* Incident Trend Chart */}
               <div className="chart-wrapper-card">
-                <h3>📈 Real-time Incident &amp; Resolution Velocity</h3>
+                <h3>Real-time Incident &amp; Resolution Velocity</h3>
                 <div style={{ height: 260, width: '100%', marginTop: 12 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={INCIDENT_TREND}>

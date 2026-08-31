@@ -290,19 +290,20 @@
 }
 
 .inspect-btn {
-  background: var(--primary-color);
+  background-color: var(--primary-color);
   color: #fff;
   border: none;
   padding: 10px;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  font-weight: 700;
   font-size: 0.86rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  box-shadow: 0 2px 10px var(--primary-glow);
+  transition: background-color 0.2s ease;
 }
 
 .inspect-btn:hover {
-  background: var(--primary-hover);
+  background-color: var(--primary-hover);
 }
 
 /* Charts Grid */

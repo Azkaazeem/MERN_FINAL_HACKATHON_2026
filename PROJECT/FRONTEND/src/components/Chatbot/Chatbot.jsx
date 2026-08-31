@@ -21,7 +21,7 @@ const Chatbot = () => {
     {
       id: 1,
       sender: 'bot',
-      text: "👋 Hi there! I'm your AI Assistant. How can I help you today?",
+      text: "Hi there! I am your NovaDesk AI Support Assistant. How can I help you today?",
       time: 'Just now'
     }
   ]);
@@ -55,23 +55,23 @@ const Chatbot = () => {
 
     // Generate Intelligent Civic AI Response
     setTimeout(() => {
-      let botReply = `🤖 I have analyzed your query regarding "${query}". You can report this issue via the Home page form, and our system will automatically categorize and dispatch it!`;
+      let botReply = `I have analyzed your query regarding "${query}". You can report this issue via the Home page form, and our system will automatically categorize and dispatch it!`;
       const q = query.toLowerCase();
 
       if (q.includes('water') || q.includes('leak') || q.includes('pipe') || q.includes('sewage')) {
-        botReply = "💧 For water pipe leaks or sewage overflow, submit a report selecting 'Water & Drainage'. Emergency main pipe bursts are dispatched to WSSB with a 4-hour inspection SLA!";
+        botReply = "For water pipe leaks or sewage overflow, submit a report selecting 'Water & Drainage'. Emergency main pipe bursts are dispatched to WSSB with a 4-hour inspection SLA!";
       } else if (q.includes('road') || q.includes('pothole') || q.includes('street')) {
-        botReply = "🛣️ Potholes and damaged asphalt are automatically assigned to the Municipal Works & Engineering Department for asphalt repair.";
+        botReply = "Potholes and damaged asphalt are automatically assigned to the Municipal Works & Engineering Department for asphalt repair.";
       } else if (q.includes('garbage') || q.includes('trash') || q.includes('waste')) {
-        botReply = "🗑️ Solid waste and bin overflows receive mandatory 24-hour cleanup SLA dispatched to Solid Waste Management Authority (SWMA).";
+        botReply = "Solid waste and bin overflows receive mandatory 24-hour cleanup SLA dispatched to Solid Waste Management Authority (SWMA).";
       } else if (q.includes('power') || q.includes('wire') || q.includes('spark') || q.includes('electric')) {
-        botReply = "⚡ Exposed electrical wiring and sparking transformers are classified Critical Urgency with direct emergency line dispatch.";
+        botReply = "Exposed electrical wiring and sparking transformers are classified Critical Urgency with direct emergency line dispatch.";
       } else if (q.includes('right') || q.includes('law') || q.includes('sla')) {
-        botReply = "📜 Citizen Rights: Every citizen has the right to clean water, safe roads, unpolluted environment, and timely government service response within 24-48 hours.";
+        botReply = "Customer Rights: Every citizen has the right to clean water, safe roads, unpolluted environment, and timely response within 24-48 hours.";
       } else if (q.includes('track') || q.includes('status')) {
-        botReply = "🔍 You can track any complaint in real time by scrolling to the 'Track Complaint Status' section and entering your Ticket ID!";
+        botReply = "You can track any ticket in real time by scrolling to the 'Track Ticket Status' section and entering your Ticket ID!";
       } else if (q.includes('hello') || q.includes('hi') || q.includes('hey')) {
-        botReply = "👋 Hello! I am CivicBot, your AI Assistant. How can I help you report an infrastructure issue or understand your civic rights today?";
+        botReply = "Hello! I am your NovaDesk AI Assistant. How can I help you report an issue or track your support ticket today?";
       }
 
       const botMsg = {
@@ -100,7 +100,7 @@ const Chatbot = () => {
           {/* Right: Message & Title */}
           <div className="bubble-text-content">
             <div className="bubble-title">AI Assistant</div>
-            <div className="bubble-msg">👋 Need help? Chat with me!</div>
+            <div className="bubble-msg">Need help? Chat with me!</div>
           </div>
 
           {/* Close 'X' Button to dismiss prompt */}

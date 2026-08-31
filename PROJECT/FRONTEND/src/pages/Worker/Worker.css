@@ -330,12 +330,15 @@
 }
 
 .start-btn {
-  background: var(--primary-color);
+  background-color: var(--primary-color);
   color: #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px var(--primary-glow);
+  transition: background-color 0.2s ease;
 }
 
 .start-btn:hover {
-  background: var(--primary-hover);
+  background-color: var(--primary-hover);
 }
 
 .resolve-btn {
