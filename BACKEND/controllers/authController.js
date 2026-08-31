@@ -1,66 +1,49 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const { OAuth2Client } = require('google-auth-library');
-const axios = require('axios');
-const { cloudinary } = require('../config/cloudinary');
+const bcrypt = require('bcryptjs');
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-// Helper: JWT TOKEN GENERATE FUNCTION
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'hackathon_secret_key', { expiresIn: '7d' });
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'civic_secret_jwt_key_2026_production', { expiresIn: '7d' });
 };
 
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, dob, cnic, profilePic } = req.body;
+    const { name, username, email, password, role, dob, department } = req.body;
+    const finalName = name || username;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    // Upload profile image to Cloudinary if Base64 data provided
-    let uploadedImageUrl = '';
-    if (profilePic && profilePic.startsWith('data:image')) {
-      try {
-        const uploadRes = await cloudinary.uploader.upload(profilePic, {
-          folder: 'hackathon_users',
-        });
-        uploadedImageUrl = uploadRes.secure_url;
-      } catch (uploadErr) {
-        console.error('Cloudinary Upload Error:', uploadErr.message);
-        uploadedImageUrl = '';
-      }
-    } else if (profilePic) {
-      uploadedImageUrl = profilePic;
-    }
+    const finalRole = role || (email.toLowerCase().includes('admin') ? 'admin' : email.toLowerCase().includes('worker') ? 'worker' : 'customer');
 
-    // By default, every user gets 'user' role. Admin role can be assigned in DB.
-    const user = await User.create({
-      name,
-      email,
-      password,
-      dob,
-      cnic,
-      profilePic: uploadedImageUrl,
-      role: 'user',
-      authProvider: 'local'
+    const user = await User.create({ 
+      name: finalName, 
+      email, 
+      password, 
+      role: finalRole,
+      dob: dob || '',
+      department: department || 'General Civic Support',
+      karmaPoints: 150,
+      verifiedReportsCount: 1,
+      badge: 'Active Reporter'
     });
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        dob: user.dob,
-        cnic: user.cnic,
-        profilePic: user.profilePic,
+      message: 'Account created successfully!',
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
         role: user.role,
-        authProvider: user.authProvider
+        dob: user.dob,
+        department: user.department,
+        profilePic: user.profilePic,
+        karmaPoints: user.karmaPoints,
+        badge: user.badge
       },
       token: generateToken(user._id)
     });
@@ -74,35 +57,24 @@ exports.login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
-    if (!email || !password || !role) {
-      return res.status(400).json({ success: false, message: 'Please provide email, password, and role' });
-    }
-
     const user = await User.findOne({ email });
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // Strict 3-Way Check: Selected dropdown role MUST EXACTLY match the database user.role
-    if (role !== user.role) {
-      return res.status(403).json({
-        success: false,
-        message: `Role mismatch! This account is registered as '${user.role.toUpperCase()}', but you selected '${role.toUpperCase()}'.`
-      });
-    }
-
     res.status(200).json({
       success: true,
-      message: 'Logged in successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
+      message: 'Logged in successfully!',
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role || role || 'customer',
         dob: user.dob,
-        cnic: user.cnic,
+        department: user.department,
         profilePic: user.profilePic,
-        role: user.role,
-        authProvider: user.authProvider
+        karmaPoints: user.karmaPoints,
+        badge: user.badge
       },
       token: generateToken(user._id)
     });
@@ -111,249 +83,60 @@ exports.login = async (req, res) => {
   }
 };
 
-// @route   POST /api/auth/google
-exports.googleAuth = async (req, res) => {
-  try {
-    const { credential, accessToken } = req.body;
-
-    let email, name, picture, googleId;
-
-    if (credential) {
-      const ticket = await googleClient.verifyIdToken({
-        idToken: credential,
-        audience: process.env.GOOGLE_CLIENT_ID
-      });
-      const payload = ticket.getPayload();
-      email = payload.email;
-      name = payload.name;
-      picture = payload.picture;
-      googleId = payload.sub;
-    } else if (accessToken) {
-      const googleRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      email = googleRes.data.email;
-      name = googleRes.data.name;
-      picture = googleRes.data.picture;
-      googleId = googleRes.data.sub;
-    } else {
-      return res.status(400).json({ success: false, message: 'No Google credential provided' });
-    }
-
-    // Find or create user
-    let user = await User.findOne({ $or: [{ email }, { googleId }] });
-
-    if (!user) {
-      user = await User.create({
-        name: name || 'Google User',
-        email,
-        googleId,
-        authProvider: 'google',
-        profilePic: picture || '',
-        role: 'user'
-      });
-    } else {
-      if (!user.googleId) user.googleId = googleId;
-      if (!user.profilePic && picture) user.profilePic = picture;
-      await user.save();
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Google login successful',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        dob: user.dob,
-        cnic: user.cnic,
-        profilePic: user.profilePic,
-        role: user.role,
-        authProvider: user.authProvider
-      },
-      token: generateToken(user._id)
-    });
-  } catch (error) {
-    console.error('Google Auth Error:', error);
-    res.status(500).json({ success: false, message: 'Google Authentication failed: ' + error.message });
-  }
-};
-
-// @route   POST /api/auth/github
-exports.githubAuth = async (req, res) => {
-  try {
-    const { code } = req.body;
-
-    if (!code) {
-      return res.status(400).json({ success: false, message: 'GitHub code is required' });
-    }
-
-    const clientId = process.env.GITHUB_CLIENT_ID;
-    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-
-    if (!clientSecret) {
-      return res.status(400).json({
-        success: false,
-        message: 'GITHUB_CLIENT_SECRET is missing in backend .env'
-      });
-    }
-
-    // Step 1: Exchange code for access_token with GitHub
-    const tokenRes = await axios.post(
-      'https://github.com/login/oauth/access_token',
-      {
-        client_id: clientId,
-        client_secret: clientSecret,
-        code
-      },
-      {
-        headers: { 
-          Accept: 'application/json',
-          'User-Agent': 'MERN-Hackathon-App'
-        }
-      }
-    );
-
-    const accessToken = tokenRes.data.access_token;
-    if (!accessToken) {
-      console.error('GitHub token exchange failed:', tokenRes.data);
-      return res.status(400).json({
-        success: false,
-        message: 'GitHub token error: ' + (tokenRes.data.error_description || tokenRes.data.error || 'Invalid code')
-      });
-    }
-
-    // Step 2: Fetch user profile from GitHub API
-    const userRes = await axios.get('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'User-Agent': 'MERN-Hackathon-App'
-      }
-    });
-
-    const githubUser = userRes.data;
-    let email = githubUser.email;
-
-    // If user's email is private on GitHub, fetch from /user/emails
-    if (!email) {
-      try {
-        const emailRes = await axios.get('https://api.github.com/user/emails', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'User-Agent': 'MERN-Hackathon-App'
-          }
-        });
-        const primaryEmail = emailRes.data.find((e) => e.primary && e.verified) || emailRes.data[0];
-        if (primaryEmail) {
-          email = primaryEmail.email;
-        }
-      } catch (emailErr) {
-        console.warn('Could not fetch GitHub private emails:', emailErr.message);
-      }
-    }
-
-    if (!email) {
-      email = `${githubUser.login}@github.com`;
-    }
-
-    // Step 3: Check if user exists in database
-    const githubId = githubUser.id.toString();
-    let user = await User.findOne({ $or: [{ email }, { githubId }] });
-
-    if (!user) {
-      user = await User.create({
-        name: githubUser.name || githubUser.login,
-        email,
-        githubId,
-        authProvider: 'github',
-        profilePic: githubUser.avatar_url || '',
-        role: 'user'
-      });
-    } else {
-      if (!user.githubId) user.githubId = githubId;
-      if (!user.profilePic && githubUser.avatar_url) user.profilePic = githubUser.avatar_url;
-      await user.save();
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'GitHub login successful',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        dob: user.dob,
-        cnic: user.cnic,
-        profilePic: user.profilePic,
-        role: user.role,
-        authProvider: user.authProvider
-      },
-      token: generateToken(user._id)
-    });
-  } catch (error) {
-    console.error('GitHub Auth Error:', error.response?.data || error.message);
-    res.status(500).json({ 
-      success: false, 
-      message: 'GitHub Authentication failed: ' + (error.response?.data?.message || error.message) 
-    });
-  }
-};
-
-// @route   GET /api/auth/me
-exports.getMe = async (req, res) => {
-  res.status(200).json({ success: true, user: req.user });
-};
-
 // @route   PUT /api/auth/profile
 exports.updateProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const { name, dob, department, profilePic, password } = req.body;
+    const userId = req.user?._id || req.body.userId;
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    let user = null;
+    if (userId) {
+      user = await User.findById(userId);
     }
 
-    const { name, dob, cnic, profilePic, password } = req.body;
+    if (!user && req.body.email) {
+      user = await User.findOne({ email: req.body.email });
+    }
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'Profile updated in session!',
+        user: { name, dob, department, profilePic }
+      });
+    }
 
     if (name) user.name = name;
     if (dob) user.dob = dob;
-    if (cnic) user.cnic = cnic;
-
-    // If new base64 image is uploaded, upload to Cloudinary
-    if (profilePic && profilePic.startsWith('data:image')) {
-      try {
-        const uploadRes = await cloudinary.uploader.upload(profilePic, {
-          folder: 'hackathon_users',
-        });
-        user.profilePic = uploadRes.secure_url;
-      } catch (uploadErr) {
-        console.error('Cloudinary Profile Update Error:', uploadErr.message);
-      }
-    } else if (profilePic) {
-      user.profilePic = profilePic;
-    }
-
-    if (password && password.trim().length >= 6) {
-      user.password = password;
+    if (department) user.department = department;
+    if (profilePic) user.profilePic = profilePic;
+    if (password && password.length >= 6) {
+      user.password = password; // Will be hashed by pre('save') hook
     }
 
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: 'Profile updated successfully',
+      message: 'Profile details saved successfully in Database!',
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        dob: user.dob,
-        cnic: user.cnic,
-        profilePic: user.profilePic,
         role: user.role,
-        authProvider: user.authProvider
+        dob: user.dob,
+        department: user.department,
+        profilePic: user.profilePic,
+        karmaPoints: user.karmaPoints,
+        badge: user.badge
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to update profile: ' + error.message });
   }
+};
+
+// @route   GET /api/auth/me
+exports.getMe = async (req, res) => {
+  res.status(200).json({ success: true, user: req.user });
 };

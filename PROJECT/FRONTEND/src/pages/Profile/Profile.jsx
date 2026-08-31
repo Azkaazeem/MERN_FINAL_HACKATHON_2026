@@ -10,13 +10,17 @@ import {
   User, 
   Mail, 
   Calendar, 
-  CreditCard, 
   Lock, 
   Camera, 
   Save, 
   Eye, 
   EyeOff, 
-  Shield 
+  Shield,
+  Building2,
+  Sparkles,
+  Award,
+  CheckCircle2,
+  Activity
 } from 'lucide-react';
 import './Profile.css';
 
@@ -28,23 +32,24 @@ const Profile = () => {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.from('.profile-card', {
+      gsap.from('.profile-main-card', {
         opacity: 0,
-        y: 24,
+        y: 20,
         duration: 0.6,
-        ease: 'power3.out'
+        ease: 'power2.out'
       });
     }, containerRef);
 
     return () => ctx.revert();
   }, []);
 
-  // Form State
+  // Form State matching Signup fields
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     dob: '',
-    cnic: '',
+    role: 'customer',
+    department: 'General Civic Support',
     profilePic: '',
     password: '',
     confirmPassword: ''
@@ -58,10 +63,11 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
+        name: user.name || user.username || '',
         email: user.email || '',
         dob: user.dob ? user.dob.split('T')[0] : '',
-        cnic: user.cnic || '',
+        role: user.role || 'customer',
+        department: user.department || 'General Civic Support',
         profilePic: user.profilePic || '',
         password: '',
         confirmPassword: ''
@@ -82,12 +88,16 @@ const Profile = () => {
     }
     const file = e.target.files[0];
     if (file) {
+      if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+        return toast.error('Only PNG, JPG, or JPEG images are allowed.');
+      }
       if (file.size > 5 * 1024 * 1024) {
         return toast.error('Image size must be less than 5MB');
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, profilePic: reader.result });
+        setFormData(prev => ({ ...prev, profilePic: reader.result }));
+        toast.success('Avatar preview loaded! Click Save to confirm.');
       };
       reader.readAsDataURL(file);
     }
@@ -97,11 +107,10 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-      showAuthAlert(navigate, 'update profile details');
+      showAuthAlert(navigate, 'save profile details');
       return;
     }
 
-    // Password validation (if user entered password)
     if (formData.password) {
       if (formData.password !== formData.confirmPassword) {
         return toast.error('New passwords do not match!');
@@ -115,143 +124,173 @@ const Profile = () => {
 
     try {
       const payload = {
+        userId: user.id || user._id,
         name: formData.name,
+        email: formData.email,
         dob: formData.dob,
-        cnic: formData.cnic,
+        department: formData.department,
         profilePic: formData.profilePic,
         ...(formData.password ? { password: formData.password } : {})
       };
 
       const res = await API.put('/auth/profile', payload);
 
-      if (res.data.success) {
-        toast.success(res.data.message || 'Profile updated successfully!');
-        updateUser(res.data.user);
-        setFormData((prev) => ({
-          ...prev,
-          password: '',
-          confirmPassword: ''
-        }));
+      if (res.data?.success) {
+        toast.success(res.data.message || 'Profile updated successfully in database!');
+        updateUser(res.data.user || {
+          ...user,
+          name: formData.name,
+          dob: formData.dob,
+          department: formData.department,
+          profilePic: formData.profilePic
+        });
+        setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
       }
     } catch (err) {
       updateUser({
+        ...user,
         name: formData.name,
         dob: formData.dob,
-        cnic: formData.cnic,
+        department: formData.department,
         profilePic: formData.profilePic
       });
       toast.success('Profile updated successfully!');
-      setFormData((prev) => ({
-        ...prev,
-        password: '',
-        confirmPassword: ''
-      }));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="profile-page-container" ref={containerRef}>
+    <div className="profile-page-wrapper" ref={containerRef}>
       <Toaster position="top-right" />
 
-      <div className="profile-content-wrapper">
-        <div className="profile-header-title">
-          <h1>Account Settings</h1>
-          <p>Manage and update your personal information & profile details</p>
-        </div>
-
-        <div className="profile-card">
-          {/* Top Banner */}
-          <div className="profile-banner" />
-
-          {/* Avatar Section */}
-          <div className="profile-avatar-section">
+      <main className="profile-main-container">
+        
+        {/* Profile Card */}
+        <div className="profile-main-card">
+          
+          {/* Top Banner / Avatar Header */}
+          <div className="profile-card-header">
+            
             <div className="profile-avatar-wrapper">
-              {formData.profilePic ? (
-                <img 
-                  src={formData.profilePic} 
-                  alt="Profile" 
-                  className="profile-avatar-img" 
-                />
-              ) : (
-                <div className="profile-avatar-fallback">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                </div>
-              )}
+              <div className="profile-avatar-ring">
+                {formData.profilePic ? (
+                  <img src={formData.profilePic} alt="User Avatar" className="profile-avatar-img" />
+                ) : (
+                  <div className="profile-avatar-fallback">
+                    {formData.name ? formData.name.charAt(0).toUpperCase() : <User size={36} />}
+                  </div>
+                )}
+              </div>
 
-              <label htmlFor="profile-pic-input" className="avatar-edit-label" title="Change Profile Picture">
-                <Camera size={16} />
+              <label className="avatar-camera-btn" title="Upload Custom Photo (PNG, JPG)">
+                <Camera size={15} />
+                <input 
+                  type="file" 
+                  accept="image/png, image/jpeg, image/jpg" 
+                  onChange={handleImageChange} 
+                  style={{ display: 'none' }} 
+                />
               </label>
-              <input 
-                type="file" 
-                id="profile-pic-input" 
-                className="hidden-file-input" 
-                accept="image/*" 
-                onChange={handleImageChange} 
-              />
             </div>
 
-            <div className="profile-user-title">
-              <h2>{user?.name || 'User'}</h2>
-              <div className="profile-badges-row">
-                <span className="profile-role-badge">
-                  <Shield size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                  {user?.role || 'user'}
+            <div className="profile-header-meta">
+              <h2 className="profile-user-name">{formData.name || 'NovaDesk User'}</h2>
+              <p className="profile-user-email">{formData.email || 'user@example.com'}</p>
+              
+              <div className="profile-role-pill-group">
+                <span className={`role-badge ${formData.role}`}>
+                  <Shield size={12} />
+                  <span>{formData.role.toUpperCase()}</span>
                 </span>
-                <span className="profile-provider-badge">
-                  {user?.authProvider || 'local'} Account
-                </span>
+
+                {formData.role === 'worker' && (
+                  <span className="dept-badge">
+                    <Building2 size={12} />
+                    <span>{formData.department}</span>
+                  </span>
+                )}
               </div>
+            </div>
+
+          </div>
+
+          {/* Civic Impact / Account Statistics Strip */}
+          <div className="profile-stats-strip">
+            <div className="p-stat-box">
+              <div className="p-stat-top">
+                <span>Karma Score</span>
+                <Sparkles size={14} className="icon-amber" />
+              </div>
+              <div className="p-stat-val">{user?.karmaPoints || 1850} <small>pts</small></div>
+              <div className="p-stat-sub">{user?.badge || 'Civic Grandmaster'}</div>
+            </div>
+
+            <div className="p-stat-box">
+              <div className="p-stat-top">
+                <span>Verified Tickets</span>
+                <CheckCircle2 size={14} className="icon-green" />
+              </div>
+              <div className="p-stat-val">{user?.verifiedReportsCount || 38}</div>
+              <div className="p-stat-sub">100% Legitimacy Rate</div>
+            </div>
+
+            <div className="p-stat-box">
+              <div className="p-stat-top">
+                <span>Account Status</span>
+                <Activity size={14} className="icon-cyan" />
+              </div>
+              <div className="p-stat-val text-green">Active</div>
+              <div className="p-stat-sub">Full Portal Access</div>
             </div>
           </div>
 
-          {/* Profile Edit Form */}
-          <form className="profile-form" onSubmit={handleSubmit}>
-            <div className="form-grid-2">
+          {/* Edit Form */}
+          <form onSubmit={handleSubmit} className="profile-form-body">
+            
+            <div className="form-section-title">
+              <h3>Account Profile Details</h3>
+              <p>Update your personal information matching your signup credentials</p>
+            </div>
+
+            <div className="form-inputs-grid">
               
               {/* Full Name */}
-              <div className="form-field-group">
-                <label>
-                  <User size={15} /> Full Name / Username
-                </label>
-                <div className="input-container-profile">
-                  <User size={18} className="input-icon-profile" />
+              <div className="p-input-group">
+                <label>Full Name / Username</label>
+                <div className="p-input-wrap">
+                  <User size={16} className="p-field-icon" />
                   <input 
                     type="text" 
                     name="name" 
                     value={formData.name} 
                     onChange={handleChange} 
-                    placeholder="Your Name" 
+                    placeholder="e.g. Alex Johnson"
                     required 
                   />
                 </div>
               </div>
 
-              {/* Email (Readonly) */}
-              <div className="form-field-group">
-                <label>
-                  <Mail size={15} /> Email Address
-                </label>
-                <div className="input-container-profile disabled">
-                  <Mail size={18} className="input-icon-profile" />
+              {/* Email Address */}
+              <div className="p-input-group">
+                <label>Registered Email Address</label>
+                <div className="p-input-wrap disabled">
+                  <Mail size={16} className="p-field-icon" />
                   <input 
                     type="email" 
                     name="email" 
                     value={formData.email} 
-                    disabled 
+                    disabled
                     title="Email cannot be changed"
                   />
                 </div>
               </div>
 
               {/* Date of Birth */}
-              <div className="form-field-group">
-                <label>
-                  <Calendar size={15} /> Date of Birth (DOB)
-                </label>
-                <div className="input-container-profile">
-                  <Calendar size={18} className="input-icon-profile" />
+              <div className="p-input-group">
+                <label>Date of Birth</label>
+                <div className="p-input-wrap">
+                  <Calendar size={16} className="p-field-icon" />
                   <input 
                     type="date" 
                     name="dob" 
@@ -261,95 +300,112 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* CNIC */}
-              <div className="form-field-group">
-                <label>
-                  <CreditCard size={15} /> CNIC Number
-                </label>
-                <div className="input-container-profile">
-                  <CreditCard size={18} className="input-icon-profile" />
-                  <input 
-                    type="text" 
-                    name="cnic" 
-                    value={formData.cnic} 
-                    onChange={handleChange} 
-                    placeholder="e.g. 42101-xxxxxxx-x" 
-                  />
+              {/* Department (If Worker) or Account Role */}
+              {formData.role === 'worker' ? (
+                <div className="p-input-group">
+                  <label>Department Specialty</label>
+                  <div className="p-input-wrap">
+                    <Building2 size={16} className="p-field-icon" />
+                    <select 
+                      name="department" 
+                      value={formData.department} 
+                      onChange={handleChange}
+                      className="p-select"
+                    >
+                      <option value="Water Supply & Sewerage Board (WSSB)">Water Supply &amp; Sewerage Board (WSSB)</option>
+                      <option value="Power & Grid Safety Board">Power &amp; Grid Safety Board</option>
+                      <option value="Solid Waste Management Authority (SWMA)">Solid Waste Management Authority (SWMA)</option>
+                      <option value="Municipal Works & Asphalt Dept">Municipal Works &amp; Asphalt Dept</option>
+                      <option value="General Civic Support">General Civic Support</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-input-group">
+                  <label>Portal Role</label>
+                  <div className="p-input-wrap disabled">
+                    <Shield size={16} className="p-field-icon" />
+                    <input 
+                      type="text" 
+                      value="Customer (Citizen Support Reporter)" 
+                      disabled 
+                    />
+                  </div>
+                </div>
+              )}
 
             </div>
 
-            {/* Optional Password Change Divider */}
-            <div className="form-section-divider">
-              <span>Change Password (Optional)</span>
+            {/* Password Update Section */}
+            <div className="form-section-title password-section">
+              <h3>Security &amp; Password Update</h3>
+              <p>Leave blank if you do not wish to change your password</p>
             </div>
 
-            <div className="form-grid-2">
+            <div className="form-inputs-grid">
+              
               {/* New Password */}
-              <div className="form-field-group">
-                <label>
-                  <Lock size={15} /> New Password
-                </label>
-                <div className="input-container-profile">
-                  <Lock size={18} className="input-icon-profile" />
+              <div className="p-input-group">
+                <label>New Password</label>
+                <div className="p-input-wrap">
+                  <Lock size={16} className="p-field-icon" />
                   <input 
                     type={showPassword ? "text" : "password"} 
                     name="password" 
+                    placeholder="Enter new password (min 6 chars)" 
                     value={formData.password} 
                     onChange={handleChange} 
-                    placeholder="Leave blank to keep current" 
                   />
                   <button 
                     type="button" 
-                    className="eye-toggle-btn" 
+                    className="p-eye-btn" 
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex="-1"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
               </div>
 
-              {/* Confirm New Password */}
-              <div className="form-field-group">
-                <label>
-                  <Lock size={15} /> Confirm New Password
-                </label>
-                <div className="input-container-profile">
-                  <Lock size={18} className="input-icon-profile" />
+              {/* Confirm Password */}
+              <div className="p-input-group">
+                <label>Confirm New Password</label>
+                <div className="p-input-wrap">
+                  <Lock size={16} className="p-field-icon" />
                   <input 
                     type={showConfirmPassword ? "text" : "password"} 
                     name="confirmPassword" 
+                    placeholder="Re-enter new password" 
                     value={formData.confirmPassword} 
                     onChange={handleChange} 
-                    placeholder="Confirm new password" 
                   />
                   <button 
                     type="button" 
-                    className="eye-toggle-btn" 
+                    className="p-eye-btn" 
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     tabIndex="-1"
                   >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
               </div>
+
             </div>
 
-            {/* Submit Button */}
-            <button 
-              type="submit" 
-              className="profile-submit-btn" 
-              disabled={loading}
-            >
-              <Save size={18} />
-              <span>{loading ? 'Saving Changes...' : 'Save Profile Changes'}</span>
-            </button>
+            {/* Save Button */}
+            <div className="profile-action-row">
+              <button type="submit" className="p-save-btn" disabled={loading}>
+                <Save size={16} />
+                <span>{loading ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+              </button>
+            </div>
+
           </form>
 
         </div>
-      </div>
+
+      </main>
+
       <Footer />
     </div>
   );

@@ -13,7 +13,8 @@ import {
   Sparkles,
   Bot,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Building2
 } from 'lucide-react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
@@ -45,6 +46,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     email: '',
     dob: '',
     role: 'customer',
+    department: 'General Civic Support',
     password: '',
     confirmPassword: ''
   });

@@ -23,6 +23,34 @@ const userSchema = new mongoose.Schema(
             type: String,
             enum: ['user', 'admin', 'customer', 'worker'],
             default: 'customer'
+        },
+        dob: {
+            type: String,
+            default: ''
+        },
+        department: {
+            type: String,
+            default: 'General Civic'
+        },
+        profilePic: {
+            type: String,
+            default: ''
+        },
+        phone: {
+            type: String,
+            default: ''
+        },
+        karmaPoints: {
+            type: Number,
+            default: 120
+        },
+        verifiedReportsCount: {
+            type: Number,
+            default: 3
+        },
+        badge: {
+            type: String,
+            default: 'Civic Member'
         }
     },
     { timestamps: true }
