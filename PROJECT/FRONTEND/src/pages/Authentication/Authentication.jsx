@@ -126,7 +126,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
       }
     } catch (err) {
       if (!err.response || err.message === 'Network Error') {
-        toast.error('Cannot connect to backend server! Please make sure backend is running on port 5000.');
+        toast.error('Cannot connect to backend server! Please check your internet or try again.');
       } else {
         toast.error(err.response.data?.message || 'Invalid email or password. Please check your credentials.');
       }

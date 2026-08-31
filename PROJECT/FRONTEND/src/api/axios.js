@@ -1,20 +1,25 @@
 import axios from 'axios';
 
-// Dynamically resolve API URL using environment variable OR deployed Vercel backend OR local host
-const API_BASE_URL = 
-  import.meta.env.VITE_API_BASE_URL || 
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:5000/api'
-    : 'https://mern-final-hackathon-2026.vercel.app/api') ||
-  'https://mern-final-hackathon-2026.vercel.app/api' || 
-  'http://localhost:5000/api';
+// Get API base URL with full production Vercel priority
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // Only use localhost if the browser itself is explicitly opened on localhost
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+  }
+  // Everywhere else (Production Vercel, etc.), ALWAYS use Deployed Vercel Backend
+  return 'https://mern-final-hackathon-2026.vercel.app/api';
+};
 
 const API = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: 'https://mern-final-hackathon-2026.vercel.app/api',
 });
 
-// Request Interceptor: Attach Token
+// Dynamic Runtime Request Interceptor
 API.interceptors.request.use((config) => {
+  config.baseURL = getBaseURL();
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

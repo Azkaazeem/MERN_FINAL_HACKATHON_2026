@@ -126,7 +126,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
       }
     } catch (err) {
       if (!err.response || err.message === 'Network Error') {
-        toast.error('Cannot connect to backend server! Please make sure backend is running on port 5000.');
+        toast.error('Cannot connect to backend server! Please check your internet or try again.');
       } else {
         toast.error(err.response.data?.message || 'Invalid email or password. Please check your credentials.');
       }
@@ -206,7 +206,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
               <input 
                 type="email" 
                 name="email" 
-                placeholder="Email" 
+                placeholder="admin@gmail.com" 
                 value={loginData.email} 
                 onChange={handleLoginChange} 
                 className="clean-input"
@@ -217,7 +217,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                 <input 
                   type={showLoginPassword ? 'text' : 'password'} 
                   name="password" 
-                  placeholder="Password" 
+                  placeholder="admin123@" 
                   value={loginData.password} 
                   onChange={handleLoginChange} 
                   className="clean-input"
