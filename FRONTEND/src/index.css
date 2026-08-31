@@ -1,56 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-
 /* ==========================================================================
-   🎨 GLOBAL CENTRALIZED THEME VARIABLES
-   Aapko kisi doosri file mein jane ki zaroorat nahi hai!
-   Bas yahan se colors change karein aur poori app ka theme change ho jayega!
+   SOLID CYAN & WHITE DESIGN SYSTEM VARIABLES
+   NovaDesk Brand Color Tokens (#00e5ff) & High-Contrast Saas Archetype
    ========================================================================== */
 :root {
-  /* --- Primary Brand & Gradient Colors --- */
-    --primary-color: #2b60ff;
-  --secondary-color: #41efff;           /* Gradient pair secondary color */
-  --primary-glow: rgba(255, 75, 43, 0.25);
-  --primary-light: rgba(255, 75, 43, 0.1);
+  /* Brand NovaDesk Electric Vibrant Cyan */
+  --primary-color: #00e5ff;
+  --primary-hover: #00c2d8;
+  --primary-dark: #0097a7;
+  --secondary-color: #00e5ff;
+  --primary-glow: rgba(0, 229, 255, 0.35);
+  --primary-light: rgba(0, 229, 255, 0.12);
 
-  /* --- Text & Neutral Colors --- */
-  --text-color: #333333;                 /* Standard text */
-  --text-dark: #1e293b;                  /* Heading & bold dark text */
-  --text-muted: #64748b;                 /* Subtitles & gray description */
-  --text-light: #ffffff;                 /* Pure white text */
+  /* Surfaces & Backgrounds */
+  --bg-color: #ffffff;
+  --bg-main: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --card-bg: #ffffff;
+  --bg-card: #ffffff;
+  --card-hover: #f1f5f9;
+  --input-bg: #f8fafc;
+  --sidebar-bg: #ffffff;
+  --sidebar-hover: #f1f5f9;
+  --footer-bg: #ffffff;
+  --footer-text: #64748b;
+  --modal-bg: #ffffff;
+  --dropdown-bg: #ffffff;
+  --hero-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(248, 250, 252, 0.94) 100%);
+  --hero-bg-img: url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=2000&q=80');
 
-  /* --- Backgrounds --- */
-  --bg-color: #f8f9fa;                   /* Main page background */
-  --card-bg: #ffffff;                    /* Card & container background */
-  --input-bg: #f0f2f5;                   /* Input fields background */
+  /* Borders */
+  --border-color: #e2e8f0;
+  --border-accent: #00e5ff;
+  --border-light: rgba(0, 0, 0, 0.08);
 
-  /* --- Dark Elements (Sidebar, Footer) --- */
-  --sidebar-bg: #1e1e2d;                 /* Admin sidebar background */
-  --sidebar-hover: #27273a;              /* Admin sidebar active hover */
-  --footer-bg: #1a1a24;                  /* Footer background */
-  --footer-text: #a0a0b0;                /* Footer muted text */
+  /* Typography */
+  --text-dark: #0f172a;
+  --text-color: #1e293b;
+  --text-muted: #64748b;
+  --text-light: #ffffff;
 
-  /* --- Borders & Radii (Sharp Theme) --- */
-  --border-color: #e2e8f0;               /* Default subtle border */
-  --border-radius-sharp: 4px;            /* Sharp modern border radius */
+  /* Status Colors */
+  --success-color: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --warning-color: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --danger-color: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --info-color: #00e5ff;
+  --info-bg: rgba(0, 229, 255, 0.12);
 
-  /* --- Global Typography --- */
-  --font-family: 'Poppins', sans-serif;  /* Global modern font */
+  /* Radii & Shadows */
+  --border-radius: 10px;
+  --border-radius-sm: 6px;
+  --border-radius-lg: 14px;
+  --border-radius-full: 9999px;
+  --text-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --text-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.6);
+  --text-shadow-lg: 0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.6);
+  --font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+[data-theme="dark"] {
+  /* Brand NovaDesk Electric Cyan */
+  --primary-color: #00e5ff;
+  --primary-hover: #33ebff;
+  --primary-dark: #00bcd4;
+  --secondary-color: #00e5ff;
+  --primary-glow: rgba(0, 229, 255, 0.4);
+  --primary-light: rgba(0, 229, 255, 0.18);
+
+  /* Surfaces & Backgrounds */
+  --bg-color: #0f172a;
+  --bg-main: #0b0f19;
+  --bg-secondary: #1e293b;
+  --card-bg: #1e293b;
+  --bg-card: #1e293b;
+  --card-hover: #243248;
+  --input-bg: #0f172a;
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --footer-bg: #0b0f19;
+  --footer-text: #94a3b8;
+  --modal-bg: #1e293b;
+  --dropdown-bg: #1e293b;
+  --hero-overlay: linear-gradient(180deg, rgba(11, 15, 25, 0.84) 0%, rgba(11, 15, 25, 0.94) 100%);
+  --hero-bg-img: url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=2000&q=80');
+
+  /* Borders */
+  --border-color: #334155;
+  --border-accent: #00e5ff;
+  --border-light: rgba(255, 255, 255, 0.08);
+
+  /* Typography */
+  --text-dark: #f8fafc;
+  --text-color: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-light: #ffffff;
+
+  /* Status Colors */
+  --success-color: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.18);
+  --warning-color: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.18);
+  --danger-color: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.18);
+  --info-color: #00e5ff;
+  --info-bg: rgba(0, 229, 255, 0.18);
+
+  --text-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --text-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.7);
+  --text-shadow-lg: 0 3px 12px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 /* Global Reset & Base */
-body {
-  font-family: var(--font-family);
-  background-color: var(--bg-color);
-  color: var(--text-color);
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide default cursor on desktop so only GSAP custom cursor is active */
+@media (pointer: fine) {
+  *, *::before, *::after, html, body, a, button, input, select, textarea, [role="button"] {
+    cursor: none !important;
+  }
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+}
+
 * {
   box-sizing: inherit;
+}
+
+/* Vibrant Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #334155;
 }

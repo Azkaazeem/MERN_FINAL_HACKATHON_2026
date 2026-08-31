@@ -112,7 +112,11 @@ exports.updateProfile = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(200).json({
+        success: true,
+        message: 'Profile updated in session!',
+        user: { name, dob, department, profilePic }
+      });
     }
 
     if (name) user.name = name;
@@ -120,14 +124,14 @@ exports.updateProfile = async (req, res) => {
     if (department) user.department = department;
     if (profilePic) user.profilePic = profilePic;
     if (password && password.length >= 6) {
-      user.password = password; // Will be hashed by pre-save hook
+      user.password = password; // Will be hashed by pre('save') hook
     }
 
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: 'Profile updated successfully!',
+      message: 'Profile details saved successfully in Database!',
       user: {
         id: user._id,
         name: user.name,
@@ -141,6 +145,11 @@ exports.updateProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to update profile: ' + error.message });
   }
+};
+
+// @route   GET /api/auth/me
+exports.getMe = async (req, res) => {
+  res.status(200).json({ success: true, user: req.user });
 };

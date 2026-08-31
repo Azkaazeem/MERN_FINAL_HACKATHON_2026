@@ -7,59 +7,71 @@ const CustomCursor = () => {
   const ringRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isActive, setIsActive] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Only run on desktop devices with hover support
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      return;
+    }
+
     const dot = dotRef.current;
     const ring = ringRef.current;
-
     if (!dot || !ring) return;
 
-    // Direct GSAP quickTo setters for instant & lag-free tracking
-    const setDotX = gsap.quickTo(dot, 'x', { duration: 0.04, ease: 'none' });
-    const setDotY = gsap.quickTo(dot, 'y', { duration: 0.04, ease: 'none' });
-    
-    const setRingX = gsap.quickTo(ring, 'x', { duration: 0.18, ease: 'power2.out' });
-    const setRingY = gsap.quickTo(ring, 'y', { duration: 0.18, ease: 'power2.out' });
+    // Instant GSAP setters for zero latency
+    const xDot = gsap.quickTo(dot, 'x', { duration: 0.05, ease: 'power3' });
+    const yDot = gsap.quickTo(dot, 'y', { duration: 0.05, ease: 'power3' });
+
+    // Smooth fluid follower for the outer ring
+    const xRing = gsap.quickTo(ring, 'x', { duration: 0.22, ease: 'power2.out' });
+    const yRing = gsap.quickTo(ring, 'y', { duration: 0.22, ease: 'power2.out' });
 
     const handleMouseMove = (e) => {
-      setDotX(e.clientX);
-      setDotY(e.clientY);
-      setRingX(e.clientX);
-      setRingY(e.clientY);
+      setIsVisible(true);
+      xDot(e.clientX);
+      yDot(e.clientY);
+      xRing(e.clientX);
+      yRing(e.clientY);
 
-      // Detect hover over any clickable element
       const target = e.target;
       if (target) {
-        const isInteractive = target.closest(
-          'a, button, input, select, textarea, label, [role="button"], .social-btn, .mobile-toggle, .ghost-btn, .nav-link, .logout-btn, .hamburger-btn, .eye-btn, .social-link-btn, .cta-btn-white'
+        const isClickable = target.closest(
+          'a, button, input, select, textarea, label, [role="button"], .interactive, .chip-btn, .mobile-nav-item, .sidebar-nav-item, .footer-social-pill, .footer-back-top-btn'
         );
-        setIsHovered(!!isInteractive);
+        setIsHovered(!!isClickable);
       }
     };
 
     const handleMouseDown = () => setIsActive(true);
     const handleMouseUp = () => setIsActive(false);
+    const handleMouseLeave = () => setIsVisible(false);
+    const handleMouseEnter = () => setIsVisible(true);
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseenter', handleMouseEnter);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mouseenter', handleMouseEnter);
     };
   }, []);
 
   return (
-    <div className="custom-cursor-container">
+    <div className={`custom-cursor-container ${isVisible ? 'visible' : ''}`}>
       <div 
         ref={dotRef} 
-        className={`custom-cursor-dot ${isHovered ? 'cursor-hover' : ''} ${isActive ? 'cursor-active' : ''}`}
+        className={`custom-cursor-dot ${isHovered ? 'hover' : ''} ${isActive ? 'active' : ''}`} 
       />
       <div 
         ref={ringRef} 
-        className={`custom-cursor-ring ${isHovered ? 'cursor-hover' : ''} ${isActive ? 'cursor-active' : ''}`}
+        className={`custom-cursor-ring ${isHovered ? 'hover' : ''} ${isActive ? 'active' : ''}`} 
       />
     </div>
   );

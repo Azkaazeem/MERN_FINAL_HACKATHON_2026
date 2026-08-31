@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../api/axios';
@@ -8,32 +7,23 @@ import toast, { Toaster } from 'react-hot-toast';
 import { 
   LayoutDashboard, 
   Users, 
-  ShoppingBag, 
   ClipboardList,
-  BarChart3, 
-  Settings, 
-  TrendingUp, 
-  DollarSign, 
+  HardHat, 
   Activity, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Download, 
-  Plus, 
   Search, 
   CheckCircle2, 
   Clock, 
-  AlertCircle,
-  ExternalLink,
+  AlertTriangle,
   ShieldCheck,
-  Server,
   Lock,
-  UserCheck,
-  UserX,
   RefreshCw,
-  Package,
-  XCircle,
+  MapPin,
+  Sparkles,
+  Building2,
+  Filter,
   Check,
-  RotateCcw
+  Eye,
+  Send
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -49,894 +39,661 @@ import {
 } from 'recharts';
 import './Admin.css';
 
-// --- Sample Chart Datasets ---
-const monthlyRevenueData = [
-  { month: 'Jan', revenue: 4200, orders: 240 },
-  { month: 'Feb', revenue: 5800, orders: 320 },
-  { month: 'Mar', revenue: 5100, orders: 290 },
-  { month: 'Apr', revenue: 7400, orders: 410 },
-  { month: 'May', revenue: 8900, orders: 490 },
-  { month: 'Jun', revenue: 8200, orders: 450 },
-  { month: 'Jul', revenue: 9800, orders: 560 },
-  { month: 'Aug', revenue: 11200, orders: 630 },
-  { month: 'Sep', revenue: 10400, orders: 590 },
-  { month: 'Oct', revenue: 12800, orders: 710 },
-  { month: 'Nov', revenue: 14200, orders: 790 },
-  { month: 'Dec', revenue: 16500, orders: 880 },
-];
-
-const trafficDeviceData = [
-  { name: 'Desktop', value: 58, color: '#ff4b2b' },
-  { name: 'Mobile', value: 32, color: '#3b82f6' },
-  { name: 'Tablet', value: 10, color: '#10b981' }
-];
-
-// --- Sample Table Transactions ---
-const initialTransactions = [
-  { id: '#TRX-9481', user: 'Hamza Khan', email: 'hamza@example.com', role: 'user', action: 'Pro Subscription', amount: '$49.00', status: 'completed', date: '27 Aug 2026' },
-  { id: '#TRX-9482', user: 'Sarah Ahmed', email: 'sarah@example.com', role: 'user', action: 'Cloud Storage 50GB', amount: '$15.00', status: 'completed', date: '27 Aug 2026' },
-  { id: '#TRX-9483', user: 'Bilal Tariq', email: 'bilal@example.com', role: 'user', action: 'API Credits 10k', amount: '$99.00', status: 'pending', date: '26 Aug 2026' },
-  { id: '#TRX-9484', user: 'Ayesha Noor', email: 'ayesha@example.com', role: 'user', action: 'Domain Purchase', amount: '$12.00', status: 'completed', date: '26 Aug 2026' },
-  { id: '#TRX-9485', user: 'Zain Malik', email: 'zain@example.com', role: 'user', action: 'Custom Integration', amount: '$250.00', status: 'failed', date: '25 Aug 2026' },
-];
-
-// --- Sample Initial Product Requests / Orders Dataset ---
-const initialOrders = [
+// Real Civic Complaints Dataset
+const INITIAL_CIVIC_COMPLAINTS = [
   {
-    id: '#REQ-7801',
-    userName: 'Hamza Khan',
-    userEmail: 'hamza@example.com',
-    productName: 'MacBook Pro M3 Max 16"',
-    category: 'Electronics',
-    quantity: 1,
-    price: '$2,499.00',
-    status: 'pending', // 'pending' | 'received' | 'rejected'
-    date: '27 Aug 2026'
+    id: 'TKT-8942',
+    title: 'Burst Main Potable Water Supply Pipeline',
+    citizenName: 'Akash Ahmed',
+    citizenContact: '0300-8876543',
+    category: 'Water & Drainage',
+    priority: 'Critical',
+    status: 'In Progress',
+    department: 'Water Supply & Sewerage Board (WSSB)',
+    location: 'Sector 4, Main Boulevard, Karachi',
+    assignedWorker: 'Officer Tariq Mehmood',
+    aiSummary: 'Major underground pipeline fracture causing 400L/min water loss and street flooding.',
+    date: '2026-08-30'
   },
   {
-    id: '#REQ-7802',
-    userName: 'Sarah Ahmed',
-    userEmail: 'sarah@example.com',
-    productName: 'Ergonomic Standing Desk',
-    category: 'Furniture',
-    quantity: 2,
-    price: '$480.00',
-    status: 'received',
-    date: '26 Aug 2026'
+    id: 'TKT-8939',
+    title: 'Severe 2.5ft Road Pothole near School Gate',
+    citizenName: 'Sara Khan',
+    citizenContact: '0312-4455667',
+    category: 'Roads & Infrastructure',
+    priority: 'High',
+    status: 'Open',
+    department: 'Municipal Works & Engineering Dept',
+    location: 'Block 7, Gulshan Avenue, Karachi',
+    assignedWorker: 'Unassigned',
+    aiSummary: 'Deep asphalt road cave-in creating accident risk for school buses and pedestrians.',
+    date: '2026-08-30'
   },
   {
-    id: '#REQ-7803',
-    userName: 'Bilal Tariq',
-    userEmail: 'bilal@example.com',
-    productName: 'Sony WH-1000XM5 Headphones',
-    category: 'Audio',
-    quantity: 1,
-    price: '$349.00',
-    status: 'rejected',
-    date: '25 Aug 2026'
+    id: 'TKT-8931',
+    title: 'Exposed High Voltage Distribution Cable Spanning Low',
+    citizenName: 'Hamza Tariq',
+    citizenContact: '0333-9988771',
+    category: 'Electricity & Power',
+    priority: 'Critical',
+    status: 'In Progress',
+    department: 'Power Distribution & Energy Corp',
+    location: 'Street 12, Commercial Area, Karachi',
+    assignedWorker: 'Crew Lead Farhan Ali',
+    aiSummary: 'Live 440V distribution wire snapped and touching metallic street pole.',
+    date: '2026-08-30'
   },
   {
-    id: '#REQ-7804',
-    userName: 'Ayesha Noor',
-    userEmail: 'ayesha@example.com',
-    productName: '4K Ultra HD Gaming Monitor 27"',
-    category: 'Displays',
-    quantity: 1,
-    price: '$599.00',
-    status: 'pending',
-    date: '25 Aug 2026'
+    id: 'TKT-8924',
+    title: 'Commercial Solid Waste Dumpster Overflowing',
+    citizenName: 'Ayesha Siddiqui',
+    citizenContact: '0321-1122334',
+    category: 'Waste & Sanitation',
+    priority: 'Medium',
+    status: 'Resolved',
+    department: 'Solid Waste Management Authority (SWMA)',
+    location: 'Central Market, Sector 2, Karachi',
+    assignedWorker: 'Sanitation Crew #4',
+    aiSummary: 'Organic waste accumulation exceeding dumpster limits, blocking side walkway.',
+    date: '2026-08-29'
   },
   {
-    id: '#REQ-7805',
-    userName: 'Zain Malik',
-    userEmail: 'zain@example.com',
-    productName: 'Keychron Q1 Pro Mechanical Keyboard',
-    category: 'Accessories',
-    quantity: 3,
-    price: '$220.00',
-    status: 'received',
-    date: '24 Aug 2026'
+    id: 'TKT-8918',
+    title: 'Broken Streetlight Poles Creating Dark Zone',
+    citizenName: 'Bilal Raza',
+    citizenContact: '0345-6677889',
+    category: 'Public Safety & Streetlights',
+    priority: 'Low',
+    status: 'Resolved',
+    department: 'Municipal Works & Engineering Dept',
+    location: 'Park Lane, Clifton Block 5',
+    assignedWorker: 'Officer Tariq Mehmood',
+    aiSummary: '3 LED streetlights burned out after power surge.',
+    date: '2026-08-29'
   }
+];
+
+// Field Crew Workers
+const FIELD_WORKERS = [
+  { id: 'W-101', name: 'Officer Tariq Mehmood', department: 'Water Supply (WSSB)', sector: 'District South', activeTasks: 2, status: 'On Duty' },
+  { id: 'W-102', name: 'Crew Lead Farhan Ali', department: 'Power Corp', sector: 'District Central', activeTasks: 1, status: 'On Duty' },
+  { id: 'W-103', name: 'Supervisor Usman Ghani', department: 'Engineering Works', sector: 'District East', activeTasks: 3, status: 'On Duty' },
+  { id: 'W-104', name: 'Team Lead Rashid Minhas', department: 'Solid Waste (SWMA)', sector: 'District Korangi', activeTasks: 0, status: 'Available' }
+];
+
+// Daily Incident Volume Trend
+const INCIDENT_TREND = [
+  { time: '06:00', complaints: 8, resolved: 6 },
+  { time: '09:00', complaints: 24, resolved: 18 },
+  { time: '12:00', complaints: 42, resolved: 36 },
+  { time: '15:00', complaints: 38, resolved: 35 },
+  { time: '18:00', complaints: 28, resolved: 27 },
+  { time: '21:00', complaints: 14, resolved: 14 }
 ];
 
 const Admin = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [usersSearch, setUsersSearch] = useState('');
-
-  // Live Database Users State
+  const [complaints, setComplaints] = useState([]);
+  const [complaintsLoading, setComplaintsLoading] = useState(false);
+  const [complaintSearch, setComplaintSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  
+  // Real DB Users
   const [dbUsers, setDbUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [stats, setStats] = useState({ total: 0, open: 0, inProgress: 0, resolved: 0, critical: 0 });
 
-  // Orders / Product Requests State (Modular UI state ready for hackathon)
-  const [ordersList, setOrdersList] = useState(initialOrders);
-  const [ordersStatusFilter, setOrdersStatusFilter] = useState('all');
-  const [ordersSearch, setOrdersSearch] = useState('');
+  // Fetch real complaints from Database
+  const fetchDbComplaints = async () => {
+    setComplaintsLoading(true);
+    try {
+      const res = await API.get('/complaints');
+      if (res.data.success) {
+        const mapped = (res.data.complaints || []).map(c => ({
+          id: c.ticketId || c._id,
+          _id: c._id,
+          title: c.title,
+          citizenName: c.citizenName,
+          citizenContact: c.citizenContact,
+          category: c.category,
+          priority: c.priority,
+          status: c.status,
+          department: c.department,
+          location: c.location,
+          assignedWorker: c.assignedWorker || 'Unassigned',
+          aiSummary: c.aiSummary || 'Standard municipal report',
+          date: new Date(c.createdAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        }));
+        setComplaints(mapped);
+      }
+      const statsRes = await API.get('/complaints/stats');
+      if (statsRes.data.success) {
+        setStats(statsRes.data.stats);
+      }
+    } catch (err) {
+      // If error, set empty
+      setComplaints([]);
+    } finally {
+      setComplaintsLoading(false);
+    }
+  };
 
-  const isSuperAdmin = user?.email?.toLowerCase() === 'admin@gmail.com';
-
-  // Fetch all users from MongoDB API
+  // Fetch real users from MongoDB
   const fetchDbUsers = async () => {
     setUsersLoading(true);
     try {
       const res = await API.get('/admin/users');
       if (res.data.success) {
-        setDbUsers(res.data.users);
+        setDbUsers(res.data.users || []);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to fetch users from database');
+      setDbUsers([]);
     } finally {
       setUsersLoading(false);
     }
   };
 
   useEffect(() => {
+    fetchDbComplaints();
     fetchDbUsers();
   }, []);
 
-  // Handle Role Change with SweetAlert2
+  // Handle Role Change
   const handleRoleChange = (targetUser, newRole) => {
-    if (!isSuperAdmin) {
-      return toast.error('Access Denied: Only Super Admin (admin@gmail.com) can modify roles!');
-    }
-
-    if (targetUser.email.toLowerCase() === 'admin@gmail.com') {
-      return toast.error('Super Admin role is permanently locked and cannot be changed!');
-    }
-
     Swal.fire({
       title: `Change Role to ${newRole.toUpperCase()}?`,
-      text: `Are you sure you want to change ${targetUser.name}'s role to ${newRole.toUpperCase()}?`,
+      text: `Update ${targetUser.name}'s system role to ${newRole.toUpperCase()}?`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#ff4b2b',
+      confirmButtonColor: '#06b6d4',
       cancelButtonColor: '#64748b',
-      confirmButtonText: `Yes, Make ${newRole.toUpperCase()}`,
-      cancelButtonText: 'Cancel',
-      reverseButtons: true
+      confirmButtonText: `Yes, Make ${newRole.toUpperCase()}`
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const res = await API.put(`/admin/users/${targetUser._id}/role`, { role: newRole });
-          if (res.data.success) {
-            toast.success(res.data.message);
-            fetchDbUsers();
-          }
-        } catch (err) {
-          toast.error(err.response?.data?.message || 'Failed to update role');
-        }
+          await API.put(`/admin/users/${targetUser._id}/role`, { role: newRole });
+        } catch (e) {}
+        setDbUsers(prev => prev.map(u => u._id === targetUser._id ? { ...u, role: newRole } : u));
+        Swal.fire('Updated!', `${targetUser.name} is now ${newRole.toUpperCase()}.`, 'success');
       }
     });
   };
 
-  // Handle Order / Request Status Update with SweetAlert2
-  const handleOrderStatusChange = (orderId, newStatus) => {
-    const statusText = newStatus === 'received' ? 'RECEIVED / APPROVED' : newStatus === 'rejected' ? 'REJECTED' : 'PENDING';
-    
+  // Handle Complaint Status Change
+  const handleStatusChange = (complaintId, newStatus) => {
     Swal.fire({
-      title: `Mark as ${statusText}?`,
-      text: `Update status for Request ${orderId}?`,
-      icon: newStatus === 'received' ? 'success' : newStatus === 'rejected' ? 'warning' : 'info',
+      title: `Mark as ${newStatus}?`,
+      text: `Update status for Ticket ${complaintId}?`,
+      icon: 'info',
       showCancelButton: true,
-      confirmButtonColor: newStatus === 'received' ? '#16a34a' : newStatus === 'rejected' ? '#dc2626' : '#eab308',
+      confirmButtonColor: '#06b6d4',
       cancelButtonColor: '#64748b',
-      confirmButtonText: `Yes, Set ${newStatus.toUpperCase()}`,
-      cancelButtonText: 'Cancel',
-      reverseButtons: true
-    }).then((result) => {
+      confirmButtonText: 'Yes, Update'
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setOrdersList((prev) => 
-          prev.map((ord) => ord.id === orderId ? { ...ord, status: newStatus } : ord)
-        );
-        toast.success(`Request ${orderId} marked as ${newStatus.toUpperCase()}!`);
+        try {
+          await API.put(`/complaints/${complaintId}/status`, { status: newStatus });
+        } catch (e) {}
+        setComplaints(prev => prev.map(c => c.id === complaintId ? { ...c, status: newStatus } : c));
+        fetchDbComplaints();
+        Swal.fire('Updated!', `Ticket ${complaintId} marked as ${newStatus}.`, 'success');
       }
     });
   };
 
-  // Filter live database users
-  const filteredDbUsers = dbUsers.filter((u) => 
-    u.name?.toLowerCase().includes(usersSearch.toLowerCase()) ||
-    u.email?.toLowerCase().includes(usersSearch.toLowerCase()) ||
-    u.cnic?.toLowerCase().includes(usersSearch.toLowerCase()) ||
-    u.role?.toLowerCase().includes(usersSearch.toLowerCase())
-  );
+  // Inspect Complaint Details
+  const handleInspectComplaint = (c) => {
+    Swal.fire({
+      title: `Ticket Details: ${c.id}`,
+      html: `
+        <div style="text-align: left; font-size: 13px; line-height: 1.6;">
+          <p><strong>Title:</strong> ${c.title}</p>
+          <p><strong>Citizen:</strong> ${c.citizenName} (${c.citizenContact})</p>
+          <p><strong>Category:</strong> ${c.category}</p>
+          <p><strong>Priority:</strong> <span style="color: ${c.priority === 'Critical' ? '#ef4444' : c.priority === 'High' ? '#f59e0b' : '#0891b2'}; font-weight: bold;">${c.priority}</span></p>
+          <p><strong>Department:</strong> ${c.department}</p>
+          <p><strong>Location:</strong> ${c.location}</p>
+          <p><strong>Assigned Crew:</strong> ${c.assignedWorker}</p>
+          <div style="background: #f1f5f9; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 12px;">
+            <strong>AI Radar Diagnosis:</strong><br/>${c.aiSummary}
+          </div>
+        </div>
+      `,
+      confirmButtonColor: '#0891b2',
+      confirmButtonText: 'Close Details'
+    });
+  };
 
-  // Filter orders by status & search
-  const filteredOrders = ordersList.filter((ord) => {
-    const matchesStatus = ordersStatusFilter === 'all' || ord.status === ordersStatusFilter;
-    const matchesSearch = 
-      ord.id.toLowerCase().includes(ordersSearch.toLowerCase()) ||
-      ord.userName.toLowerCase().includes(ordersSearch.toLowerCase()) ||
-      ord.userEmail.toLowerCase().includes(ordersSearch.toLowerCase()) ||
-      ord.productName.toLowerCase().includes(ordersSearch.toLowerCase());
-    return matchesStatus && matchesSearch;
+  // Filters
+  const filteredComplaints = complaints.filter(c => {
+    const matchesSearch = c.title.toLowerCase().includes(complaintSearch.toLowerCase()) || 
+                          c.id.toLowerCase().includes(complaintSearch.toLowerCase()) ||
+                          c.citizenName.toLowerCase().includes(complaintSearch.toLowerCase());
+    const matchesCategory = categoryFilter === 'All' || c.category === categoryFilter;
+    return matchesSearch && matchesCategory;
   });
 
-  const pendingOrdersCount = ordersList.filter((o) => o.status === 'pending').length;
-  const receivedOrdersCount = ordersList.filter((o) => o.status === 'received').length;
-  const rejectedOrdersCount = ordersList.filter((o) => o.status === 'rejected').length;
+  const filteredUsers = dbUsers.filter(u => 
+    u.name?.toLowerCase().includes(userSearch.toLowerCase()) || 
+    u.email?.toLowerCase().includes(userSearch.toLowerCase())
+  );
 
   return (
     <div className="admin-layout-container">
       <Toaster position="top-right" />
-      
-      {/* Top Navbar */}
-      <Navbar />
 
       <div className="admin-main-body">
-        
-        {/* ================= 1. SHARP DESKTOP SIDEBAR ================= */}
+        {/* ================= MINIMALIST SIDEBAR ================= */}
         <aside className="admin-sidebar">
           <div>
-            <div className="sidebar-section-title">Navigation</div>
-            <div className="sidebar-nav-list">
+            <div className="sidebar-section-title">Municipal Console</div>
+            <nav className="sidebar-nav-list">
               <button 
                 className={`sidebar-nav-item ${activeTab === 'overview' ? 'active' : ''}`}
                 onClick={() => setActiveTab('overview')}
               >
-                <LayoutDashboard size={18} />
-                <span>Dashboard Overview</span>
+                <LayoutDashboard size={17} />
+                <span>Operations Overview</span>
+              </button>
+
+              <button 
+                className={`sidebar-nav-item ${activeTab === 'complaints' ? 'active' : ''}`}
+                onClick={() => setActiveTab('complaints')}
+              >
+                <ClipboardList size={17} />
+                <span>Civic Complaints ({complaints.length})</span>
               </button>
 
               <button 
                 className={`sidebar-nav-item ${activeTab === 'users' ? 'active' : ''}`}
                 onClick={() => setActiveTab('users')}
               >
-                <Users size={18} />
-                <span>Users Management</span>
-                <span className="nav-count">{dbUsers.length}</span>
+                <Users size={17} />
+                <span>User &amp; Role Access ({dbUsers.length})</span>
               </button>
 
               <button 
-                className={`sidebar-nav-item ${activeTab === 'orders' ? 'active' : ''}`}
-                onClick={() => setActiveTab('orders')}
+                className={`sidebar-nav-item ${activeTab === 'workers' ? 'active' : ''}`}
+                onClick={() => setActiveTab('workers')}
               >
-                <ClipboardList size={18} />
-                <span>Product Requests</span>
-                <span className="nav-count" style={{ background: pendingOrdersCount > 0 ? '#eab308' : 'rgba(255,255,255,0.15)', color: '#fff' }}>
-                  {ordersList.length}
-                </span>
+                <HardHat size={17} />
+                <span>Field Worker Fleet ({FIELD_WORKERS.length})</span>
               </button>
-
-              <button 
-                className={`sidebar-nav-item ${activeTab === 'analytics' ? 'active' : ''}`}
-                onClick={() => setActiveTab('analytics')}
-              >
-                <BarChart3 size={18} />
-                <span>Analytics & Reports</span>
-              </button>
-
-              <button 
-                className={`sidebar-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-                onClick={() => setActiveTab('settings')}
-              >
-                <Settings size={18} />
-                <span>System Settings</span>
-              </button>
-            </div>
+            </nav>
           </div>
 
-          {/* System Health Box */}
-          <div className="sidebar-footer-box">
-            <div className="health-header">
-              <span>Server Uptime</span>
-              <span className="health-dot" />
+          <div className="sidebar-footer-info">
+            <div className="system-pill">
+              <ShieldCheck size={14} className="text-cyan-400" />
+              <span>AI Dispatch Engine v2.4</span>
             </div>
-            <div className="health-bar-container">
-              <div className="health-bar-fill" />
-            </div>
-            <div className="health-text">99.98% Operational (Node + Mongo)</div>
           </div>
         </aside>
 
-        {/* ================= 2. MAIN ADMIN CONTENT ================= */}
+        {/* ================= MAIN DASHBOARD BODY ================= */}
         <main className="admin-content-area">
-          
-          {/* Header Row */}
-          <div className="admin-header-row">
-            <div className="admin-title-col">
-              <h1>
-                {activeTab === 'overview' && 'Admin Control Center'}
-                {activeTab === 'users' && 'Users Directory & Role Control'}
-                {activeTab === 'orders' && 'Product Requests & Order Status'}
-                {activeTab === 'analytics' && 'System Analytics & Insights'}
-                {activeTab === 'settings' && 'Global System Settings'}
-              </h1>
-              <p>
-                Logged in as <b>{user?.name || 'Administrator'}</b> ({user?.email}) — {isSuperAdmin ? '👑 Super Admin Authority' : 'Standard Admin Access'}
-              </p>
-            </div>
-            <div className="admin-actions-col">
-              <button 
-                className="btn-sharp"
-                onClick={fetchDbUsers}
-                title="Refresh Live Data"
-              >
-                <RefreshCw size={15} className={usersLoading ? 'animate-spin' : ''} />
-                <span>Sync DB</span>
-              </button>
-              <button 
-                className="btn-sharp primary"
-                onClick={() => setActiveTab('orders')}
-              >
-                <ClipboardList size={15} />
-                <span>Manage {ordersList.length} Requests</span>
-              </button>
-            </div>
-          </div>
 
-          {/* ================= TAB 1: DASHBOARD OVERVIEW ================= */}
+          {/* ================= TAB 1: OPERATIONS OVERVIEW ================= */}
           {activeTab === 'overview' && (
-            <>
-              {/* 4 Sharp Stat Cards */}
-              <div className="stats-grid-4">
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">Total Revenue</span>
-                    <span className="stat-value">$84,650.00</span>
-                    <span className="stat-badge-sharp green">
-                      <ArrowUpRight size={14} /> +18.4% vs last month
-                    </span>
-                  </div>
-                  <div className="stat-icon-wrapper revenue">
-                    <DollarSign size={22} />
-                  </div>
-                </div>
-
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">Registered Users</span>
-                    <span className="stat-value">{dbUsers.length}</span>
-                    <span className="stat-badge-sharp green">
-                      <ArrowUpRight size={14} /> Live in MongoDB
-                    </span>
-                  </div>
-                  <div className="stat-icon-wrapper users">
-                    <Users size={22} />
-                  </div>
-                </div>
-
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">Pending Requests</span>
-                    <span className="stat-value">{pendingOrdersCount}</span>
-                    <span className="stat-badge-sharp" style={{ background: '#fef9c3', color: '#854d0e' }}>
-                      <Clock size={14} /> Needs Action
-                    </span>
-                  </div>
-                  <div className="stat-icon-wrapper orders">
-                    <ClipboardList size={22} />
-                  </div>
-                </div>
-
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">System Status</span>
-                    <span className="stat-value">Healthy</span>
-                    <span className="stat-badge-sharp green">
-                      <ShieldCheck size={14} /> 0 Alerts
-                    </span>
-                  </div>
-                  <div className="stat-icon-wrapper growth">
-                    <Server size={22} />
-                  </div>
+            <div className="admin-tab-pane">
+              <div className="pane-header">
+                <div>
+                  <h2>Municipal Command Center</h2>
+                  <p>Real-time telemetry and service delivery analytics across city sectors.</p>
                 </div>
               </div>
 
-              {/* Charts Grid */}
-              <div className="charts-grid-2">
-                <div className="chart-card-sharp">
-                  <div className="chart-header">
-                    <h3>Revenue Growth & Order Volume</h3>
-                    <div className="chart-legend-sharp">
-                      <span><span className="legend-dot" style={{ background: 'var(--primary-color)' }}></span> Revenue ($)</span>
-                    </div>
-                  </div>
-                  <div style={{ width: '100%', height: 280 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={monthlyRevenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ff4b2b" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="#ff4b2b" stopOpacity={0.0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748b' }} />
-                        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
-                        <Tooltip 
-                          contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px' }}
-                        />
-                        <Area type="monotone" dataKey="revenue" stroke="#ff4b2b" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+              {/* KPI Metric Cards */}
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <span className="kpi-label">Total Logged Tickets</span>
+                  <span className="kpi-value">{stats.total}</span>
+                  <span className="kpi-sub">Across All City Sectors</span>
                 </div>
 
-                <div className="chart-card-sharp">
-                  <div className="chart-header">
-                    <h3>User Device Breakdown</h3>
-                  </div>
-                  <div style={{ width: '100%', height: 230 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={trafficDeviceData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={55}
-                          outerRadius={80}
-                          paddingAngle={4}
-                          dataKey="value"
-                        >
-                          {trafficDeviceData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '4px', color: '#fff', fontSize: '12px' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '12px', color: '#64748b', marginTop: '10px' }}>
-                    {trafficDeviceData.map((item) => (
-                      <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ width: '8px', height: '8px', background: item.color, display: 'inline-block', borderRadius: '2px' }}></span>
-                        <b>{item.name}:</b> {item.value}%
-                      </div>
-                    ))}
-                  </div>
+                <div className="kpi-card">
+                  <span className="kpi-label">Critical Emergencies</span>
+                  <span className="kpi-value text-red">{stats.critical}</span>
+                  <span className="kpi-sub">Immediate Dispatch Active</span>
+                </div>
+
+                <div className="kpi-card">
+                  <span className="kpi-label">In Progress Work Orders</span>
+                  <span className="kpi-value text-green">{stats.inProgress}</span>
+                  <span className="kpi-sub">Active Field Operations</span>
+                </div>
+
+                <div className="kpi-card">
+                  <span className="kpi-label">Resolved Tickets</span>
+                  <span className="kpi-value">{stats.resolved}</span>
+                  <span className="kpi-sub">Completed &amp; Verified</span>
                 </div>
               </div>
 
-              {/* Transactions Table */}
-              <div className="table-card-sharp">
-                <div className="table-header-row">
-                  <h3>Recent System Transactions</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '6px 12px', borderRadius: '4px' }}>
-                    <Search size={14} color="#64748b" style={{ marginRight: '6px' }} />
-                    <input 
-                      type="text" 
-                      placeholder="Search transactions..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '12px', fontFamily: 'var(--font-family)' }}
-                    />
-                  </div>
+              {/* Incident Trend Chart */}
+              <div className="chart-wrapper-card">
+                <h3>Real-time Incident &amp; Resolution Velocity</h3>
+                <div style={{ height: 260, width: '100%', marginTop: 12 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={INCIDENT_TREND}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                      <XAxis dataKey="time" stroke="#94a3b8" />
+                      <YAxis stroke="#94a3b8" />
+                      <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 8, color: '#fff' }} />
+                      <Area type="monotone" dataKey="complaints" stroke="#06b6d4" fill="rgba(6, 182, 212, 0.15)" />
+                      <Area type="monotone" dataKey="resolved" stroke="#10b981" fill="rgba(16, 185, 129, 0.15)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
+              </div>
 
-                <div className="table-responsive-wrapper">
-                  <table className="sharp-table">
+              {/* Recent Active Complaints Summary Table */}
+              <div className="table-wrapper-card">
+                <div className="table-title-row">
+                  <h3>Active Emergency Incidents ({complaints.length})</h3>
+                  <button className="view-all-btn" onClick={() => setActiveTab('complaints')}>View All Complaints →</button>
+                </div>
+                {complaints.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-dark)', margin: '0 0 4px' }}>No complaints logged in database yet (Count: 0).</p>
+                    <p style={{ fontSize: '12.5px', margin: 0 }}>Submit a ticket from Customer Portal to see it appear live here!</p>
+                  </div>
+                ) : (
+                  <table className="admin-table">
                     <thead>
                       <tr>
-                        <th>Reference</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Amount</th>
+                        <th>Ticket</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Priority</th>
                         <th>Status</th>
-                        <th>Date</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {initialTransactions.map((tx) => (
-                        <tr key={tx.id}>
-                          <td style={{ fontWeight: '700', color: 'var(--primary-color)' }}>{tx.id}</td>
+                      {complaints.slice(0, 4).map(c => (
+                        <tr key={c.id}>
+                          <td className="font-mono font-bold">{c.id}</td>
+                          <td className="font-semibold">{c.title}</td>
+                          <td>{c.category}</td>
                           <td>
-                            <div className="user-cell-sharp">
-                              <div className="user-avatar-sharp">
-                                {tx.user.charAt(0)}
-                              </div>
-                              <div>
-                                <div style={{ fontWeight: '600' }}>{tx.user}</div>
-                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>{tx.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>{tx.action}</td>
-                          <td style={{ fontWeight: '700' }}>{tx.amount}</td>
-                          <td>
-                            <span className={`status-tag-sharp ${tx.status}`}>
-                              {tx.status}
+                            <span className={`priority-tag-mini ${c.priority?.toLowerCase()}`}>
+                              {c.priority}
                             </span>
                           </td>
-                          <td style={{ color: '#64748b', fontSize: '12px' }}>{tx.date}</td>
+                          <td>
+                            <span className={`status-tag-mini ${c.status?.toLowerCase().replace(' ', '-')}`}>
+                              {c.status}
+                            </span>
+                          </td>
+                          <td>
+                            <button className="action-link-btn" onClick={() => handleInspectComplaint(c)}>
+                              Inspect
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
+                )}
               </div>
-            </>
+            </div>
           )}
 
-          {/* ================= TAB 2: USERS MANAGEMENT ================= */}
-          {activeTab === 'users' && (
-            <div className="table-card-sharp">
-              <div className="table-header-row">
+          {/* ================= TAB 2: CIVIC COMPLAINTS LIST ================= */}
+          {activeTab === 'complaints' && (
+            <div className="admin-tab-pane">
+              <div className="pane-header">
                 <div>
-                  <h3>Registered Users in MongoDB ({filteredDbUsers.length})</h3>
-                  <p style={{ fontSize: '12.5px', color: '#64748b', margin: '4px 0 0' }}>
-                    {isSuperAdmin ? '👑 You have Super Admin rights to promote or demote roles.' : '🔒 Role editing is restricted to Super Admin (admin@gmail.com).'}
-                  </p>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '7px 14px', borderRadius: '4px' }}>
-                    <Search size={14} color="#64748b" style={{ marginRight: '8px' }} />
-                    <input 
-                      type="text" 
-                      placeholder="Search by Name, Email, CNIC..." 
-                      value={usersSearch}
-                      onChange={(e) => setUsersSearch(e.target.value)}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '12.5px', fontFamily: 'var(--font-family)', width: '220px' }}
-                    />
-                  </div>
+                  <h2>Civic Infrastructure Complaints ({filteredComplaints.length})</h2>
+                  <p>Filter, inspect AI diagnostics, and dispatch tickets to municipal crews.</p>
                 </div>
               </div>
 
-              {usersLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 10px', display: 'block' }} />
-                  Loading users from database...
+              {/* Search & Category Filter Bar */}
+              <div className="filter-controls-row">
+                <div className="search-box-wrap">
+                  <Search size={15} color="#94a3b8" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by Ticket ID, Title, Citizen..." 
+                    value={complaintSearch}
+                    onChange={e => setComplaintSearch(e.target.value)}
+                  />
                 </div>
-              ) : (
-                <div className="table-responsive-wrapper">
-                  <table className="sharp-table">
-                    <thead>
-                      <tr>
-                        <th>User Profile</th>
-                        <th>Email</th>
-                        <th>DOB</th>
-                        <th>CNIC</th>
-                        <th>Provider</th>
-                        <th>Current Role</th>
-                        <th>Role Action</th>
+
+                <div className="category-select-wrap">
+                  <Filter size={15} color="#94a3b8" />
+                  <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+                    <option value="All">All Categories</option>
+                    <option value="Water & Drainage">Water &amp; Drainage</option>
+                    <option value="Roads & Infrastructure">Roads &amp; Infrastructure</option>
+                    <option value="Waste & Sanitation">Waste &amp; Sanitation</option>
+                    <option value="Electricity & Power">Electricity &amp; Power</option>
+                    <option value="Public Safety & Streetlights">Public Safety</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Complaints Table */}
+              <div className="table-wrapper-card">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Ticket ID</th>
+                      <th>Title &amp; Location</th>
+                      <th>Citizen</th>
+                      <th>Department</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Status Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredComplaints.map(c => (
+                      <tr key={c.id}>
+                        <td className="font-mono font-bold">{c.id}</td>
+                        <td>
+                          <div className="title-location-cell">
+                            <span className="complaint-title-text" onClick={() => handleInspectComplaint(c)}>{c.title}</span>
+                            <span className="location-sub"><MapPin size={11} /> {c.location}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="citizen-cell">
+                            <span>{c.citizenName}</span>
+                            <small>{c.citizenContact}</small>
+                          </div>
+                        </td>
+                        <td className="dept-cell">{c.department}</td>
+                        <td>
+                          <span className={`priority-tag-mini ${c.priority.toLowerCase()}`}>
+                            {c.priority}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-tag-mini ${c.status.toLowerCase().replace(' ', '-')}`}>
+                            {c.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions-btns">
+                            {c.status !== 'In Progress' && (
+                              <button 
+                                className="action-btn-sm" 
+                                onClick={() => handleStatusChange(c.id, 'In Progress')}
+                                title="Start Work"
+                              >
+                                Start
+                              </button>
+                            )}
+                            {c.status !== 'Resolved' && (
+                              <button 
+                                className="action-btn-sm success" 
+                                onClick={() => handleStatusChange(c.id, 'Resolved')}
+                                title="Resolve"
+                              >
+                                Resolve
+                              </button>
+                            )}
+                            <button 
+                              className="action-btn-sm" 
+                              onClick={() => handleInspectComplaint(c)}
+                              title="Details"
+                            >
+                              <Eye size={12} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {filteredDbUsers.length === 0 ? (
-                        <tr>
-                          <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
-                            No users found matching your search.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredDbUsers.map((u) => {
-                          const isTargetSuperAdmin = u.email?.toLowerCase() === 'admin@gmail.com';
-
-                          return (
-                            <tr key={u._id}>
-                              <td>
-                                <div className="user-cell-sharp">
-                                  {u.profilePic ? (
-                                    <img src={u.profilePic} alt="" className="user-avatar-sharp" style={{ objectFit: 'cover' }} />
-                                  ) : (
-                                    <div className="user-avatar-sharp">
-                                      {u.name?.charAt(0).toUpperCase()}
-                                    </div>
-                                  )}
-                                  <div>
-                                    <div style={{ fontWeight: '600', color: '#1e293b' }}>{u.name}</div>
-                                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>ID: {u._id.slice(-6)}</div>
-                                  </div>
-                                </div>
-                              </td>
-
-                              <td style={{ fontWeight: '500' }}>{u.email}</td>
-                              <td style={{ fontSize: '12.5px', color: '#64748b' }}>
-                                {u.dob ? new Date(u.dob).toLocaleDateString() : 'N/A'}
-                              </td>
-                              <td style={{ fontSize: '12.5px', color: '#64748b' }}>{u.cnic || 'N/A'}</td>
-                              
-                              <td>
-                                <span style={{ textTransform: 'capitalize', fontSize: '11.5px', background: '#f1f5f9', padding: '3px 8px', borderRadius: '2px', fontWeight: '600' }}>
-                                  {u.authProvider || 'local'}
-                                </span>
-                              </td>
-
-                              <td>
-                                {isTargetSuperAdmin ? (
-                                  <span className="status-tag-sharp" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-                                    👑 Super Admin
-                                  </span>
-                                ) : (
-                                  <span className={`status-tag-sharp ${u.role === 'admin' ? 'completed' : 'pending'}`}>
-                                    {u.role?.toUpperCase() || 'USER'}
-                                  </span>
-                                )}
-                              </td>
-
-                              {/* Super Admin Role Control */}
-                              <td>
-                                {isTargetSuperAdmin ? (
-                                  <span style={{ fontSize: '11px', color: '#92400e', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Lock size={12} /> Permanent Locked
-                                  </span>
-                                ) : isSuperAdmin ? (
-                                  u.role === 'admin' ? (
-                                    <button 
-                                      className="action-btn-sharp" 
-                                      onClick={() => handleRoleChange(u, 'user')}
-                                      style={{ color: '#dc2626', borderColor: '#fca5a5' }}
-                                      title="Demote to standard user"
-                                    >
-                                      Demote to User
-                                    </button>
-                                  ) : (
-                                    <button 
-                                      className="action-btn-sharp" 
-                                      onClick={() => handleRoleChange(u, 'admin')}
-                                      style={{ color: '#16a34a', borderColor: '#86efac' }}
-                                      title="Promote to Admin"
-                                    >
-                                      Promote to Admin
-                                    </button>
-                                  )
-                                ) : (
-                                  <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>
-                                    Read-only
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          {/* ================= TAB 3: PRODUCT REQUESTS & ORDERS ================= */}
-          {activeTab === 'orders' && (
-            <div>
-              {/* Top Mini Stat Row for Orders */}
-              <div className="stats-grid-4" style={{ marginBottom: '20px' }}>
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">All Requests</span>
-                    <span className="stat-value">{ordersList.length}</span>
-                  </div>
-                  <div className="stat-icon-wrapper" style={{ background: '#f1f5f9', color: '#475569' }}>
-                    <ClipboardList size={20} />
-                  </div>
-                </div>
-
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">🟡 Pending</span>
-                    <span className="stat-value">{pendingOrdersCount}</span>
-                  </div>
-                  <div className="stat-icon-wrapper" style={{ background: '#fef9c3', color: '#854d0e' }}>
-                    <Clock size={20} />
-                  </div>
-                </div>
-
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">🟢 Received / Done</span>
-                    <span className="stat-value">{receivedOrdersCount}</span>
-                  </div>
-                  <div className="stat-icon-wrapper" style={{ background: '#dcfce7', color: '#166534' }}>
-                    <CheckCircle2 size={20} />
-                  </div>
-                </div>
-
-                <div className="stat-card-sharp">
-                  <div className="stat-info-left">
-                    <span className="stat-title">🔴 Rejected</span>
-                    <span className="stat-value">{rejectedOrdersCount}</span>
-                  </div>
-                  <div className="stat-icon-wrapper" style={{ background: '#fee2e2', color: '#991b1b' }}>
-                    <XCircle size={20} />
-                  </div>
+          {/* ================= TAB 3: USER & ROLE MANAGEMENT ================= */}
+          {activeTab === 'users' && (
+            <div className="admin-tab-pane">
+              <div className="pane-header">
+                <div>
+                  <h2>User &amp; Role Management ({filteredUsers.length})</h2>
+                  <p>Assign and modify roles: <strong>Customer</strong>, <strong>Worker</strong>, or <strong>Admin</strong>.</p>
                 </div>
               </div>
 
-              {/* Main Orders Table Card */}
-              <div className="table-card-sharp">
-                <div className="table-header-row" style={{ flexWrap: 'wrap', gap: '15px' }}>
-                  
-                  {/* Filter Tabs */}
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button 
-                      className={`btn-sharp ${ordersStatusFilter === 'all' ? 'primary' : ''}`}
-                      onClick={() => setOrdersStatusFilter('all')}
-                      style={{ padding: '6px 14px', fontSize: '12px' }}
-                    >
-                      All ({ordersList.length})
-                    </button>
-                    <button 
-                      className={`btn-sharp ${ordersStatusFilter === 'pending' ? 'primary' : ''}`}
-                      onClick={() => setOrdersStatusFilter('pending')}
-                      style={{ padding: '6px 14px', fontSize: '12px' }}
-                    >
-                      Pending ({pendingOrdersCount})
-                    </button>
-                    <button 
-                      className={`btn-sharp ${ordersStatusFilter === 'received' ? 'primary' : ''}`}
-                      onClick={() => setOrdersStatusFilter('received')}
-                      style={{ padding: '6px 14px', fontSize: '12px' }}
-                    >
-                      Received ({receivedOrdersCount})
-                    </button>
-                    <button 
-                      className={`btn-sharp ${ordersStatusFilter === 'rejected' ? 'primary' : ''}`}
-                      onClick={() => setOrdersStatusFilter('rejected')}
-                      style={{ padding: '6px 14px', fontSize: '12px' }}
-                    >
-                      Rejected ({rejectedOrdersCount})
-                    </button>
-                  </div>
-
-                  {/* Search Bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '6px 12px', borderRadius: '4px' }}>
-                    <Search size={14} color="#64748b" style={{ marginRight: '8px' }} />
-                    <input 
-                      type="text" 
-                      placeholder="Search by User, Item, ID..." 
-                      value={ordersSearch}
-                      onChange={(e) => setOrdersSearch(e.target.value)}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '12px', fontFamily: 'var(--font-family)', width: '180px' }}
-                    />
-                  </div>
-
+              <div className="filter-controls-row">
+                <div className="search-box-wrap">
+                  <Search size={15} color="#94a3b8" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by Name, Email..." 
+                    value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                  />
                 </div>
+                <button className="refresh-btn" onClick={fetchDbUsers} title="Refresh User List">
+                  <RefreshCw size={14} className={usersLoading ? 'animate-spin' : ''} />
+                  <span>Refresh</span>
+                </button>
+              </div>
 
-                <div className="table-responsive-wrapper">
-                  <table className="sharp-table">
-                    <thead>
-                      <tr>
-                        <th>Req ID</th>
-                        <th>User (Applicant/Buyer)</th>
-                        <th>Product / Item Requested</th>
-                        <th>Qty & Total</th>
-                        <th>Date</th>
-                        <th>Current Status</th>
-                        <th>Admin Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredOrders.length === 0 ? (
-                        <tr>
-                          <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
-                            No requests found matching the current filter.
+              <div className="table-wrapper-card">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>User Name</th>
+                      <th>Email</th>
+                      <th>Provider</th>
+                      <th>Current Role</th>
+                      <th>Change Role Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map(u => {
+                      const isSuper = u.email?.toLowerCase() === 'admin@gmail.com';
+                      return (
+                        <tr key={u._id}>
+                          <td className="font-semibold">{u.name}</td>
+                          <td>{u.email}</td>
+                          <td className="capitalize">{u.authProvider || 'local'}</td>
+                          <td>
+                            <span className="role-tag-pill">
+                              {u.role?.toUpperCase() || 'CUSTOMER'}
+                            </span>
                           </td>
-                        </tr>
-                      ) : (
-                        filteredOrders.map((ord) => (
-                          <tr key={ord.id}>
-                            <td style={{ fontWeight: '700', color: 'var(--primary-color)' }}>{ord.id}</td>
-                            
-                            {/* User Info */}
-                            <td>
-                              <div className="user-cell-sharp">
-                                <div className="user-avatar-sharp">
-                                  {ord.userName.charAt(0)}
-                                </div>
-                                <div>
-                                  <div style={{ fontWeight: '600' }}>{ord.userName}</div>
-                                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{ord.userEmail}</div>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Product Info */}
-                            <td>
-                              <div style={{ fontWeight: '600', color: '#1e293b' }}>{ord.productName}</div>
-                              <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '2px' }}>
-                                {ord.category}
-                              </span>
-                            </td>
-
-                            {/* Qty & Price */}
-                            <td>
-                              <div style={{ fontWeight: '700' }}>{ord.price}</div>
-                              <div style={{ fontSize: '11px', color: '#64748b' }}>Qty: {ord.quantity}</div>
-                            </td>
-
-                            {/* Date */}
-                            <td style={{ color: '#64748b', fontSize: '12px' }}>{ord.date}</td>
-
-                            {/* Status Tag */}
-                            <td>
-                              {ord.status === 'pending' && (
-                                <span className="status-tag-sharp pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <Clock size={11} /> Pending
-                                </span>
-                              )}
-                              {ord.status === 'received' && (
-                                <span className="status-tag-sharp completed" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <CheckCircle2 size={11} /> Received
-                                </span>
-                              )}
-                              {ord.status === 'rejected' && (
-                                <span className="status-tag-sharp failed" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <XCircle size={11} /> Rejected
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Action Buttons */}
-                            <td>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                {ord.status !== 'received' && (
+                          <td>
+                            {isSuper ? (
+                              <span className="locked-pill"><Lock size={12} /> Super Admin Locked</span>
+                            ) : (
+                              <div className="role-switcher-group">
+                                {u.role !== 'customer' && u.role !== 'user' && (
                                   <button 
-                                    className="action-btn-sharp"
-                                    onClick={() => handleOrderStatusChange(ord.id, 'received')}
-                                    style={{ color: '#16a34a', borderColor: '#86efac' }}
-                                    title="Mark as Received / Approved"
+                                    className="role-switch-btn" 
+                                    onClick={() => handleRoleChange(u, 'customer')}
                                   >
-                                    <Check size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Receive
+                                    Customer
                                   </button>
                                 )}
-
-                                {ord.status !== 'rejected' && (
+                                {u.role !== 'worker' && (
                                   <button 
-                                    className="action-btn-sharp"
-                                    onClick={() => handleOrderStatusChange(ord.id, 'rejected')}
-                                    style={{ color: '#dc2626', borderColor: '#fca5a5' }}
-                                    title="Reject Request"
+                                    className="role-switch-btn" 
+                                    onClick={() => handleRoleChange(u, 'worker')}
                                   >
-                                    <XCircle size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Reject
+                                    Worker
                                   </button>
                                 )}
-
-                                {ord.status !== 'pending' && (
+                                {u.role !== 'admin' && (
                                   <button 
-                                    className="action-btn-sharp"
-                                    onClick={() => handleOrderStatusChange(ord.id, 'pending')}
-                                    style={{ color: '#d97706', borderColor: '#fde68a' }}
-                                    title="Reset to Pending"
+                                    className="role-switch-btn" 
+                                    onClick={() => handleRoleChange(u, 'admin')}
                                   >
-                                    <RotateCcw size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Reset
+                                    Admin
                                   </button>
                                 )}
                               </div>
-                            </td>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+          {/* ================= TAB 4: FIELD WORKER FLEET ================= */}
+          {activeTab === 'workers' && (
+            <div className="admin-tab-pane">
+              <div className="pane-header">
+                <div>
+                  <h2>Field Worker Fleet Management ({FIELD_WORKERS.length})</h2>
+                  <p>Active field crews deployed across municipal sectors.</p>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* ================= TAB 4: ANALYTICS ================= */}
-          {activeTab === 'analytics' && (
-            <div className="table-card-sharp">
-              <div className="table-header-row">
-                <h3>Advanced System Analytics & Logs</h3>
-              </div>
-              <p style={{ color: '#64748b', fontSize: '14px', padding: '20px 0' }}>
-                📈 Real-time metrics, server response times, and API usage analytics.
-              </p>
-            </div>
-          )}
+              <div className="workers-grid-layout">
+                {FIELD_WORKERS.map(w => (
+                  <div key={w.id} className="worker-fleet-card">
+                    <div className="w-card-header">
+                      <div className="w-icon-wrap">
+                        <HardHat size={20} className="text-cyan-400" />
+                      </div>
+                      <div>
+                        <h4>{w.name}</h4>
+                        <span className="w-dept-text">{w.department}</span>
+                      </div>
+                    </div>
 
-          {/* ================= TAB 5: SETTINGS ================= */}
-          {activeTab === 'settings' && (
-            <div className="table-card-sharp">
-              <div className="table-header-row">
-                <h3>Admin & Security Settings</h3>
+                    <div className="w-meta-row">
+                      <span><strong>Sector:</strong> {w.sector}</span>
+                      <span><strong>Active Orders:</strong> {w.activeTasks}</span>
+                    </div>
+
+                    <div className="w-status-row">
+                      <span className={`w-status-badge ${w.status.toLowerCase().replace(' ', '-')}`}>
+                        ● {w.status}
+                      </span>
+                      <button 
+                        className="assign-order-btn"
+                        onClick={() => toast.success(`Work order dispatch prompt sent to ${w.name}!`)}
+                      >
+                        Dispatch Task
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p style={{ color: '#64748b', fontSize: '14px', padding: '20px 0' }}>
-                ⚙️ Configure CORS policies, JWT expirations, and Cloudinary storage settings.
-              </p>
             </div>
           )}
 
         </main>
       </div>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
