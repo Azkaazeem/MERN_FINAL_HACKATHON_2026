@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ChatMessage = require('../models/ChatMessage');
+const Complaint = require('../models/Complaint');
 
 // GET all messages for a ticket
 router.get('/:ticketId', async (req, res) => {
@@ -16,8 +17,10 @@ router.get('/:ticketId', async (req, res) => {
 router.post('/:ticketId', async (req, res) => {
   try {
     const { senderRole, senderName, text, type, mediaUrl, duration, time } = req.body;
+    const ticketId = req.params.ticketId;
+
     const msg = new ChatMessage({
-      ticketId: req.params.ticketId,
+      ticketId,
       senderRole: senderRole || 'customer',
       senderName: senderName || 'User',
       text: text || '',
@@ -27,6 +30,22 @@ router.post('/:ticketId', async (req, res) => {
       time: time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
     const saved = await msg.save();
+
+    // If worker sends message, automatically claim complaint for this worker in DB
+    if (senderRole === 'worker' && senderName) {
+      try {
+        await Complaint.findOneAndUpdate(
+          { $or: [{ ticketId: ticketId }, { _id: ticketId.match(/^[0-9a-fA-F]{24}$/) ? ticketId : null }] },
+          { 
+            assignedWorker: senderName,
+            status: 'In Progress'
+          }
+        );
+      } catch (dbErr) {
+        console.warn('Complaint worker claim error:', dbErr.message);
+      }
+    }
+
     res.status(201).json({ success: true, message: saved });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to send message', error: err.message });

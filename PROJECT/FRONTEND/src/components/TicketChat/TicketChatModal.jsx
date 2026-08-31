@@ -51,41 +51,45 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
   const timerRef = useRef(null);
 
   // Load ticket conversation history from Database with LocalStorage fallback
-  useEffect(() => {
+  const fetchDbMessages = async () => {
     if (!ticket) return;
-    const tId = ticket.id || ticket.ticketId || '101';
+    const tId = ticket.ticketId || ticket.id || '101';
     
-    const fetchDbMessages = async () => {
-      try {
-        const res = await API.get(`/chat/${tId}`);
-        if (res.data?.messages?.length > 0) {
-          setMessages(res.data.messages);
-          return;
-        }
-      } catch (e) {}
-
-      const storageKey = `ticket_chat_${tId}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          setMessages(JSON.parse(saved));
-        } catch (e) {
-          setMessages(getInitialSeedMessages(ticket));
-        }
-      } else {
-        const initial = getInitialSeedMessages(ticket);
-        setMessages(initial);
-        localStorage.setItem(storageKey, JSON.stringify(initial));
+    try {
+      const res = await API.get(`/chat/${tId}`);
+      if (res.data?.messages?.length > 0) {
+        setMessages(res.data.messages);
+        return;
       }
-    };
+    } catch (e) {}
 
+    const storageKey = `ticket_chat_${tId}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved));
+      } catch (e) {
+        setMessages(getInitialSeedMessages(ticket));
+      }
+    } else {
+      const initial = getInitialSeedMessages(ticket);
+      setMessages(initial);
+      localStorage.setItem(storageKey, JSON.stringify(initial));
+    }
+  };
+
+  // Poll database messages every 2 seconds for real-time synchronization between User & Worker!
+  useEffect(() => {
+    if (!isOpen || !ticket) return;
     fetchDbMessages();
-  }, [ticket]);
+    const interval = setInterval(fetchDbMessages, 2000);
+    return () => clearInterval(interval);
+  }, [isOpen, ticket]);
 
-  // Save messages to persistent storage & DB
+  // Save messages to persistent storage
   useEffect(() => {
     if (!ticket || messages.length === 0) return;
-    const tId = ticket.id || ticket.ticketId || '101';
+    const tId = ticket.ticketId || ticket.id || '101';
     const storageKey = `ticket_chat_${tId}`;
     localStorage.setItem(storageKey, JSON.stringify(messages));
   }, [messages, ticket]);
@@ -114,7 +118,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
       id: 'msg_sys_1',
       senderRole: 'system',
       senderName: 'NovaDesk AI Triage Engine',
-      text: `Ticket #${t.id || '101'} triaged as ${t.priority || 'High'} Priority. Automated dispatch routed to ${t.assigned_department || t.assignedDept || 'Municipal Authority'}.`,
+      text: `Ticket #${t.ticketId || t.id || '101'} triaged as ${t.priority || 'High'} Priority. Automated dispatch routed to ${t.assigned_department || t.assignedDept || 'Municipal Authority'}.`,
       time: '10:15 AM',
       type: 'system'
     },
@@ -122,7 +126,7 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
       id: 'msg_agent_1',
       senderRole: 'worker',
       senderName: t.assignedWorker || 'Officer Tariq Mehmood (Field Crew)',
-      text: `Assigned inspection order #${t.id || '101'}. Our mobile repair van is currently en route with required hydraulic maintenance crew.`,
+      text: `Assigned inspection order #${t.ticketId || t.id || '101'}. Our mobile repair van is currently en route with required hydraulic maintenance crew.`,
       time: '10:18 AM',
       type: 'text'
     },
@@ -139,12 +143,13 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
   if (!isOpen || !ticket) return null;
 
   // Send Text Message
-  const handleSendMessage = (textToSend = null) => {
+  const handleSendMessage = async (textToSend = null) => {
     const text = textToSend || inputText;
     if (!text.trim()) return;
 
+    const tId = ticket.ticketId || ticket.id || '101';
     const newMsg = {
-      id: `msg_${Date.now()}`,
+      ticketId: tId,
       senderRole: userRole === 'worker' ? 'worker' : 'customer',
       senderName: user?.name || (userRole === 'worker' ? 'Assigned Field Officer' : 'Citizen Reporter'),
       text: text.trim(),
@@ -156,21 +161,11 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
     setInputText('');
     setShowEmojiPicker(false);
 
-    // Simulate Agent Auto-Reply if sent by customer
-    if (userRole === 'customer') {
-      setIsAgentTyping(true);
-      setTimeout(() => {
-        setIsAgentTyping(false);
-        const replyMsg = {
-          id: `msg_${Date.now() + 1}`,
-          senderRole: 'worker',
-          senderName: ticket.assignedWorker || 'Officer Tariq Mehmood (Field Crew)',
-          text: `Acknowledged! We have logged your update on Ticket #${ticket.id || '101'}. Crew is addressing the issue now.`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text'
-        };
-        setMessages(prev => [...prev, replyMsg]);
-      }, 1500);
+    // Save to Database API
+    try {
+      await API.post(`/chat/${tId}`, newMsg);
+    } catch (err) {
+      console.warn('Chat DB post fallback:', err);
     }
   };
 
@@ -190,10 +185,11 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
       return;
     }
 
+    const tId = ticket.ticketId || ticket.id || '101';
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       const newMsg = {
-        id: `msg_${Date.now()}`,
+        ticketId: tId,
         senderRole: userRole === 'worker' ? 'worker' : 'customer',
         senderName: user?.name || (userRole === 'worker' ? 'Field Officer' : 'Citizen Reporter'),
         mediaUrl: reader.result,
@@ -202,36 +198,47 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
         type: 'image'
       };
       setMessages(prev => [...prev, newMsg]);
+      try {
+        await API.post(`/chat/${tId}`, newMsg);
+      } catch (err) {}
       toast.success('Photo proof attached to conversation!');
     };
     reader.readAsDataURL(file);
   };
 
   // Toggle Voice Note Recording
-  const toggleVoiceRecording = () => {
+  const toggleVoiceRecording = async () => {
     if (!isRecordingVoice) {
       setIsRecordingVoice(true);
       toast('Recording voice note... Click mic again to send.', { icon: '🎙️' });
     } else {
       setIsRecordingVoice(false);
       const durationSec = recordingSeconds > 0 ? recordingSeconds : 5;
+      const tId = ticket.ticketId || ticket.id || '101';
       const newMsg = {
-        id: `msg_${Date.now()}`,
+        ticketId: tId,
         senderRole: userRole === 'worker' ? 'worker' : 'customer',
         senderName: user?.name || (userRole === 'worker' ? 'Field Officer' : 'Citizen Reporter'),
-        duration: `0:${durationSec < 10 ? '0' : ''}${durationSec}`,
+        duration: `0:0${durationSec}`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'voice'
       };
       setMessages(prev => [...prev, newMsg]);
-      toast.success('Voice note sent!');
+      try {
+        await API.post(`/chat/${tId}`, newMsg);
+      } catch (err) {}
+      toast.success('Voice note sent to ticket conversation!');
     }
   };
 
-  // Delete message
-  const handleDeleteMessage = (msgId) => {
-    setMessages(prev => prev.filter(m => m.id !== msgId));
-    toast.success('Message deleted.');
+  // Delete / Unsend Message
+  const handleDeleteMessage = async (msgId) => {
+    setMessages(prev => prev.filter(m => m._id !== msgId && m.id !== msgId));
+    try {
+      const tId = ticket.ticketId || ticket.id || '101';
+      await API.delete(`/chat/${tId}/${msgId}`);
+    } catch (e) {}
+    toast.success('Message deleted');
   };
 
   return (

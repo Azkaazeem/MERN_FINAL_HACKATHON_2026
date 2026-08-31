@@ -291,6 +291,43 @@
   background: var(--card-hover);
   color: var(--text-muted);
   border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-pill.status-claimed {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.status-pill.status-my-task {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.task-card.task-claimed-other {
+  opacity: 0.75;
+  border-style: dashed;
+}
+
+.claimed-by-other-box {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.claimed-by-other-box strong {
+  color: #d97706;
 }
 
 .task-title {

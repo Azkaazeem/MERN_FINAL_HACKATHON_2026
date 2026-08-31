@@ -24,7 +24,9 @@ import {
   MessageSquare,
   Building2,
   Layers,
-  Award
+  Award,
+  Lock,
+  UserCheck
 } from 'lucide-react';
 import TicketChatModal from '../../components/TicketChat/TicketChatModal';
 import './Worker.css';
@@ -68,6 +70,7 @@ const Worker = () => {
           priority: c.priority || 'Medium',
           status: c.status === 'Open' ? 'Pending' : (c.status || 'Pending'),
           assignedDept: c.department || c.assigned_department || 'General Civic Support',
+          assignedWorker: c.assignedWorker || 'Unassigned',
           location: c.location || 'Central District',
           slaRemaining: c.status === 'Resolved' ? 'Completed' : (c.priority === 'Critical' ? '1 hr 45 min' : '14 hrs'),
           timeAgo: 'Just now',
@@ -213,6 +216,8 @@ const Worker = () => {
   // Filter tasks based on Department Scope & Status
   const filteredTasks = activeScopedTasks.filter(t => {
     if (filter === 'All') return true;
+    if (filter === 'Available') return (!t.assignedWorker || t.assignedWorker === 'Unassigned' || t.status === 'Pending') && t.status !== 'Resolved';
+    if (filter === 'My Tasks') return t.assignedWorker === user?.name;
     if (filter === 'In Progress') return t.status === 'In Progress';
     if (filter === 'Pending') return t.status === 'Pending';
     if (filter === 'Critical') return t.priority === 'Critical';
@@ -305,7 +310,7 @@ const Worker = () => {
           {/* Status Filter Bar */}
           <div className="worker-filter-bar">
             <div className="filter-tabs">
-              {['All', 'In Progress', 'Pending', 'Critical', 'Resolved'].map(tab => (
+              {['All', 'Available', 'My Tasks', 'In Progress', 'Critical', 'Resolved'].map(tab => (
                 <button
                   key={tab}
                   className={`filter-tab-btn ${filter === tab ? 'active' : ''}`}
@@ -313,9 +318,11 @@ const Worker = () => {
                 >
                   {tab}
                   <span className="filter-count">
-                    {tab === 'All' ? filteredTasks.length :
-                     tab === 'Critical' ? filteredTasks.filter(t => t.priority === 'Critical').length :
-                     filteredTasks.filter(t => t.status === tab).length}
+                    {tab === 'All' ? activeScopedTasks.length :
+                     tab === 'Available' ? activeScopedTasks.filter(t => (!t.assignedWorker || t.assignedWorker === 'Unassigned' || t.status === 'Pending') && t.status !== 'Resolved').length :
+                     tab === 'My Tasks' ? activeScopedTasks.filter(t => t.assignedWorker === user?.name).length :
+                     tab === 'Critical' ? activeScopedTasks.filter(t => t.priority === 'Critical').length :
+                     activeScopedTasks.filter(t => t.status === tab).length}
                   </span>
                 </button>
               ))}
@@ -345,105 +352,133 @@ const Worker = () => {
           {filteredTasks.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '44px 20px', gridColumn: '1 / -1', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-dark)', margin: '0 0 6px' }}>
-                No active complaints found in this category.
+                No complaints found for "{filter}".
               </p>
               <p style={{ fontSize: '13px', margin: 0 }}>
                 {departmentScope === 'my_dept' ? 'Switch to "All Municipal Complaints" above to view citywide issues.' : 'No complaints logged currently.'}
               </p>
             </div>
           ) : (
-            filteredTasks.map(task => (
-            <div key={task.id} className={`task-card ${task.priority.toLowerCase()} ${task.status === 'Resolved' ? 'task-resolved' : ''}`}>
-              <div className="task-header">
-                <div className="task-id-badge">
-                  <span className="ticket-tag">{task.id}</span>
-                  <span className={`priority-tag ${task.priority.toLowerCase()}`}>
-                    {task.priority} Priority
-                  </span>
-                </div>
-                <div className={`status-pill ${task.status.toLowerCase().replace(' ', '-')}`}>
-                  {task.status}
-                </div>
-              </div>
+            filteredTasks.map(task => {
+              const isClaimedByOther = task.assignedWorker && task.assignedWorker !== 'Unassigned' && task.assignedWorker !== user?.name && task.status !== 'Resolved';
+              const isClaimedByMe = task.assignedWorker && task.assignedWorker === user?.name;
 
-              <h3 className="task-title">{task.title}</h3>
+              return (
+                <div key={task.id} className={`task-card ${task.priority.toLowerCase()} ${task.status === 'Resolved' ? 'task-resolved' : ''} ${isClaimedByOther ? 'task-claimed-other' : ''}`}>
+                  <div className="task-header">
+                    <div className="task-id-badge">
+                      <span className="ticket-tag">{task.id}</span>
+                      <span className={`priority-tag ${task.priority.toLowerCase()}`}>
+                        {task.priority} Priority
+                      </span>
+                    </div>
 
-              <div className="task-meta-row">
-                <div className="meta-item">
-                  <MapPin size={15} />
-                  <span>{task.location}</span>
-                </div>
-                <div className="meta-item">
-                  <Clock size={15} />
-                  <span>SLA: <strong>{task.slaRemaining}</strong></span>
-                </div>
-              </div>
-
-              <div className="ai-diagnosis-box">
-                <div className="ai-badge">
-                  <Sparkles size={13} />
-                  <span>Category &amp; Department</span>
-                </div>
-                <p>Category: <strong>{task.category}</strong> &bull; Reporter: {task.citizenName}</p>
-                <div className="dept-tag">Assigned Dept: {task.assignedDept}</div>
-              </div>
-
-              {/* Action Buttons: Live Chat with Citizen on EVERY complaint card */}
-              <div className="task-actions-row">
-                <button 
-                  type="button"
-                  className="action-btn chat-citizen-btn"
-                  onClick={() => setActiveChatTicket(task)}
-                  title="Open live chat conversation with reporting citizen"
-                >
-                  <MessageSquare size={15} />
-                  <span>Chat with Citizen</span>
-                </button>
-
-                {task.status === 'Pending' && (
-                  <button 
-                    type="button"
-                    className="action-btn start-btn"
-                    onClick={() => handleStatusChange(task.id, 'In Progress')}
-                  >
-                    <Wrench size={15} />
-                    <span>Start Repair</span>
-                  </button>
-                )}
-
-                {task.status === 'In Progress' && (
-                  <>
-                    <button 
-                      type="button"
-                      className="action-btn resolve-btn"
-                      onClick={() => {
-                        setSelectedTask(task);
-                        setIsResolving(true);
-                      }}
-                    >
-                      <CheckCircle size={15} />
-                      <span>Submit Resolution</span>
-                    </button>
-                    <button 
-                      type="button"
-                      className="action-btn photo-btn"
-                      onClick={() => toast.success('Site Inspection Photo Attached!')}
-                      title="Upload Field Photo"
-                    >
-                      <Camera size={15} />
-                    </button>
-                  </>
-                )}
-
-                {task.status === 'Resolved' && (
-                  <div className="resolved-status-indicator">
-                    <CheckCircle2 size={16} />
-                    <span>Work Completed &amp; Payout Logged</span>
+                    {isClaimedByOther ? (
+                      <div className="status-pill status-claimed" title={`Assigned to ${task.assignedWorker}`}>
+                        <Lock size={12} /> Claimed ({task.assignedWorker})
+                      </div>
+                    ) : isClaimedByMe ? (
+                      <div className="status-pill status-my-task">
+                        <UserCheck size={12} /> Assigned to You
+                      </div>
+                    ) : (
+                      <div className={`status-pill ${task.status.toLowerCase().replace(' ', '-')}`}>
+                        {task.status}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          )))}
+
+                  <h3 className="task-title">{task.title}</h3>
+
+                  <div className="task-meta-row">
+                    <div className="meta-item">
+                      <MapPin size={15} />
+                      <span>{task.location}</span>
+                    </div>
+                    <div className="meta-item">
+                      <Clock size={15} />
+                      <span>SLA: <strong>{task.slaRemaining}</strong></span>
+                    </div>
+                  </div>
+
+                  <div className="ai-diagnosis-box">
+                    <div className="ai-badge">
+                      <Sparkles size={13} />
+                      <span>Category &amp; Department</span>
+                    </div>
+                    <p>Category: <strong>{task.category}</strong> &bull; Reporter: {task.citizenName}</p>
+                    <div className="dept-tag">
+                      {task.assignedWorker && task.assignedWorker !== 'Unassigned' ? `Assigned Staff: ${task.assignedWorker}` : `Assigned Dept: ${task.assignedDept}`}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="task-actions-row">
+                    {isClaimedByOther ? (
+                      <div className="claimed-by-other-box">
+                        <Lock size={14} />
+                        <span>Being handled by <strong>{task.assignedWorker}</strong></span>
+                      </div>
+                    ) : (
+                      <>
+                        <button 
+                          type="button"
+                          className="action-btn chat-citizen-btn"
+                          onClick={() => setActiveChatTicket(task)}
+                          title="Open live chat conversation with reporting citizen"
+                        >
+                          <MessageSquare size={15} />
+                          <span>Chat with Citizen</span>
+                        </button>
+
+                        {task.status === 'Pending' && (
+                          <button 
+                            type="button"
+                            className="action-btn start-btn"
+                            onClick={() => handleStatusChange(task.id, 'In Progress')}
+                          >
+                            <Wrench size={15} />
+                            <span>Start Repair</span>
+                          </button>
+                        )}
+
+                        {task.status === 'In Progress' && (
+                          <>
+                            <button 
+                              type="button"
+                              className="action-btn resolve-btn"
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setIsResolving(true);
+                              }}
+                            >
+                              <CheckCircle size={15} />
+                              <span>Submit Resolution</span>
+                            </button>
+                            <button 
+                              type="button"
+                              className="action-btn photo-btn"
+                              onClick={() => toast.success('Site Inspection Photo Attached!')}
+                              title="Upload Field Photo"
+                            >
+                              <Camera size={15} />
+                            </button>
+                          </>
+                        )}
+
+                        {task.status === 'Resolved' && (
+                          <div className="resolved-status-indicator">
+                            <CheckCircle2 size={16} />
+                            <span>Work Completed &amp; Payout Logged</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </section>
 
         {/* ================= RESOLUTION MODAL ================= */}
