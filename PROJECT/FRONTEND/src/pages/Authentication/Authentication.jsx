@@ -1,25 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  Calendar, 
-  Eye, 
-  EyeOff, 
-  Shield,
-  ArrowRight,
-  Sparkles,
-  Bot,
-  Zap,
-  CheckCircle2,
-  Building2,
-  Camera
-} from 'lucide-react';
+import { Camera, User } from 'lucide-react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import logoImg from '../../assets/logo.png';
 import './Authentication.css';
 
 const Authentication = ({ defaultIsSignUp = false }) => {
@@ -29,19 +13,14 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   const [isSignUp, setIsSignUp] = useState(defaultIsSignUp);
   const [loading, setLoading] = useState(false);
 
-  // --- Password Visibility States ---
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [showSignupPassword, setShowSignupPassword] = useState(false);
-  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
-
-  // --- Signin State (3 Roles: Customer, Worker, Admin) ---
+  // --- Signin State (Roles: Customer, Worker, Admin) ---
   const [loginData, setLoginData] = useState({
     email: '',
     password: '',
     role: 'customer'
   });
 
-  // --- Signup State (Roles: Customer, Worker - Admin NOT allowed via open registration) ---
+  // --- Signup State (Roles: Customer, Worker) ---
   const [signupData, setSignupData] = useState({
     username: '',
     email: '',
@@ -117,12 +96,12 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       setSignupData(prev => ({ ...prev, profilePic: reader.result }));
-      toast.success('Avatar preview loaded!');
+      toast.success('Avatar uploaded!');
     };
     reader.readAsDataURL(file);
   };
 
-  // --- STRICT Database Sign In Handler (NO fake auto-login) ---
+  // --- STRICT Database Sign In Handler ---
   const handleSignIn = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -148,12 +127,12 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     }
   };
 
-  // --- STRICT Database Sign Up Handler (Saves in MongoDB) ---
+  // --- STRICT Database Sign Up Handler ---
   const handleSignUp = async (e) => {
     e.preventDefault();
 
     if (signupData.password !== signupData.confirmPassword) {
-      return toast.error('Passwords do not match! Please verify your password.');
+      return toast.error('Passwords do not match!');
     }
 
     if (signupData.password.length < 6) {
@@ -174,7 +153,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
       });
 
       if (res.data?.success) {
-        toast.success('Account created and saved in Database!');
+        toast.success('Account created successfully!');
         handleAuthSuccess(res.data.user, res.data.token, res.data.user.role || signupData.role);
       } else {
         toast.error(res.data?.message || 'Failed to create account.');
@@ -188,334 +167,210 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   };
 
   return (
-    <div className="auth-page-wrapper">
+    <div className="auth-clean-wrapper">
       <Toaster position="top-right" />
-      
-      <div className="auth-card-container">
+
+      {/* Main Sliding Container */}
+      <div className={`clean-auth-container ${isSignUp ? 'right-panel-active' : ''}`} id="container">
         
-        {/* Brand Header */}
-        <div className="auth-brand-header">
-          <div className="auth-logo-badge">
-            <img src={logoImg} alt="NovaDesk" className="auth-header-logo" />
-          </div>
-          <h1 className="auth-brand-name">NovaDesk</h1>
-          <p className="auth-brand-tagline">AI-Powered Customer Support Desk</p>
-        </div>
+        {/* ================= 1. SIGN IN FORM (LEFT) ================= */}
+        <div className="form-container sign-in-container">
+          <form onSubmit={handleSignIn} className="clean-form">
+            
+            <h1>Sign in</h1>
 
-        {/* Tab Switcher */}
-        <div className="auth-tab-bar">
-          <button 
-            type="button" 
-            className={`auth-tab-btn ${!isSignUp ? 'active' : ''}`}
-            onClick={() => switchTab(false)}
-          >
-            Sign In
-          </button>
-          <button 
-            type="button" 
-            className={`auth-tab-btn ${isSignUp ? 'active' : ''}`}
-            onClick={() => switchTab(true)}
-          >
-            Sign Up
-          </button>
-        </div>
+            <div className="inputs-wrapper">
+              <select 
+                name="role" 
+                value={loginData.role} 
+                onChange={handleLoginChange} 
+                className="clean-input clean-select"
+                required
+              >
+                <option value="customer">Role: Customer (Citizen)</option>
+                <option value="worker">Role: Worker (Field Agent)</option>
+                <option value="admin">Role: Administrator</option>
+              </select>
 
-        {/* Form Container Card */}
-        <div className="auth-form-card">
-          
-          {/* ================= 1. SIGN IN FORM ================= */}
-          {!isSignUp ? (
-            <form onSubmit={handleSignIn} className="auth-form">
-              <div className="form-header-text">
-                <h2>Welcome to NovaDesk</h2>
-                <p>Sign in to access your role-based support workspace</p>
-              </div>
+              <input 
+                type="email" 
+                name="email" 
+                placeholder="Email" 
+                value={loginData.email} 
+                onChange={handleLoginChange} 
+                className="clean-input"
+                required 
+              />
 
-              <div className="inputs-column">
-                
-                {/* Role Selector Pill */}
-                <div className="custom-input-box">
-                  <label>Login As</label>
-                  <div className="input-field-wrap">
-                    <Shield size={17} className="field-icon" />
-                    <select 
-                      name="role" 
-                      value={loginData.role} 
-                      onChange={handleLoginChange} 
-                      className="field-select"
-                      required
-                    >
-                      <option value="customer">Customer (View &amp; Submit Tickets)</option>
-                      <option value="worker">Worker (Field Support Agent)</option>
-                      <option value="admin">Administrator (Command Console)</option>
-                    </select>
-                  </div>
-                </div>
+              <input 
+                type="password" 
+                name="password" 
+                placeholder="Password" 
+                value={loginData.password} 
+                onChange={handleLoginChange} 
+                className="clean-input"
+                required 
+              />
+            </div>
 
-                {/* Email Field */}
-                <div className="custom-input-box">
-                  <label>Email Address</label>
-                  <div className="input-field-wrap">
-                    <Mail size={17} className="field-icon" />
-                    <input 
-                      type="email" 
-                      name="email" 
-                      placeholder="name@example.com" 
-                      value={loginData.email} 
-                      onChange={handleLoginChange} 
-                      required 
-                    />
-                  </div>
-                </div>
+            <button className="clean-solid-btn" type="submit" disabled={loading}>
+              {loading ? 'SIGNING IN...' : 'SIGN IN'}
+            </button>
 
-                {/* Password Field with Eye Toggle */}
-                <div className="custom-input-box">
-                  <label>Password</label>
-                  <div className="input-field-wrap">
-                    <Lock size={17} className="field-icon" />
-                    <input 
-                      type={showLoginPassword ? "text" : "password"} 
-                      name="password" 
-                      placeholder="••••••••••••" 
-                      value={loginData.password} 
-                      onChange={handleLoginChange} 
-                      required 
-                    />
-                    <button 
-                      type="button" 
-                      className="field-eye-btn" 
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      tabIndex="-1"
-                      aria-label="Toggle password visibility"
-                    >
-                      {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
-              <button className="auth-primary-submit-btn" type="submit" disabled={loading}>
-                <span>{loading ? 'Authenticating with Database...' : 'Sign In to NovaDesk'}</span>
-                <ArrowRight size={17} />
+            {/* Mobile / Tablet switch */}
+            <div className="mobile-switch-box">
+              <span>Don't have an account?</span>
+              <button type="button" onClick={() => switchTab(true)} className="mobile-toggle-btn">
+                Sign Up
               </button>
+            </div>
 
-              <div className="demo-credentials-note">
-                <span>Demo Accounts:</span>
-                <code>admin@novadesk.com</code> | <code>worker@novadesk.com</code> | <code>citizen@novadesk.com</code>
-                <small>Password: password123</small>
-              </div>
+          </form>
+        </div>
 
-              <p className="auth-switch-prompt">
-                Don't have an account?{' '}
-                <button type="button" onClick={() => switchTab(true)} className="auth-switch-link">
-                  Create an account
-                </button>
-              </p>
-            </form>
-          ) : (
+        {/* ================= 2. SIGN UP FORM (RIGHT) ================= */}
+        <div className="form-container sign-up-container">
+          <form onSubmit={handleSignUp} className="clean-form signup-form">
+            
+            <h1>Create Account</h1>
 
-            /* ================= 2. SIGN UP FORM ================= */
-            <form onSubmit={handleSignUp} className="auth-form">
-              <div className="form-header-text">
-                <h2>Create Your Account</h2>
-                <p>Register as a Customer or Support Agent to start managing tickets</p>
-              </div>
-
-              {/* Avatar Profile Picture Upload in Signup */}
-              <div className="signup-avatar-row">
-                <div className="signup-avatar-preview">
-                  {signupData.profilePic ? (
-                    <img src={signupData.profilePic} alt="Avatar Preview" className="signup-avatar-img" />
-                  ) : (
-                    <User size={26} className="signup-avatar-icon" />
-                  )}
-                </div>
-                <label className="signup-avatar-btn" title="Upload Profile Picture">
-                  <Camera size={14} />
-                  <span>{signupData.profilePic ? 'Change Photo' : 'Upload Profile Picture (Optional)'}</span>
-                  <input 
-                    type="file" 
-                    accept="image/png, image/jpeg, image/jpg" 
-                    onChange={handleAvatarUpload} 
-                    style={{ display: 'none' }} 
-                  />
-                </label>
-              </div>
-
-              <div className="inputs-column">
-                
-                {/* Username */}
-                <div className="custom-input-box">
-                  <label>Full Username / Name</label>
-                  <div className="input-field-wrap">
-                    <User size={17} className="field-icon" />
-                    <input 
-                      type="text" 
-                      name="username" 
-                      placeholder="e.g. Alex Johnson" 
-                      value={signupData.username} 
-                      onChange={handleSignupChange} 
-                      required 
-                    />
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="custom-input-box">
-                  <label>Email Address</label>
-                  <div className="input-field-wrap">
-                    <Mail size={17} className="field-icon" />
-                    <input 
-                      type="email" 
-                      name="email" 
-                      placeholder="name@example.com" 
-                      value={signupData.email} 
-                      onChange={handleSignupChange} 
-                      required 
-                    />
-                  </div>
-                </div>
-
-                {/* Date of Birth (DOB) */}
-                <div className="custom-input-box">
-                  <label>Date of Birth</label>
-                  <div className="input-field-wrap">
-                    <Calendar size={17} className="field-icon" />
-                    <input 
-                      type="date" 
-                      name="dob" 
-                      value={signupData.dob} 
-                      onChange={handleSignupChange} 
-                      required 
-                    />
-                  </div>
-                </div>
-
-                {/* Role Dropdown */}
-                <div className="custom-input-box">
-                  <label>Register As</label>
-                  <div className="input-field-wrap">
-                    <Shield size={17} className="field-icon" />
-                    <select 
-                      name="role" 
-                      value={signupData.role} 
-                      onChange={handleSignupChange} 
-                      className="field-select"
-                      required
-                    >
-                      <option value="customer">Customer (Submit &amp; Track Tickets)</option>
-                      <option value="worker">Worker (Support Agent - Resolve Tickets)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Conditional Department for Worker */}
-                {signupData.role === 'worker' && (
-                  <div className="custom-input-box">
-                    <label>Department Specialty</label>
-                    <div className="input-field-wrap">
-                      <Building2 size={17} className="field-icon" />
-                      <select 
-                        name="department" 
-                        value={signupData.department} 
-                        onChange={handleSignupChange} 
-                        className="field-select"
-                        required
-                      >
-                        <option value="Water Supply &amp; Sewerage Board (WSSB)">Water Supply &amp; Sewerage Board (WSSB)</option>
-                        <option value="Power &amp; Grid Safety Board">Power &amp; Grid Safety Board</option>
-                        <option value="Solid Waste Management Authority (SWMA)">Solid Waste Management Authority (SWMA)</option>
-                        <option value="Municipal Works &amp; Asphalt Dept">Municipal Works &amp; Asphalt Dept</option>
-                        <option value="General Civic Support">General Civic Support</option>
-                      </select>
-                    </div>
+            {/* Clickable Circle Avatar (Enlarged) */}
+            <div className="clean-avatar-circle-wrapper">
+              <label className="clean-avatar-circle" title="Click to upload avatar">
+                {signupData.profilePic ? (
+                  <img src={signupData.profilePic} alt="Avatar" className="clean-avatar-img" />
+                ) : (
+                  <div className="clean-avatar-placeholder">
+                    <User size={34} color="#94a3b8" />
+                    <Camera size={14} className="clean-camera-badge" />
                   </div>
                 )}
+                <input 
+                  type="file" 
+                  accept="image/png, image/jpeg, image/jpg" 
+                  onChange={handleAvatarUpload} 
+                  style={{ display: 'none' }} 
+                />
+              </label>
+            </div>
 
-                {/* Password with Eye Toggle */}
-                <div className="custom-input-box">
-                  <label>Create Password</label>
-                  <div className="input-field-wrap">
-                    <Lock size={17} className="field-icon" />
-                    <input 
-                      type={showSignupPassword ? "text" : "password"} 
-                      name="password" 
-                      placeholder="At least 6 characters" 
-                      value={signupData.password} 
-                      onChange={handleSignupChange} 
-                      required 
-                    />
-                    <button 
-                      type="button" 
-                      className="field-eye-btn" 
-                      onClick={() => setShowSignupPassword(!showSignupPassword)}
-                      tabIndex="-1"
-                      aria-label="Toggle password visibility"
-                    >
-                      {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
+            {/* Single Column Inputs: 1 input per row */}
+            <div className="inputs-wrapper">
+              <input 
+                type="text" 
+                name="username" 
+                placeholder="Name" 
+                value={signupData.username} 
+                onChange={handleSignupChange} 
+                className="clean-input"
+                required 
+              />
 
-                {/* Confirm Password with Eye Toggle */}
-                <div className="custom-input-box">
-                  <label>Confirm Password</label>
-                  <div className="input-field-wrap">
-                    <Lock size={17} className="field-icon" />
-                    <input 
-                      type={showSignupConfirmPassword ? "text" : "password"} 
-                      name="confirmPassword" 
-                      placeholder="Re-enter password" 
-                      value={signupData.confirmPassword} 
-                      onChange={handleSignupChange} 
-                      required 
-                    />
-                    <button 
-                      type="button" 
-                      className="field-eye-btn" 
-                      onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
-                      tabIndex="-1"
-                      aria-label="Toggle confirm password visibility"
-                    >
-                      {showSignupConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
+              <input 
+                type="email" 
+                name="email" 
+                placeholder="Email" 
+                value={signupData.email} 
+                onChange={handleSignupChange} 
+                className="clean-input"
+                required 
+              />
 
-              </div>
+              <input 
+                type="date" 
+                name="dob" 
+                placeholder="Date of Birth"
+                value={signupData.dob} 
+                onChange={handleSignupChange} 
+                className="clean-input"
+                required 
+              />
 
-              <button className="auth-primary-submit-btn" type="submit" disabled={loading}>
-                <span>{loading ? 'Registering with Database...' : 'Create NovaDesk Account'}</span>
-                <ArrowRight size={17} />
+              <select 
+                name="role" 
+                value={signupData.role} 
+                onChange={handleSignupChange} 
+                className="clean-input clean-select"
+                required
+              >
+                <option value="customer">Customer (Citizen)</option>
+                <option value="worker">Worker (Field Support)</option>
+              </select>
+
+              {signupData.role === 'worker' && (
+                <select 
+                  name="department" 
+                  value={signupData.department} 
+                  onChange={handleSignupChange} 
+                  className="clean-input clean-select full-col"
+                  required
+                >
+                  <option value="Water Supply & Sewerage Board (WSSB)">Water Supply & Sewerage Board</option>
+                  <option value="Power & Grid Safety Board">Power & Grid Safety Board</option>
+                  <option value="Solid Waste Management Authority (SWMA)">Solid Waste Management Authority</option>
+                  <option value="Municipal Works & Asphalt Dept">Municipal Works & Asphalt Dept</option>
+                  <option value="General Civic Support">General Civic Support</option>
+                </select>
+              )}
+
+              <input 
+                type="password" 
+                name="password" 
+                placeholder="Password" 
+                value={signupData.password} 
+                onChange={handleSignupChange} 
+                className="clean-input"
+                required 
+              />
+
+              <input 
+                type="password" 
+                name="confirmPassword" 
+                placeholder="Confirm Password" 
+                value={signupData.confirmPassword} 
+                onChange={handleSignupChange} 
+                className="clean-input"
+                required 
+              />
+            </div>
+
+            <button className="clean-solid-btn" type="submit" disabled={loading}>
+              {loading ? 'SIGNING UP...' : 'SIGN UP'}
+            </button>
+
+            {/* Mobile / Tablet switch */}
+            <div className="mobile-switch-box">
+              <span>Already have an account?</span>
+              <button type="button" onClick={() => switchTab(false)} className="mobile-toggle-btn">
+                Sign In
               </button>
+            </div>
 
-              <p className="auth-switch-prompt">
-                Already have an account?{' '}
-                <button type="button" onClick={() => switchTab(false)} className="auth-switch-link">
-                  Sign in here
-                </button>
-              </p>
-            </form>
-          )}
-
+          </form>
         </div>
 
-        {/* Feature Badges Footer */}
-        <div className="auth-footer-features">
-          <div className="feature-item">
-            <Bot size={14} className="feature-icon" />
-            <span>AI Triage</span>
-          </div>
-          <span className="feature-dot">•</span>
-          <div className="feature-item">
-            <Zap size={14} className="feature-icon" />
-            <span>Real-Time Sockets</span>
-          </div>
-          <span className="feature-dot">•</span>
-          <div className="feature-item">
-            <CheckCircle2 size={14} className="feature-icon" />
-            <span>Guaranteed SLAs</span>
+        {/* ================= 3. SOLID CYAN SLIDING OVERLAY CONTAINER ================= */}
+        <div className="overlay-container">
+          <div className="overlay">
+            
+            {/* Left Overlay Panel (Shows when in Sign Up mode) */}
+            <div className="overlay-panel overlay-left">
+              <h1>Welcome Back!</h1>
+              <p>To keep connected with us please login with your personal info</p>
+              <button type="button" className="clean-ghost-btn" onClick={() => switchTab(false)}>
+                SIGN IN
+              </button>
+            </div>
+
+            {/* Right Overlay Panel (Shows when in Sign In mode) */}
+            <div className="overlay-panel overlay-right">
+              <h1>Hello, Friend!</h1>
+              <p>Enter your personal details and start journey with us</p>
+              <button type="button" className="clean-ghost-btn" onClick={() => switchTab(true)}>
+                SIGN UP
+              </button>
+            </div>
+
           </div>
         </div>
 

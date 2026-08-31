@@ -28,7 +28,9 @@ import {
   Upload,
   ZoomIn,
   X,
-  MessageSquare
+  MessageSquare,
+  User,
+  Globe
 } from 'lucide-react';
 import TicketChatModal from '../../components/TicketChat/TicketChatModal';
 import API from '../../api/axios';
@@ -44,15 +46,17 @@ const MyComplaints = () => {
     title: '',
     description: '',
     location: 'Central District',
-    citizen_name: user?.name || 'Citizen User',
-    citizen_contact: '0300-1234567',
-    image_url: ''
+    citizen_name: user?.name || '',
+    citizen_contact: user?.phone || '0300-1234567',
+    image_url: '',
+    image_name: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // User's Dynamic Complaints State (Loaded strictly from MongoDB)
+  // Dynamic Complaints State (Loaded from MongoDB)
   const [complaints, setComplaints] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [complaintsScope, setComplaintsScope] = useState('my'); // 'my' or 'all'
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,33 +65,62 @@ const MyComplaints = () => {
   const [selectedImageModal, setSelectedImageModal] = useState(null);
   const [activeChatTicket, setActiveChatTicket] = useState(null);
 
-  // Fetch Database Complaints
+  // Sync user info into form
   useEffect(() => {
-    const loadComplaints = async () => {
-      try {
-        const res = await API.get('/complaints');
-        const data = res.data?.data || res.data?.complaints || res.data || [];
-        if (Array.isArray(data) && data.length > 0) {
-          const formatted = data.map(c => ({
-            id: c.ticketId || c._id || (Math.floor(100 + Math.random() * 900)).toString(),
-            ticketId: c.ticketId || `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-            title: c.title,
-            description: c.description || 'Civic infrastructure maintenance report.',
-            category: c.category || 'General Civic',
-            priority: c.priority || 'Medium',
-            status: c.status === 'Open' ? 'Pending' : c.status || 'Pending',
-            assigned_department: c.department || c.assigned_department || 'Municipal Works',
-            location: c.location || 'Central District',
-            date: new Date(c.createdAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-          }));
-          setComplaints(formatted);
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        citizen_name: user.name || prev.citizen_name,
+        citizen_contact: user.phone || prev.citizen_contact || '0300-1234567'
+      }));
+    }
+  }, [user]);
+
+  // Fetch Database Complaints (Strictly filtered by logged in user or citywide)
+  const loadComplaints = async () => {
+    try {
+      setIsLoading(true);
+      let res;
+      if (complaintsScope === 'my') {
+        if (user?.email) {
+          res = await API.get('/complaints/my', { params: { email: user.email } });
+        } else {
+          res = await API.get('/complaints/my');
         }
-      } catch (e) {
-        console.warn('API fallback load:', e);
+      } else {
+        res = await API.get('/complaints');
       }
-    };
+
+      const data = res.data?.complaints || res.data?.data || res.data || [];
+      if (Array.isArray(data)) {
+        const formatted = data.map(c => ({
+          id: c.ticketId || c._id,
+          ticketId: c.ticketId || `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
+          title: c.title,
+          description: c.description || 'Civic infrastructure maintenance report.',
+          category: c.category || 'General Civic',
+          priority: c.priority || 'Medium',
+          status: c.status === 'Open' ? 'Pending' : (c.status || 'Pending'),
+          assigned_department: c.department || c.assigned_department || 'Municipal Works',
+          location: c.location || 'Central District',
+          date: new Date(c.createdAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+          image_url: c.imageUrl || c.image_url || ''
+        }));
+        setComplaints(formatted);
+      } else {
+        setComplaints([]);
+      }
+    } catch (e) {
+      console.warn('API fallback load:', e);
+      setComplaints([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadComplaints();
-  }, []);
+  }, [user, complaintsScope]);
 
   // GSAP Animation
   useEffect(() => {
@@ -173,8 +206,6 @@ const MyComplaints = () => {
     }
 
     setIsSubmitting(true);
-    const newId = (Math.floor(100 + Math.random() * 900)).toString();
-    const newTkt = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
 
     let category = 'General Civic';
     let dept = 'Municipal Works Department';
@@ -199,61 +230,70 @@ const MyComplaints = () => {
       priority = 'Critical';
     }
 
-    const newRecord = {
-      id: newId,
-      ticketId: newTkt,
-      title: formData.title,
-      description: formData.description,
-      category,
-      priority,
-      status: 'Pending',
-      assigned_department: dept,
-      location: formData.location,
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    };
-
     try {
-      await API.post('/complaints', {
+      const payload = {
         title: formData.title,
         description: formData.description,
         location: formData.location,
         category,
         priority,
         department: dept,
-        citizenName: formData.citizen_name,
-        citizenContact: formData.citizen_contact
+        citizenName: formData.citizen_name || user?.name || 'Citizen User',
+        citizenEmail: (user?.email || '').toLowerCase().trim(),
+        citizenContact: formData.citizen_contact || user?.phone || '0300-1234567',
+        imageUrl: formData.image_url || ''
+      };
+
+      const res = await API.post('/complaints', payload);
+      const saved = res.data?.complaint;
+
+      const newRecord = {
+        id: saved?.ticketId || saved?._id || `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
+        ticketId: saved?.ticketId || `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
+        title: saved?.title || formData.title,
+        description: saved?.description || formData.description,
+        category: saved?.category || category,
+        priority: saved?.priority || priority,
+        status: saved?.status === 'Open' ? 'Pending' : (saved?.status || 'Pending'),
+        assigned_department: saved?.department || dept,
+        location: saved?.location || formData.location,
+        date: new Date(saved?.createdAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        image_url: saved?.imageUrl || formData.image_url || ''
+      };
+
+      setComplaints(prev => [newRecord, ...prev]);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Complaint Registered in Vault!',
+        html: `
+          <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
+            <p><strong>Ticket ID:</strong> ${newRecord.ticketId}</p>
+            <p><strong>Category:</strong> ${newRecord.category}</p>
+            <p><strong>Assigned Dept:</strong> ${newRecord.assigned_department}</p>
+            <p><strong>Status:</strong> <span style="color: #00e5ff; font-weight: bold;">Pending Dispatch</span></p>
+            <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Saved to Municipal Database and added to your live complaints vault.</p>
+          </div>
+        `,
+        confirmButtonColor: '#00e5ff',
+        confirmButtonText: 'Great!'
+      });
+
+      setFormData({
+        title: '',
+        description: '',
+        location: 'Central District',
+        citizen_name: user?.name || '',
+        citizen_contact: user?.phone || '0300-1234567',
+        image_url: '',
+        image_name: ''
       });
     } catch (err) {
       console.warn('API post error:', err);
+      toast.error('Failed to submit complaint. Please check your connection.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setComplaints(prev => [newRecord, ...prev]);
-
-    Swal.fire({
-      icon: 'success',
-      title: 'Complaint Registered in Vault!',
-      html: `
-        <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
-          <p><strong>Ticket ID:</strong> #${newId} (${newTkt})</p>
-          <p><strong>Category:</strong> ${category}</p>
-          <p><strong>Assigned Dept:</strong> ${dept}</p>
-          <p><strong>Status:</strong> <span style="color: #00e5ff; font-weight: bold;">Pending Dispatch</span></p>
-          <p style="font-size: 12px; color: #64748b; margin-top: 8px;">Added to your live complaint history list on the right.</p>
-        </div>
-      `,
-      confirmButtonColor: '#00e5ff',
-      confirmButtonText: 'Great!'
-    });
-
-    setFormData({
-      title: '',
-      description: '',
-      location: 'Central District',
-      citizen_name: user?.name || 'Citizen User',
-      citizen_contact: '0300-1234567',
-      image_url: ''
-    });
-    setIsSubmitting(false);
   };
 
   // Inspect Complaint Modal
@@ -461,15 +501,41 @@ const MyComplaints = () => {
         <section className="vault-history-column">
           <div className="vault-panel-card">
             
-            {/* Header with KPI Counts */}
+            {/* Header with KPI Counts & Scope Switcher */}
             <div className="history-top-header">
               <div>
-                <h2>Citizen Complaint History</h2>
-                <p>Real-time audit log of all registered municipal tickets</p>
+                <h2>{complaintsScope === 'my' ? 'My Incident Vault' : 'All Municipal Incidents'}</h2>
+                <p>
+                  {complaintsScope === 'my' 
+                    ? (user ? `Tracking complaints lodged by ${user.name || user.email}` : 'Log in to manage and track your lodged complaints') 
+                    : 'Citywide live municipal complaints across all districts'}
+                </p>
               </div>
               <div className="history-counter-badge">
                 <span>{filteredComplaints.length} of {complaints.length} Total</span>
               </div>
+            </div>
+
+            {/* Scope Switcher: My Complaints vs All City Tickets */}
+            <div className="vault-scope-tabs" style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <button 
+                type="button" 
+                className={`filter-pill ${complaintsScope === 'my' ? 'active' : ''}`}
+                onClick={() => setComplaintsScope('my')}
+                style={{ flex: 1, padding: '8px 12px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+              >
+                <User size={15} />
+                <span>My Lodged Complaints {user?.email ? `(${complaintsScope === 'my' ? complaints.length : ''})` : ''}</span>
+              </button>
+              <button 
+                type="button" 
+                className={`filter-pill ${complaintsScope === 'all' ? 'active' : ''}`}
+                onClick={() => setComplaintsScope('all')}
+                style={{ flex: 1, padding: '8px 12px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+              >
+                <Globe size={15} />
+                <span>All City Tickets</span>
+              </button>
             </div>
 
             {/* Live Real-Time Search Bar */}
@@ -520,14 +586,36 @@ const MyComplaints = () => {
 
             {/* Complaints List Container */}
             <div className="vault-complaints-list">
-              {filteredComplaints.length === 0 ? (
+              {isLoading ? (
+                <div className="no-complaints-box">
+                  <Clock size={36} className="empty-icon" />
+                  <h4>Loading Incident Vault...</h4>
+                  <p>Fetching real-time records from MongoDB database.</p>
+                </div>
+              ) : filteredComplaints.length === 0 ? (
                 <div className="no-complaints-box">
                   <AlertCircle size={36} className="empty-icon" />
-                  <h4>No Complaints Match Your Search</h4>
-                  <p>Try adjusting your search keyword or switching status filter tabs.</p>
-                  <button type="button" onClick={() => { setSearchQuery(''); setStatusFilter('All'); setCategoryFilter('All'); }}>
-                    Reset All Filters
-                  </button>
+                  {complaints.length === 0 ? (
+                    complaintsScope === 'my' ? (
+                      <>
+                        <h4>No Personal Complaints Registered Yet</h4>
+                        <p>{user ? 'You have not submitted any complaints yet. Use the form on the left to lodge your first incident!' : 'Please log in to view your personal complaints history, or switch to "All City Tickets" above.'}</p>
+                      </>
+                    ) : (
+                      <>
+                        <h4>No Municipal Tickets in Database</h4>
+                        <p>No complaints have been logged in the system yet.</p>
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <h4>No Complaints Match Your Search</h4>
+                      <p>Try adjusting your search keyword or switching status filter tabs.</p>
+                      <button type="button" onClick={() => { setSearchQuery(''); setStatusFilter('All'); setCategoryFilter('All'); }}>
+                        Reset All Filters
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 filteredComplaints.map(c => {

@@ -84,11 +84,11 @@ exports.createComplaint = async (req, res) => {
 // @route   GET /api/complaints/my
 exports.getMyComplaints = async (req, res) => {
   try {
-    const email = (req.query.email || req.user?.email || '').toLowerCase();
+    const email = (req.query.email || req.user?.email || '').toLowerCase().trim();
     
     let filter = {};
     if (email) {
-      filter = { citizenEmail: email };
+      filter = { citizenEmail: { $regex: new RegExp(`^${email}$`, 'i') } };
     } else if (req.user?._id) {
       filter = { user: req.user._id };
     } else {
