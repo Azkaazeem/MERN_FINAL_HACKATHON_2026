@@ -22,9 +22,9 @@ const connectDB = async () => {
   if (!cached.promise) {
     let mongoUri = process.env.MONGO_URI || DEFAULT_MONGO_URI;
     
-    // Auto-repair if Vercel Environment Variable is missing cluster shard id 'clkrb0s'
-    if (mongoUri.includes('@cluster0.mongodb.net')) {
-      mongoUri = mongoUri.replace('@cluster0.mongodb.net', '@cluster0.clkrb0s.mongodb.net');
+    // Auto-repair if Vercel Environment Variable has stale password or missing cluster id
+    if (!mongoUri.includes('3NQN9YskTWu6vy1X') || !mongoUri.includes('clkrb0s')) {
+      mongoUri = DEFAULT_MONGO_URI;
     }
 
     const opts = {
