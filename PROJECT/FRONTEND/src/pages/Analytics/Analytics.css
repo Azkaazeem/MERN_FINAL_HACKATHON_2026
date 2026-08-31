@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Analytics.css - Senior Minimalist GIS & Telemetry Hub
+   Analytics.css - Clean, High-Tech Municipal GIS & Telemetry Hub
    ========================================================================== */
 
 .analytics-page-wrapper {
@@ -13,70 +13,64 @@
 
 .analytics-main-container {
   flex: 1;
-  max-width: 1200px;
+  max-width: 1280px;
   width: 100%;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 36px 24px 60px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 28px;
+  box-sizing: border-box;
 }
 
-/* Hero */
+/* ================= 1. HERO ================= */
 .analytics-hero {
   text-align: center;
-  max-width: 750px;
-  margin: 0 auto 8px;
-}
-
-.analytics-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--primary-light);
-  color: var(--primary-color);
-  padding: 5px 14px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border: 1px solid var(--border-accent);
-  margin-bottom: 12px;
+  max-width: 800px;
+  margin: 0 auto 4px;
 }
 
 .analytics-hero h1 {
-  font-size: 2.3rem;
+  font-size: 2.1rem;
   font-weight: 800;
   color: var(--text-dark);
   letter-spacing: -0.5px;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
+}
+
+.cyan-gradient {
+  color: var(--primary-color);
 }
 
 .analytics-subtitle {
   color: var(--text-muted);
-  font-size: 0.96rem;
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin: 0;
 }
 
-/* Stats Metric Strip */
+/* ================= 2. FOUR KPI CARDS ================= */
 .stats-metric-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
 }
 
 .stat-metric-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  padding: 20px;
-  border-radius: 12px;
+  padding: 18px 20px;
+  border-radius: var(--border-radius-sm);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: border-color 0.2s ease;
+  gap: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
 }
 
 .stat-metric-card:hover {
-  border-color: var(--border-accent);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
 }
 
 .metric-header {
@@ -84,7 +78,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
 }
 
@@ -93,12 +87,14 @@
   font-weight: 800;
   color: var(--text-dark);
   letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 2px 0;
 }
 
 .metric-val small {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--primary-color);
 }
 
 .metric-sub {
@@ -106,66 +102,126 @@
   color: var(--text-muted);
 }
 
-/* GIS Heatmap Section */
+/* ================= 3. GIS HEATMAP SECTION ================= */
 .gis-heatmap-section {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: var(--border-radius-md);
   padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 .section-title-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 12px;
 }
 
 .section-title-row h2 {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-dark);
   margin: 0;
 }
 
 .section-title-row p {
-  font-size: 0.84rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  margin: 2px 0 0;
+  margin: 3px 0 0;
 }
 
 .live-pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: var(--primary-light);
   color: var(--primary-color);
   padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.72rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.5px;
-  border: 1px solid var(--border-accent);
+  border: 1px solid var(--border-color);
 }
 
+.pulse-icon {
+  animation: pulseBeacon 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseBeacon {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+
+/* District Filter Tabs Bar */
+.district-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.dist-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-dark);
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dist-tab-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.dist-tab-btn.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.tab-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dist-tab-btn.active .tab-indicator-dot {
+  background-color: #ffffff !important;
+}
+
+/* GIS Radar Grid Layout */
 .gis-radar-container {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1.85fr 1fr;
   gap: 20px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .gis-radar-container {
     grid-template-columns: 1fr;
   }
 }
 
+/* Futuristic Radar Map Canvas */
 .gis-map-canvas {
-  height: 360px;
-  background: #0f172a;
-  border-radius: 12px;
+  height: 380px;
+  background: #080d1a;
+  border-radius: var(--border-radius-sm);
   position: relative;
   overflow: hidden;
   border: 1px solid #1e293b;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
 }
 
 .map-grid-overlay {
@@ -175,11 +231,43 @@
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(0, 229, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.07) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
+.map-radar-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px dashed rgba(0, 229, 255, 0.15);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.circle-1 { width: 140px; height: 140px; }
+.circle-2 { width: 260px; height: 260px; }
+.circle-3 { width: 360px; height: 360px; }
+
+.radar-sweep-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12) 0%, transparent 60%);
+  transform-origin: center center;
+  animation: sweepAnim 8s infinite linear;
+  pointer-events: none;
+}
+
+@keyframes sweepAnim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Geo Pins */
 .gis-pin-marker {
   position: absolute;
   cursor: pointer;
@@ -194,126 +282,179 @@
 
 .gis-pin-marker:hover,
 .gis-pin-marker.active-pin {
-  transform: translate(-50%, -50%) scale(1.1);
+  transform: translate(-50%, -50%) scale(1.15);
 }
 
 .pin-dot {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .pin-label {
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(11, 15, 25, 0.92);
   color: #f8fafc;
   font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 6px;
+  font-weight: 700;
+  padding: 2px 7px;
   border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   white-space: nowrap;
 }
 
-/* Sidebar */
+.gis-pin-marker.active-pin .pin-label {
+  border-color: #00e5ff;
+  color: #00e5ff;
+}
+
+.pin-pulse {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  top: -5px;
+  left: -5px;
+  border-radius: 50%;
+  border: 1.5px solid #00e5ff;
+  animation: pingPin 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes pingPin {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* District Inspector Sidebar */
 .gis-sidebar {
-  background: var(--card-hover);
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: var(--border-radius-sm);
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.gis-sidebar h3 {
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h3 {
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-dark);
   margin: 0;
 }
 
 .dist-name {
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--primary-color);
+  margin-bottom: 2px;
 }
 
 .dist-area {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.dist-coords {
+  font-size: 0.75rem;
   color: var(--text-muted);
+  font-family: monospace;
+  margin-bottom: 12px;
 }
 
 .dist-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .dist-stat-box {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  padding: 12px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: var(--border-radius-sm);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 2px;
 }
 
 .box-val {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: var(--text-dark);
 }
 
 .box-lbl {
   font-size: 0.72rem;
   color: var(--text-muted);
   font-weight: 600;
-  text-transform: uppercase;
+}
+
+.dist-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 6px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.dist-detail-row strong {
+  color: var(--text-dark);
 }
 
 .risk-level-bar {
   display: flex;
   justify-content: space-between;
-  font-size: 0.84rem;
-  background: var(--bg-card);
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  color: var(--text-dark);
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 6px 0 10px;
 }
 
 .inspect-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background-color: var(--primary-color);
-  color: #fff;
+  color: #ffffff;
   border: none;
-  padding: 10px;
+  padding: 9px 14px;
   border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: 12.5px;
   font-weight: 700;
-  font-size: 0.86rem;
   cursor: pointer;
-  box-shadow: 0 2px 10px var(--primary-glow);
-  transition: background-color 0.2s ease;
+  box-shadow: 0 2px 8px var(--primary-glow);
+  transition: all 0.15s ease;
 }
 
 .inspect-btn:hover {
   background-color: var(--primary-hover);
 }
 
-/* Charts Grid */
+/* ================= 4. CHARTS ROW ================= */
 .charts-grid-row {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 900px) {
   .charts-grid-row {
     grid-template-columns: 1fr;
   }
@@ -322,31 +463,32 @@
 .chart-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 22px;
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
 }
 
 .chart-card h3 {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-dark);
-  margin: 0;
+  margin: 0 0 2px;
 }
 
 .chart-subtitle {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  margin: 4px 0 0;
+  margin: 0;
 }
 
-/* Leaderboards */
+/* ================= 5. LEADERBOARDS ================= */
 .leaderboards-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.35fr 1fr;
   gap: 20px;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 900px) {
   .leaderboards-grid {
     grid-template-columns: 1fr;
   }
@@ -355,39 +497,50 @@
 .leaderboard-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  border-radius: var(--border-radius-md);
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
 }
 
 .card-header-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 14px;
 }
 
 .title-with-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
 .title-with-icon h3 {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
   color: var(--text-dark);
   margin: 0;
 }
 
 .sub-badge {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 800;
   padding: 3px 8px;
-  border-radius: 12px;
+  border-radius: var(--border-radius-sm);
   background: var(--primary-light);
   color: var(--primary-color);
+}
+
+.sub-badge.gold {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+/* Table */
+.table-responsive {
+  overflow-x: auto;
 }
 
 .analytics-table {
@@ -399,11 +552,10 @@
 .analytics-table th {
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--text-muted);
-  font-weight: 600;
-  font-size: 0.78rem;
-  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .analytics-table td {
@@ -420,75 +572,86 @@
 }
 
 .rank-badge {
-  font-size: 0.74rem;
-  font-weight: 700;
-  background: var(--input-bg);
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: var(--text-muted);
-  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--primary-color);
 }
 
 .score-pill {
-  background: var(--primary-light);
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--border-radius-sm);
   color: var(--primary-color);
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.78rem;
 }
 
 /* Karma List */
 .karma-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .karma-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: var(--card-hover);
-  border-radius: 8px;
+  gap: 12px;
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 10px 14px;
 }
 
 .cit-rank {
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  width: 24px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  width: 20px;
 }
 
 .cit-avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
+  border: 1px solid var(--border-color);
 }
 
 .cit-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .cit-name {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-dark);
 }
 
 .cit-badge {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 
 .cit-karma {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-weight: 700;
-  color: var(--primary-color);
+  gap: 4px;
   font-size: 0.84rem;
+  font-weight: 800;
+  color: #f59e0b;
 }
+
+/* Utility Colors */
+.text-red { color: #ef4444; }
+.text-green { color: #10b981; }
+.text-cyan { color: var(--primary-color); }
+.text-purple { color: #a855f7; }
+.font-bold { font-weight: 700; }
+.icon-cyan { color: var(--primary-color); }
+.icon-green { color: #10b981; }
+.icon-amber { color: #f59e0b; }
+.icon-indigo { color: #6366f1; }

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Footer from '../../components/Footer/Footer';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { 
   BarChart, 
   Bar, 
@@ -32,11 +34,90 @@ import {
   Flame,
   Filter,
   BarChart3,
-  Globe2
+  Globe2,
+  Radio,
+  Truck,
+  ArrowUpRight
 } from 'lucide-react';
 import './Analytics.css';
 
-// Chart Data
+gsap.registerPlugin(ScrollTrigger);
+
+// 5 Metropolitan Districts Data
+const DISTRICT_INCIDENTS = [
+  { 
+    id: 'central', 
+    district: 'District Central', 
+    area: 'Nazimabad, Liaquatabad, Gulberg', 
+    lat: '24.9180° N', 
+    lng: '67.0315° E', 
+    active: 28, 
+    resolved: 194, 
+    risk: 'Medium', 
+    color: '#00e5ff',
+    units: '6 Crew Teams',
+    avgTime: '3.1 hrs',
+    topIssue: 'Water Pipe Fractures'
+  },
+  { 
+    id: 'south', 
+    district: 'District South', 
+    area: 'Clifton, Saddar, Defense Corridor', 
+    lat: '24.8315° N', 
+    lng: '67.0344° E', 
+    active: 14, 
+    resolved: 240, 
+    risk: 'Low', 
+    color: '#10b981',
+    units: '8 Crew Teams',
+    avgTime: '2.2 hrs',
+    topIssue: 'Traffic Light Sync'
+  },
+  { 
+    id: 'east', 
+    district: 'District East', 
+    area: 'Gulshan-e-Iqbal, Jamshed Town', 
+    lat: '24.9012° N', 
+    lng: '67.0855° E', 
+    active: 42, 
+    resolved: 165, 
+    risk: 'High', 
+    color: '#f59e0b',
+    units: '5 Crew Teams',
+    avgTime: '4.5 hrs',
+    topIssue: 'Drainage Overflow'
+  },
+  { 
+    id: 'korangi', 
+    district: 'District Korangi', 
+    area: 'Korangi Industrial Area, Landhi', 
+    lat: '24.8150° N', 
+    lng: '67.1420° E', 
+    active: 35, 
+    resolved: 180, 
+    risk: 'High', 
+    color: '#ef4444',
+    units: '7 Crew Teams',
+    avgTime: '4.8 hrs',
+    topIssue: 'High Voltage Wires'
+  },
+  { 
+    id: 'malir', 
+    district: 'District Malir', 
+    area: 'Malir Cantonment, Airport Axis', 
+    lat: '24.8960° N', 
+    lng: '67.2015° E', 
+    active: 19, 
+    resolved: 142, 
+    risk: 'Medium', 
+    color: '#00e5ff',
+    units: '4 Crew Teams',
+    avgTime: '3.6 hrs',
+    topIssue: 'Street Lamp Repairs'
+  }
+];
+
+// Monthly Resolution Speed Trends (Lower is faster)
 const RESOLUTION_TIME_DATA = [
   { month: 'Jan', 'Water & Drainage': 4.2, 'Roads & Infra': 8.5, 'Waste Mgt': 3.1, 'Power Grid': 2.4 },
   { month: 'Feb', 'Water & Drainage': 3.8, 'Roads & Infra': 7.2, 'Waste Mgt': 2.8, 'Power Grid': 2.0 },
@@ -46,20 +127,23 @@ const RESOLUTION_TIME_DATA = [
   { month: 'Jun', 'Water & Drainage': 2.1, 'Roads & Infra': 4.4, 'Waste Mgt': 1.6, 'Power Grid': 0.9 }
 ];
 
+// Domain Distribution
 const CATEGORY_DISTRIBUTION = [
   { name: 'Water & Sewerage', value: 420, color: '#00e5ff' },
-  { name: 'Roads & Asphalt', value: 360, color: '#3b82f6' },
-  { name: 'Solid Waste & Bins', value: 480, color: '#10b981' },
-  { name: 'Electrical Hazards', value: 230, color: '#f59e0b' }
+  { name: 'Roads & Infrastructure', value: 360, color: '#3b82f6' },
+  { name: 'Solid Waste & Sanitation', value: 480, color: '#10b981' },
+  { name: 'Electrical & Fire Hazard', value: 230, color: '#f59e0b' }
 ];
 
+// Department Performance
 const DEPARTMENT_LEADERBOARD = [
   { rank: 1, name: 'Water Supply & Sewerage Board (WSSB)', onTimeRate: 98.6, avgHours: '2.4 hrs', resolvedTotal: 1240, score: 99 },
-  { rank: 2, name: 'Power Distribution & Energy Corp', onTimeRate: 97.4, avgHours: '1.2 hrs', resolvedTotal: 980, score: 96 },
+  { rank: 2, name: 'Power & Grid Safety Board', onTimeRate: 97.4, avgHours: '1.2 hrs', resolvedTotal: 980, score: 96 },
   { rank: 3, name: 'Solid Waste Management Authority (SWMA)', onTimeRate: 96.1, avgHours: '3.1 hrs', resolvedTotal: 1450, score: 94 },
-  { rank: 4, name: 'Municipal Works & Engineering Dept', onTimeRate: 94.8, avgHours: '5.2 hrs', resolvedTotal: 890, score: 91 }
+  { rank: 4, name: 'Municipal Works Department', onTimeRate: 94.8, avgHours: '5.2 hrs', resolvedTotal: 890, score: 91 }
 ];
 
+// Citizen Karma Champions
 const CITIZEN_CHAMPIONS = [
   { rank: 1, name: 'Akash Ahmed', karma: 1850, verifiedReports: 38, badge: 'Civic Grandmaster', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100' },
   { rank: 2, name: 'Sara Khan', karma: 1420, verifiedReports: 29, badge: 'Water Sentinel', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100' },
@@ -68,56 +152,25 @@ const CITIZEN_CHAMPIONS = [
 ];
 
 const Analytics = () => {
-  const [selectedDistrict, setSelectedDistrict] = useState(DISTRICT_INCIDENTS[2]);
+  const [selectedDistrict, setSelectedDistrict] = useState(DISTRICT_INCIDENTS[0]);
   const containerRef = useRef(null);
 
+  // GSAP Animations
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.from('.analytics-hero h1', { opacity: 0, y: 22, duration: 0.6, ease: 'power3.out' });
+      gsap.from('.analytics-hero h1', { opacity: 0, y: 20, duration: 0.6, ease: 'power2.out' });
       gsap.from('.stat-metric-card', {
         opacity: 0,
         y: 20,
         duration: 0.5,
         stagger: 0.08,
-        delay: 0.15,
         ease: 'power2.out'
       });
-
       gsap.from('.gis-heatmap-section', {
-        scrollTrigger: {
-          trigger: '.gis-heatmap-section',
-          start: 'top 85%',
-          toggleActions: 'play none none none'
-        },
         opacity: 0,
-        y: 30,
-        duration: 0.65,
-        ease: 'power2.out'
-      });
-
-      gsap.from('.chart-card', {
-        scrollTrigger: {
-          trigger: '.charts-grid-row',
-          start: 'top 85%',
-          toggleActions: 'play none none none'
-        },
-        opacity: 0,
-        y: 28,
+        y: 24,
         duration: 0.6,
-        stagger: 0.12,
-        ease: 'power2.out'
-      });
-
-      gsap.from('.leaderboard-card', {
-        scrollTrigger: {
-          trigger: '.leaderboards-grid',
-          start: 'top 85%',
-          toggleActions: 'play none none none'
-        },
-        opacity: 0,
-        y: 25,
-        duration: 0.6,
-        stagger: 0.12,
+        delay: 0.2,
         ease: 'power2.out'
       });
     }, containerRef);
@@ -128,19 +181,20 @@ const Analytics = () => {
   const handleInspectDistrict = (dist) => {
     setSelectedDistrict(dist);
     Swal.fire({
-      title: `${dist.district} GIS Telemetry`,
+      title: `${dist.district} Telemetry`,
       html: `
         <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
-          <p><strong>Sector:</strong> ${dist.area}</p>
+          <p><strong>Coverage Sector:</strong> ${dist.area}</p>
           <p><strong>GPS Coordinates:</strong> ${dist.lat}, ${dist.lng}</p>
           <p><strong>Active Unresolved Tickets:</strong> <span style="color: #ef4444; font-weight: bold;">${dist.active}</span></p>
           <p><strong>Total Resolved (30 Days):</strong> <span style="color: #10b981; font-weight: bold;">${dist.resolved}</span></p>
-          <p><strong>Regional Risk Index:</strong> <span style="color: ${dist.color}; font-weight: bold;">${dist.risk}</span></p>
-          <p style="margin-top: 10px; font-size: 12px; color: #64748b;">AI Dispatch Fleet actively patrolling this sector.</p>
+          <p><strong>Response Crew on Duty:</strong> ${dist.units}</p>
+          <p><strong>Average Resolution Speed:</strong> <span style="color: #00e5ff; font-weight: bold;">${dist.avgTime}</span></p>
+          <p><strong>Top Recurring Fault:</strong> ${dist.topIssue}</p>
         </div>
       `,
       confirmButtonColor: '#00e5ff',
-      confirmButtonText: 'Deploy Additional Patrol'
+      confirmButtonText: 'Close Telemetry'
     });
   };
 
@@ -149,99 +203,141 @@ const Analytics = () => {
       <Toaster position="top-right" />
 
       <main className="analytics-main-container">
-        {/* ================= HERO HEADER ================= */}
+        
+        {/* ================= 1. CLEAN HEADER ================= */}
         <section className="analytics-hero">
           <h1>
-            Municipal Transparency <span className="cyan-gradient">&amp; Telemetry Hub</span>
+            Municipal Transparency &amp; <span className="cyan-gradient">GIS Telemetry Hub</span>
           </h1>
           <p className="analytics-subtitle">
-            Live geospatial fault heatmaps, statistical reliability metrics, and municipal performance leaderboards.
+            Live geospatial fault distribution, mathematical turnaround benchmarks, and municipal performance metrics across Karachi.
           </p>
         </section>
 
-        {/* ================= STATISTICAL BENCHMARKS ================= */}
+        {/* ================= 2. FOUR MATHEMATICAL KPI BENCHMARKS ================= */}
         <section className="stats-metric-strip">
           <div className="stat-metric-card">
             <div className="metric-header">
               <span>Mean Resolution (&mu;)</span>
-              <Clock size={16} className="text-cyan-400" />
+              <Clock size={16} className="icon-cyan" />
             </div>
             <div className="metric-val">3.42 <small>hrs</small></div>
-            <div className="metric-sub">Average municipal turnaround</div>
+            <div className="metric-sub">Average municipal turnaround time</div>
           </div>
 
           <div className="stat-metric-card">
             <div className="metric-header">
-              <span>Median Resolution</span>
-              <Activity size={16} className="text-emerald-400" />
+              <span>Median Turnaround</span>
+              <Activity size={16} className="icon-green" />
             </div>
             <div className="metric-val">2.10 <small>hrs</small></div>
-            <div className="metric-sub">50th Percentile Speed</div>
+            <div className="metric-sub">50th Percentile resolution speed</div>
           </div>
 
           <div className="stat-metric-card">
             <div className="metric-header">
               <span>Standard Dev (&sigma;)</span>
-              <TrendingUp size={16} className="text-amber-400" />
+              <TrendingUp size={16} className="icon-amber" />
             </div>
             <div className="metric-val">1.18 <small>hrs</small></div>
-            <div className="metric-sub">High delivery consistency</div>
+            <div className="metric-sub">High operational consistency</div>
           </div>
 
           <div className="stat-metric-card">
             <div className="metric-header">
               <span>IQR Spread (Q3 - Q1)</span>
-              <ShieldCheck size={16} className="text-indigo-400" />
+              <ShieldCheck size={16} className="icon-indigo" />
             </div>
             <div className="metric-val">1.85 <small>hrs</small></div>
-            <div className="metric-sub">Outlier resilience index</div>
+            <div className="metric-sub">Outlier resilience &amp; SLA index</div>
           </div>
         </section>
 
-        {/* ================= GIS GEOSPATIAL HEATMAP RADAR ================= */}
+
+        {/* ================= 3. GIS GEOSPATIAL RADAR & TELEMETRY ================= */}
         <section className="gis-heatmap-section">
+          
+          {/* Section Header */}
           <div className="section-title-row">
             <div>
               <h2>Live Municipal GIS Incident Heatmap</h2>
-              <p>Real-time telemetry pins across Karachi metropolitan districts</p>
+              <p>Real-time telemetry pins &amp; active fault clusters across Karachi metropolitan zones</p>
             </div>
-            <span className="live-pulse-badge">● LIVE GIS FEED</span>
+            <span className="live-pulse-badge">
+              <Radio size={12} className="pulse-icon" />
+              <span>LIVE GIS RADAR</span>
+            </span>
           </div>
 
+          {/* District Quick Filter Selector Bar */}
+          <div className="district-filter-tabs">
+            {DISTRICT_INCIDENTS.map(dist => (
+              <button 
+                key={dist.id}
+                type="button"
+                className={`dist-tab-btn ${selectedDistrict.id === dist.id ? 'active' : ''}`}
+                onClick={() => setSelectedDistrict(dist)}
+              >
+                <span className="tab-indicator-dot" style={{ backgroundColor: dist.color }} />
+                <span>{dist.district}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Radar Grid Layout */}
           <div className="gis-radar-container">
+            
+            {/* Left: Futuristic High-Tech Map Canvas */}
             <div className="gis-map-canvas">
               <div className="map-grid-overlay" />
-              
-              {/* GIS Pins */}
-              {DISTRICT_INCIDENTS.map((dist, idx) => (
-                <div 
-                  key={dist.id}
-                  className={`gis-pin-marker ${selectedDistrict.id === dist.id ? 'active-pin' : ''}`}
-                  style={{
-                    top: `${20 + (idx * 13)}%`,
-                    left: `${18 + (idx * 14)}%`
-                  }}
-                  onClick={() => handleInspectDistrict(dist)}
-                  title={`${dist.district} - Click for Telemetry`}
-                >
-                  <div className="pin-pulse" style={{ borderColor: dist.color }} />
-                  <div className="pin-dot" style={{ background: dist.color }}>
-                    <MapPin size={12} color="#fff" />
-                  </div>
-                  <span className="pin-label">{dist.district}</span>
-                </div>
-              ))}
-
+              <div className="map-radar-circle circle-1" />
+              <div className="map-radar-circle circle-2" />
+              <div className="map-radar-circle circle-3" />
               <div className="radar-sweep-beam" />
+
+              {/* District Geo-Pins */}
+              {DISTRICT_INCIDENTS.map((dist, idx) => {
+                const isSelected = selectedDistrict.id === dist.id;
+                // Pin layout coordinates on radar grid
+                const positions = [
+                  { top: '35%', left: '42%' }, // Central
+                  { top: '65%', left: '30%' }, // South
+                  { top: '38%', left: '60%' }, // East
+                  { top: '72%', left: '68%' }, // Korangi
+                  { top: '25%', left: '80%' }  // Malir
+                ];
+                const pos = positions[idx] || { top: '50%', left: '50%' };
+
+                return (
+                  <div 
+                    key={dist.id}
+                    className={`gis-pin-marker ${isSelected ? 'active-pin' : ''}`}
+                    style={{ top: pos.top, left: pos.left }}
+                    onClick={() => setSelectedDistrict(dist)}
+                    title={`${dist.district} - Click for Telemetry`}
+                  >
+                    <div className="pin-pulse" style={{ borderColor: dist.color }} />
+                    <div className="pin-dot" style={{ background: dist.color }}>
+                      <MapPin size={12} color="#ffffff" />
+                    </div>
+                    <span className="pin-label">{dist.district}</span>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* District Inspector Sidebar */}
+            {/* Right: Selected District Telemetry Inspector Card */}
             <div className="gis-sidebar">
-              <h3>District Telemetry</h3>
+              <div className="sidebar-header">
+                <Globe2 size={16} className="icon-cyan" />
+                <h3>Zone Telemetry Inspector</h3>
+              </div>
+
               <div className="selected-dist-card">
                 <div className="dist-name">{selectedDistrict.district}</div>
                 <div className="dist-area">{selectedDistrict.area}</div>
-                
+                <div className="dist-coords">{selectedDistrict.lat}, {selectedDistrict.lng}</div>
+
                 <div className="dist-stats-grid">
                   <div className="dist-stat-box">
                     <span className="box-val text-red">{selectedDistrict.active}</span>
@@ -249,8 +345,21 @@ const Analytics = () => {
                   </div>
                   <div className="dist-stat-box">
                     <span className="box-val text-green">{selectedDistrict.resolved}</span>
-                    <span className="box-lbl">Resolved</span>
+                    <span className="box-lbl">Resolved (30d)</span>
                   </div>
+                  <div className="dist-stat-box">
+                    <span className="box-val text-cyan">{selectedDistrict.units}</span>
+                    <span className="box-lbl">Field Fleet</span>
+                  </div>
+                  <div className="dist-stat-box">
+                    <span className="box-val text-purple">{selectedDistrict.avgTime}</span>
+                    <span className="box-lbl">Avg SLA Speed</span>
+                  </div>
+                </div>
+
+                <div className="dist-detail-row">
+                  <span>Top Issue:</span>
+                  <strong>{selectedDistrict.topIssue}</strong>
                 </div>
 
                 <div className="risk-level-bar">
@@ -259,60 +368,67 @@ const Analytics = () => {
                 </div>
 
                 <button 
+                  type="button" 
                   className="inspect-btn"
                   onClick={() => handleInspectDistrict(selectedDistrict)}
                 >
-                  Inspect District Operations
+                  <span>Inspect Full Operations Telemetry</span>
+                  <ArrowUpRight size={15} />
                 </button>
               </div>
             </div>
+
           </div>
         </section>
 
-        {/* ================= CHARTS ROW ================= */}
+
+        {/* ================= 4. CHARTS ROW ================= */}
         <section className="charts-grid-row">
-          {/* Resolution Speed Trends */}
+          
+          {/* Monthly Speed Area Chart */}
           <div className="chart-card">
             <h3>Monthly Resolution Speed (Hours by Domain)</h3>
             <p className="chart-subtitle">Lower is faster (Demonstrating continuous AI optimization)</p>
-            <div style={{ height: 280, width: '100%', marginTop: 16 }}>
+            
+            <div style={{ height: 260, width: '100%', marginTop: 14 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={RESOLUTION_TIME_DATA}>
                   <defs>
                     <linearGradient id="colorWater" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00e5ff" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#00e5ff" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#00e5ff" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#00e5ff" stopOpacity={0.05}/>
                     </linearGradient>
                     <linearGradient id="colorRoad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                  <XAxis dataKey="month" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: 8, color: '#fff' }} />
-                  <Legend />
-                  <Area type="monotone" dataKey="Water & Drainage" stroke="#00e5ff" fillOpacity={1} fill="url(#colorWater)" />
-                  <Area type="monotone" dataKey="Roads & Infra" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRoad)" />
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.12} />
+                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
+                  <YAxis stroke="#94a3b8" fontSize={12} unit="h" />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 8, color: '#f8fafc', fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
+                  <Area type="monotone" dataKey="Water & Drainage" stroke="#00e5ff" fillOpacity={1} fill="url(#colorWater)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Roads & Infra" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRoad)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Category Distribution Pie */}
+          {/* Complaint Volume Breakdown Pie */}
           <div className="chart-card">
-            <h3>Complaint Volume by Domain</h3>
-            <p className="chart-subtitle">Breakdown across 1,490 logged tickets</p>
-            <div style={{ height: 280, width: '100%', marginTop: 16 }}>
+            <h3>Complaint Volume by Civic Domain</h3>
+            <p className="chart-subtitle">Breakdown across 1,490 logged municipal tickets</p>
+            
+            <div style={{ height: 260, width: '100%', marginTop: 14 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={CATEGORY_DISTRIBUTION}
                     cx="50%"
                     cy="50%"
-                    innerRadius={65}
-                    outerRadius={95}
+                    innerRadius={60}
+                    outerRadius={88}
                     paddingAngle={4}
                     dataKey="value"
                   >
@@ -320,21 +436,24 @@ const Analytics = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: 8, color: '#fff' }} />
-                  <Legend />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: 8, color: '#f8fafc', fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
+
         </section>
 
-        {/* ================= LEADERBOARDS ROW ================= */}
+
+        {/* ================= 5. PERFORMANCE LEADERBOARDS ================= */}
         <section className="leaderboards-grid">
+          
           {/* Department Leaderboard */}
           <div className="leaderboard-card">
             <div className="card-header-row">
               <div className="title-with-icon">
-                <Building2 size={20} className="text-cyan-400" />
+                <Building2 size={18} className="icon-cyan" />
                 <h3>Municipal Department Performance</h3>
               </div>
               <span className="sub-badge">SLA Ranked</span>
@@ -344,7 +463,7 @@ const Analytics = () => {
               <table className="analytics-table">
                 <thead>
                   <tr>
-                    <th>Dept</th>
+                    <th>Department</th>
                     <th>On-Time Rate</th>
                     <th>Avg Speed</th>
                     <th>Score</th>
@@ -373,7 +492,7 @@ const Analytics = () => {
           <div className="leaderboard-card">
             <div className="card-header-row">
               <div className="title-with-icon">
-                <Award size={20} className="text-amber-400" />
+                <Award size={18} className="icon-amber" />
                 <h3>Citizen Karma Champions</h3>
               </div>
               <span className="sub-badge gold">Top Reporters</span>
@@ -383,20 +502,22 @@ const Analytics = () => {
               {CITIZEN_CHAMPIONS.map(cit => (
                 <div key={cit.rank} className="karma-item">
                   <div className="cit-rank">#{cit.rank}</div>
-                  <img src={cit.avatar} alt="" className="cit-avatar" />
+                  <img src={cit.avatar} alt={cit.name} className="cit-avatar" />
                   <div className="cit-info">
                     <div className="cit-name">{cit.name}</div>
                     <div className="cit-badge">{cit.badge}</div>
                   </div>
                   <div className="cit-karma">
-                    <Sparkles size={14} className="text-amber-400" />
+                    <Sparkles size={14} className="icon-amber" />
                     <span>{cit.karma} pts</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+
         </section>
+
       </main>
 
       <Footer />
