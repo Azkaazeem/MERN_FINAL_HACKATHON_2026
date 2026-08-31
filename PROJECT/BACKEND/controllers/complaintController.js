@@ -1,5 +1,6 @@
 const Complaint = require('../models/Complaint');
 const mongoose = require('mongoose');
+const { cloudinary } = require('../config/cloudinary');
 
 const isDbConnected = () => mongoose.connection.readyState === 1;
 
@@ -42,6 +43,19 @@ exports.createComplaint = async (req, res) => {
     const ticketId = 'TKT-' + Math.floor(1000 + Math.random() * 9000);
     const district = getDistrictFromLocation(location);
 
+    // If imageUrl is Base64, automatically upload to Cloudinary
+    let finalImageUrl = imageUrl || '';
+    if (imageUrl && (imageUrl.startsWith('data:image') || imageUrl.length > 500)) {
+      try {
+        const uploadRes = await cloudinary.uploader.upload(imageUrl, {
+          folder: 'hackathon_uploads'
+        });
+        finalImageUrl = uploadRes.secure_url;
+      } catch (cloudErr) {
+        console.warn('Cloudinary direct upload failed, using fallback:', cloudErr.message);
+      }
+    }
+
     const complaintData = {
       ticketId,
       user: req.user?._id || null,
@@ -54,7 +68,7 @@ exports.createComplaint = async (req, res) => {
       citizenName: citizenName || req.user?.name || 'Citizen Reporter',
       citizenEmail: (citizenEmail || req.user?.email || '').toLowerCase(),
       citizenContact: citizenContact || req.user?.phone || '',
-      imageUrl: imageUrl || '',
+      imageUrl: finalImageUrl,
       aiSummary: aiSummary || '',
       department: department || 'Municipal Works & Engineering Dept',
       status: 'Open',

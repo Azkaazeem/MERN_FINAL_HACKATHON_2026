@@ -230,22 +230,52 @@ const MyComplaints = () => {
     return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80';
   };
 
-  // Handle 1 Image File Upload (PNG, JPG, JPEG only)
-  const handleImageFileChange = (e) => {
+  // Handle 1 Image File Upload (PNG, JPG, JPEG, WEBP) -> Uploads to Cloudinary
+  const handleImageFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       toast.error('Only PNG, JPEG, and JPG image formats are supported.');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB.');
       return;
     }
 
+    // Immediate preview
+    const previewUrl = URL.createObjectURL(file);
+    setFormData(prev => ({
+      ...prev,
+      image_url: previewUrl,
+      image_name: file.name
+    }));
+
+    // Upload to Cloudinary API
+    const uploadToast = toast.loading('Uploading photo evidence to Cloudinary...');
+    try {
+      const uploadData = new FormData();
+      uploadData.append('image', file);
+      const res = await API.post('/upload/upload', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data?.imageUrl) {
+        setFormData(prev => ({
+          ...prev,
+          image_url: res.data.imageUrl,
+          image_name: file.name
+        }));
+        toast.success('Photo saved to Cloudinary!', { id: uploadToast });
+        return;
+      }
+    } catch (err) {
+      console.warn('Cloudinary upload fallback to Base64:', err);
+    }
+
+    // Fallback: Read as Base64 (backend uploads to Cloudinary on submit)
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData(prev => ({
@@ -253,7 +283,7 @@ const MyComplaints = () => {
         image_url: reader.result,
         image_name: file.name
       }));
-      toast.success(`Photo "${file.name}" attached successfully!`);
+      toast.success(`Photo attached successfully!`, { id: uploadToast });
     };
     reader.readAsDataURL(file);
   };

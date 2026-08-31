@@ -12,7 +12,7 @@ dotenv.config();
 const connectDB = require('./config/db');
 const dns = require("dns");
 
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+dns.setServers(['8.8.8.8', '1.1.1.1']); 
 
 // Connect Database & run automatic initial seed
 connectDB().then(() => {
@@ -55,6 +55,7 @@ app.use('/api/departments', require('./routes/departmentRoutes'));
 app.use('/api/telemetry', require('./routes/telemetryRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
 
 // Admin User Management Routes
 app.get('/api/admin/users', async (req, res) => {
