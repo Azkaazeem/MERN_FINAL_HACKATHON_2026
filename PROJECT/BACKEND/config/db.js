@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
 const dns = require('dns');
@@ -8,7 +8,7 @@ dns.setServers(['8.8.8.8', '1.1.1.1']);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config();
 
-const DEFAULT_ATLAS_URI = 'mongodb+srv://azkaazeem804_db_user:KlHAmuaQuOjKfNbc@cluster1.n9chvof.mongodb.net/civic_support_db?retryWrites=true&w=majority';
+const DEFAULT_ATLAS_URI = 'mongodb+srv://azkaazeem804_db_user:KlHAmuaQuOjKfNbc@cluster0.clkrb0s.mongodb.net/test?retryWrites=true&w=majority';
 
 const connectDB = async () => {
   const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGOURI || DEFAULT_ATLAS_URI;
@@ -29,4 +29,3 @@ const connectDB = async () => {
 };
 
 module.exports = connectDB;
-
