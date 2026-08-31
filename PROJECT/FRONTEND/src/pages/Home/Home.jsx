@@ -66,29 +66,51 @@ const Home = () => {
   const [selectedImageModal, setSelectedImageModal] = useState(null);
   const [activeChatTicket, setActiveChatTicket] = useState(null);
 
-  // Local Complaints List for Instant Feedback
-  const [submittedComplaints, setSubmittedComplaints] = useState([
-    {
-      id: '101',
-      title: 'Main water pipeline burst with heavy street flooding',
-      category: 'Water & Drainage',
-      priority: 'Critical',
-      status: 'In Progress',
-      assigned_department: 'Water & Sewerage Board (WSSB)',
-      location: 'Central District',
-      date: '30 Aug 2026'
-    },
-    {
-      id: '102',
-      title: 'Deep road sinkhole damaging passing vehicles',
-      category: 'Roads & Infrastructure',
-      priority: 'High',
-      status: 'Pending',
-      assigned_department: 'Municipal Works Department',
-      location: 'District South (Clifton)',
-      date: '30 Aug 2026'
+  // User's Real Complaints History from MongoDB
+  const [submittedComplaints, setSubmittedComplaints] = useState([]);
+
+  // Fetch logged in user's real complaints
+  useEffect(() => {
+    const fetchUserHistory = async () => {
+      if (!user) {
+        setSubmittedComplaints([]);
+        return;
+      }
+      try {
+        const userEmail = user.email || '';
+        const res = await API.get(`/complaints/my?email=${encodeURIComponent(userEmail)}`);
+        const data = res.data?.complaints || [];
+        const formatted = data.map(c => ({
+          _id: c._id,
+          id: c.ticketId || c._id,
+          ticketId: c.ticketId,
+          title: c.title,
+          category: c.category,
+          priority: c.priority,
+          status: c.status,
+          assigned_department: c.department,
+          location: c.location,
+          date: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently',
+          imageUrl: c.imageUrl
+        }));
+        setSubmittedComplaints(formatted);
+      } catch (e) {
+        setSubmittedComplaints([]);
+      }
+    };
+    fetchUserHistory();
+  }, [user]);
+
+  // Handle Delete Complaint from Home History
+  const handleDeleteHomeComplaint = async (complaintId, ticketCode) => {
+    try {
+      await API.delete(`/complaints/${complaintId}`);
+      toast.success(`Complaint #${ticketCode || complaintId} deleted!`);
+      setSubmittedComplaints(prev => prev.filter(c => c._id !== complaintId && c.id !== complaintId));
+    } catch (err) {
+      toast.error('Failed to delete complaint.');
     }
-  ]);
+  };
 
   // Real-Time NLP & AI Inference Engine
   useEffect(() => {

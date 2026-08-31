@@ -14,7 +14,8 @@ import {
   Bot,
   Zap,
   CheckCircle2,
-  Building2
+  Building2,
+  Camera
 } from 'lucide-react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
@@ -40,13 +41,14 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     role: 'customer'
   });
 
-  // --- Signup State (Only 2 Roles: Customer, Worker - Admin NOT allowed) ---
+  // --- Signup State (Roles: Customer, Worker - Admin NOT allowed via open registration) ---
   const [signupData, setSignupData] = useState({
     username: '',
     email: '',
     dob: '',
     role: 'customer',
     department: 'General Civic Support',
+    profilePic: '',
     password: '',
     confirmPassword: ''
   });
@@ -100,45 +102,58 @@ const Authentication = ({ defaultIsSignUp = false }) => {
     setSignupData({ ...signupData, [e.target.name]: e.target.value });
   };
 
-  // --- Local Sign In Handler ---
+  // --- Avatar Profile Picture Upload ---
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+      return toast.error('Only PNG, JPG, or JPEG images are allowed.');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return toast.error('Image size must be less than 5MB');
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSignupData(prev => ({ ...prev, profilePic: reader.result }));
+      toast.success('Avatar preview loaded!');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // --- STRICT Database Sign In Handler (NO fake auto-login) ---
   const handleSignIn = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const res = await API.post('/auth/login', {
-        email: loginData.email,
+        email: loginData.email.trim(),
         password: loginData.password,
         role: loginData.role
       });
 
-      if (res.data.success) {
+      if (res.data?.success) {
         toast.success(res.data.message || 'Login successful!');
-        handleAuthSuccess(res.data.user, res.data.token, loginData.role);
-        return;
+        handleAuthSuccess(res.data.user, res.data.token, res.data.user.role || loginData.role);
+      } else {
+        toast.error(res.data?.message || 'Login failed. Please check credentials.');
       }
     } catch (err) {
-      const email = (loginData.email || '').toLowerCase();
-      const selectedRole = loginData.role || (email.includes('admin') ? 'admin' : email.includes('worker') ? 'worker' : 'customer');
-      const fallbackUser = {
-        _id: 'usr_' + Date.now(),
-        name: selectedRole === 'admin' ? 'Admin Officer' : selectedRole === 'worker' ? 'Support Agent (Worker)' : (email.split('@')[0] || 'Customer User'),
-        email: loginData.email || (selectedRole === 'admin' ? 'admin@novadesk.com' : selectedRole === 'worker' ? 'worker@novadesk.com' : 'customer@novadesk.com'),
-        role: selectedRole
-      };
-      toast.success(`Signed in as ${selectedRole.toUpperCase()}!`);
-      handleAuthSuccess(fallbackUser, 'demo_token_' + Date.now(), selectedRole);
+      const errMsg = err.response?.data?.message || 'Invalid email or password. User not found in database.';
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Local Sign Up Handler ---
+  // --- STRICT Database Sign Up Handler (Saves in MongoDB) ---
   const handleSignUp = async (e) => {
     e.preventDefault();
 
     if (signupData.password !== signupData.confirmPassword) {
-      return toast.error('Passwords do not match! Please verify again password.');
+      return toast.error('Passwords do not match! Please verify your password.');
     }
 
     if (signupData.password.length < 6) {
@@ -149,27 +164,24 @@ const Authentication = ({ defaultIsSignUp = false }) => {
 
     try {
       const res = await API.post('/auth/register', {
-        name: signupData.username,
-        email: signupData.email,
+        name: signupData.username.trim(),
+        email: signupData.email.trim().toLowerCase(),
         password: signupData.password,
         dob: signupData.dob,
-        role: signupData.role
+        role: signupData.role,
+        department: signupData.department,
+        profilePic: signupData.profilePic
       });
 
-      if (res.data.success) {
-        toast.success(res.data.message || 'Account created successfully!');
-        handleAuthSuccess(res.data.user, res.data.token, signupData.role);
-        return;
+      if (res.data?.success) {
+        toast.success('Account created and saved in Database!');
+        handleAuthSuccess(res.data.user, res.data.token, res.data.user.role || signupData.role);
+      } else {
+        toast.error(res.data?.message || 'Failed to create account.');
       }
     } catch (err) {
-      const fallbackUser = {
-        _id: 'usr_' + Date.now(),
-        name: signupData.username || 'Customer User',
-        email: signupData.email || 'customer@gmail.com',
-        role: signupData.role || 'customer'
-      };
-      toast.success(`Account Created as ${fallbackUser.role.toUpperCase()}!`);
-      handleAuthSuccess(fallbackUser, 'demo_token_' + Date.now(), fallbackUser.role);
+      const errMsg = err.response?.data?.message || 'Failed to register. Email may already exist in database.';
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -208,19 +220,39 @@ const Authentication = ({ defaultIsSignUp = false }) => {
           </button>
         </div>
 
-        {/* Forms Container */}
-        <div className="auth-forms-content">
+        {/* Form Container Card */}
+        <div className="auth-form-card">
           
-          {/* ===================== SIGN IN FORM ===================== */}
-          {!isSignUp && (
-            <form onSubmit={handleSignIn} className="auth-form-body">
-              <div className="form-title-wrap">
-                <h2>Welcome Back</h2>
-                <p>Enter your credentials to access your support portal</p>
+          {/* ================= 1. SIGN IN FORM ================= */}
+          {!isSignUp ? (
+            <form onSubmit={handleSignIn} className="auth-form">
+              <div className="form-header-text">
+                <h2>Welcome to NovaDesk</h2>
+                <p>Sign in to access your role-based support workspace</p>
               </div>
 
               <div className="inputs-column">
-                {/* Email */}
+                
+                {/* Role Selector Pill */}
+                <div className="custom-input-box">
+                  <label>Login As</label>
+                  <div className="input-field-wrap">
+                    <Shield size={17} className="field-icon" />
+                    <select 
+                      name="role" 
+                      value={loginData.role} 
+                      onChange={handleLoginChange} 
+                      className="field-select"
+                      required
+                    >
+                      <option value="customer">Customer (View &amp; Submit Tickets)</option>
+                      <option value="worker">Worker (Field Support Agent)</option>
+                      <option value="admin">Administrator (Command Console)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Email Field */}
                 <div className="custom-input-box">
                   <label>Email Address</label>
                   <div className="input-field-wrap">
@@ -236,7 +268,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                   </div>
                 </div>
 
-                {/* Password with Eye Toggle */}
+                {/* Password Field with Eye Toggle */}
                 <div className="custom-input-box">
                   <label>Password</label>
                   <div className="input-field-wrap">
@@ -244,7 +276,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                     <input 
                       type={showLoginPassword ? "text" : "password"} 
                       name="password" 
-                      placeholder="Enter your password" 
+                      placeholder="••••••••••••" 
                       value={loginData.password} 
                       onChange={handleLoginChange} 
                       required 
@@ -261,30 +293,18 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                   </div>
                 </div>
 
-                {/* Role Dropdown (3 Roles: Customer, Worker, Admin) */}
-                <div className="custom-input-box">
-                  <label>Select Role</label>
-                  <div className="input-field-wrap">
-                    <Shield size={17} className="field-icon" />
-                    <select 
-                      name="role" 
-                      value={loginData.role} 
-                      onChange={handleLoginChange} 
-                      className="field-select"
-                      required
-                    >
-                      <option value="customer">Customer (Ticket Creator)</option>
-                      <option value="worker">Worker (Support Agent)</option>
-                      <option value="admin">Admin (Supervisor)</option>
-                    </select>
-                  </div>
-                </div>
               </div>
 
               <button className="auth-primary-submit-btn" type="submit" disabled={loading}>
-                <span>{loading ? 'Authenticating...' : 'Sign In to Portal'}</span>
+                <span>{loading ? 'Authenticating with Database...' : 'Sign In to NovaDesk'}</span>
                 <ArrowRight size={17} />
               </button>
+
+              <div className="demo-credentials-note">
+                <span>Demo Accounts:</span>
+                <code>admin@novadesk.com</code> | <code>worker@novadesk.com</code> | <code>citizen@novadesk.com</code>
+                <small>Password: password123</small>
+              </div>
 
               <p className="auth-switch-prompt">
                 Don't have an account?{' '}
@@ -293,26 +313,47 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                 </button>
               </p>
             </form>
-          )}
+          ) : (
 
-          {/* ===================== SIGN UP FORM ===================== */}
-          {isSignUp && (
-            <form onSubmit={handleSignUp} className="auth-form-body">
-              <div className="form-title-wrap">
+            /* ================= 2. SIGN UP FORM ================= */
+            <form onSubmit={handleSignUp} className="auth-form">
+              <div className="form-header-text">
                 <h2>Create Your Account</h2>
                 <p>Register as a Customer or Support Agent to start managing tickets</p>
               </div>
 
+              {/* Avatar Profile Picture Upload in Signup */}
+              <div className="signup-avatar-row">
+                <div className="signup-avatar-preview">
+                  {signupData.profilePic ? (
+                    <img src={signupData.profilePic} alt="Avatar Preview" className="signup-avatar-img" />
+                  ) : (
+                    <User size={26} className="signup-avatar-icon" />
+                  )}
+                </div>
+                <label className="signup-avatar-btn" title="Upload Profile Picture">
+                  <Camera size={14} />
+                  <span>{signupData.profilePic ? 'Change Photo' : 'Upload Profile Picture (Optional)'}</span>
+                  <input 
+                    type="file" 
+                    accept="image/png, image/jpeg, image/jpg" 
+                    onChange={handleAvatarUpload} 
+                    style={{ display: 'none' }} 
+                  />
+                </label>
+              </div>
+
               <div className="inputs-column">
+                
                 {/* Username */}
                 <div className="custom-input-box">
-                  <label>Full Username</label>
+                  <label>Full Username / Name</label>
                   <div className="input-field-wrap">
                     <User size={17} className="field-icon" />
                     <input 
                       type="text" 
                       name="username" 
-                      placeholder="e.g. alex_johnson" 
+                      placeholder="e.g. Alex Johnson" 
                       value={signupData.username} 
                       onChange={handleSignupChange} 
                       required 
@@ -351,7 +392,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                   </div>
                 </div>
 
-                {/* Role Dropdown (ONLY Worker & Customer - Admin NOT allowed) */}
+                {/* Role Dropdown */}
                 <div className="custom-input-box">
                   <label>Register As</label>
                   <div className="input-field-wrap">
@@ -363,11 +404,34 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                       className="field-select"
                       required
                     >
-                      <option value="customer">Customer (Submit & Track Tickets)</option>
+                      <option value="customer">Customer (Submit &amp; Track Tickets)</option>
                       <option value="worker">Worker (Support Agent - Resolve Tickets)</option>
                     </select>
                   </div>
                 </div>
+
+                {/* Conditional Department for Worker */}
+                {signupData.role === 'worker' && (
+                  <div className="custom-input-box">
+                    <label>Department Specialty</label>
+                    <div className="input-field-wrap">
+                      <Building2 size={17} className="field-icon" />
+                      <select 
+                        name="department" 
+                        value={signupData.department} 
+                        onChange={handleSignupChange} 
+                        className="field-select"
+                        required
+                      >
+                        <option value="Water Supply &amp; Sewerage Board (WSSB)">Water Supply &amp; Sewerage Board (WSSB)</option>
+                        <option value="Power &amp; Grid Safety Board">Power &amp; Grid Safety Board</option>
+                        <option value="Solid Waste Management Authority (SWMA)">Solid Waste Management Authority (SWMA)</option>
+                        <option value="Municipal Works &amp; Asphalt Dept">Municipal Works &amp; Asphalt Dept</option>
+                        <option value="General Civic Support">General Civic Support</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 {/* Password with Eye Toggle */}
                 <div className="custom-input-box">
@@ -394,9 +458,9 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                   </div>
                 </div>
 
-                {/* Again Password (Confirm Password) with Eye Toggle */}
+                {/* Confirm Password with Eye Toggle */}
                 <div className="custom-input-box">
-                  <label>Confirm Password (Again)</label>
+                  <label>Confirm Password</label>
                   <div className="input-field-wrap">
                     <Lock size={17} className="field-icon" />
                     <input 
@@ -418,10 +482,11 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                     </button>
                   </div>
                 </div>
+
               </div>
 
               <button className="auth-primary-submit-btn" type="submit" disabled={loading}>
-                <span>{loading ? 'Creating Account...' : 'Create NovaDesk Account'}</span>
+                <span>{loading ? 'Registering with Database...' : 'Create NovaDesk Account'}</span>
                 <ArrowRight size={17} />
               </button>
 
@@ -450,7 +515,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
           <span className="feature-dot">•</span>
           <div className="feature-item">
             <CheckCircle2 size={14} className="feature-icon" />
-            <span>Role Protected</span>
+            <span>Guaranteed SLAs</span>
           </div>
         </div>
 

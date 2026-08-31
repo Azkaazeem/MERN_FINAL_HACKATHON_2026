@@ -50,81 +50,9 @@ const MyComplaints = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Complaints Vault State
-  const [complaints, setComplaints] = useState([
-    {
-      id: '101',
-      ticketId: 'TKT-8942',
-      title: 'Main water pipeline burst with heavy street flooding',
-      description: 'Major underground pipeline fracture causing 400L/min water loss and street flooding across residential avenue.',
-      category: 'Water & Drainage',
-      priority: 'Critical',
-      status: 'In Progress',
-      assigned_department: 'Water Supply & Sewerage Board (WSSB)',
-      location: 'Central District',
-      date: '30 Aug 2026'
-    },
-    {
-      id: '102',
-      ticketId: 'TKT-8939',
-      title: 'Deep road sinkhole damaging passing vehicles',
-      description: 'Severe 4-foot deep asphalt sinkhole creating dangerous traffic hazard for passing school buses and cars.',
-      category: 'Roads & Infrastructure',
-      priority: 'High',
-      status: 'Pending',
-      assigned_department: 'Municipal Works Department',
-      location: 'District South (Clifton)',
-      date: '30 Aug 2026'
-    },
-    {
-      id: '103',
-      ticketId: 'TKT-8931',
-      title: 'Solid waste dumpster overflowing onto main sidewalk',
-      description: 'Municipal trash bin overflowing for 5 consecutive days creating severe odor and environmental sanitation hazard.',
-      category: 'Solid Waste & Sanitation',
-      priority: 'Medium',
-      status: 'Resolved',
-      assigned_department: 'Solid Waste Management Authority (SWMA)',
-      location: 'District East (Gulshan)',
-      date: '28 Aug 2026'
-    },
-    {
-      id: '104',
-      ticketId: 'TKT-8925',
-      title: 'Exposed live 220V power wire sparking during rain',
-      description: 'Hanging high-voltage wire sparking near public street light pole. Urgent hazard intervention required.',
-      category: 'Electrical & Fire Hazard',
-      priority: 'Critical',
-      status: 'Resolved',
-      assigned_department: 'Power & Grid Safety Board',
-      location: 'Korangi Industrial Area',
-      date: '27 Aug 2026'
-    },
-    {
-      id: '105',
-      ticketId: 'TKT-8919',
-      title: 'Sewerage line blockage causing backflow into homes',
-      description: 'Underground sewerage line clogged with silt, leading to foul backflow into residential ground floors.',
-      category: 'Water & Drainage',
-      priority: 'High',
-      status: 'In Progress',
-      assigned_department: 'Water Supply & Sewerage Board (WSSB)',
-      location: 'Malir Metropolitan Zone',
-      date: '26 Aug 2026'
-    },
-    {
-      id: '106',
-      ticketId: 'TKT-8912',
-      title: 'Street light transformer smoking and voltage fluctuation',
-      description: 'Transformer unit smoking on Pole 14 causing heavy voltage dips across Sector 5.',
-      category: 'Electrical & Fire Hazard',
-      priority: 'High',
-      status: 'Resolved',
-      assigned_department: 'Power & Grid Safety Board',
-      location: 'Central District',
-      date: '25 Aug 2026'
-    }
-  ]);
+  // User's Dynamic Complaints State (Loaded strictly from MongoDB)
+  const [complaints, setComplaints] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
