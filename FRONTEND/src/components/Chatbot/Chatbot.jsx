@@ -1,35 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   Send, 
   Minus, 
   Sparkles, 
-  Smile, 
-  Paperclip,
-  Bot
+  Bot,
+  RotateCcw,
+  Search,
+  Zap,
+  Droplet,
+  ShieldCheck,
+  HardHat
 } from 'lucide-react';
+import API from '../../api/axios';
 import aiRoboImg from '../../assets/AI robo.jpg';
 import './Chatbot.css';
+
+const QUICK_SUGGESTIONS = [
+  { label: 'Track Ticket', query: 'How do I track my ticket status?' },
+  { label: 'Water Pipe Leak SLA', query: 'What is the repair SLA for a water pipe leak?' },
+  { label: 'Emergency Power Hazard', query: 'How to report a transformer spark or power line hazard?' },
+  { label: 'Worker Karma Points', query: 'How do municipal field workers earn compensation and karma?' }
+];
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showPrompt, setShowPrompt] = useState(true);
   const [inputMsg, setInputMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const chatBodyRef = useRef(null);
 
-  // Sample default messages for clean UI presentation
+  // Initial greeting
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'bot',
-      text: "Hi there! I am your NovaDesk AI Support Assistant. How can I help you today?",
+      text: "Hello! I am NovaDesk AI, your 24/7 Smart Municipal Assistant powered by Gemini. You can ask me anything about reporting issues, tracking tickets, municipal SLAs, or department contacts!",
       time: 'Just now'
     }
   ]);
 
+  // Auto-scroll to bottom on new message
+  useEffect(() => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
   const toggleChat = () => {
     setIsOpen(!isOpen);
     if (!isOpen) {
-      setShowPrompt(false); // Hide prompt once user opens chat
+      setShowPrompt(false);
     }
   };
 
@@ -38,10 +59,9 @@ const Chatbot = () => {
     setShowPrompt(false);
   };
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    const query = inputMsg.trim();
-    if (!query) return;
+  const handleSendMessage = async (customQuery) => {
+    const query = (customQuery || inputMsg).trim();
+    if (!query || isLoading) return;
 
     const userMsg = {
       id: Date.now(),
@@ -51,59 +71,71 @@ const Chatbot = () => {
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setInputMsg('');
+    if (!customQuery) setInputMsg('');
+    setIsLoading(true);
 
-    // Generate Intelligent Civic AI Response
-    setTimeout(() => {
-      let botReply = `I have analyzed your query regarding "${query}". You can report this issue via the Home page form, and our system will automatically categorize and dispatch it!`;
-      const q = query.toLowerCase();
+    try {
+      // Build brief history context
+      const historyContext = messages.slice(-4).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        text: m.text
+      }));
 
-      if (q.includes('water') || q.includes('leak') || q.includes('pipe') || q.includes('sewage')) {
-        botReply = "For water pipe leaks or sewage overflow, submit a report selecting 'Water & Drainage'. Emergency main pipe bursts are dispatched to WSSB with a 4-hour inspection SLA!";
-      } else if (q.includes('road') || q.includes('pothole') || q.includes('street')) {
-        botReply = "Potholes and damaged asphalt are automatically assigned to the Municipal Works & Engineering Department for asphalt repair.";
-      } else if (q.includes('garbage') || q.includes('trash') || q.includes('waste')) {
-        botReply = "Solid waste and bin overflows receive mandatory 24-hour cleanup SLA dispatched to Solid Waste Management Authority (SWMA).";
-      } else if (q.includes('power') || q.includes('wire') || q.includes('spark') || q.includes('electric')) {
-        botReply = "Exposed electrical wiring and sparking transformers are classified Critical Urgency with direct emergency line dispatch.";
-      } else if (q.includes('right') || q.includes('law') || q.includes('sla')) {
-        botReply = "Customer Rights: Every citizen has the right to clean water, safe roads, unpolluted environment, and timely response within 24-48 hours.";
-      } else if (q.includes('track') || q.includes('status')) {
-        botReply = "You can track any ticket in real time by scrolling to the 'Track Ticket Status' section and entering your Ticket ID!";
-      } else if (q.includes('hello') || q.includes('hi') || q.includes('hey')) {
-        botReply = "Hello! I am your NovaDesk AI Assistant. How can I help you report an issue or track your support ticket today?";
-      }
+      const res = await API.post('/ai/chat', {
+        prompt: query,
+        history: historyContext
+      });
+
+      const replyText = res.data?.reply || "I am here to assist you with municipal complaints and ticket tracking. Please file your issue on the Home page.";
 
       const botMsg = {
         id: Date.now() + 1,
         sender: 'bot',
-        text: botReply,
+        text: replyText,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
+
       setMessages((prev) => [...prev, botMsg]);
-    }, 400);
+    } catch (err) {
+      console.warn('AI Chat error:', err);
+      const fallbackMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: "I am ready to help! You can report water leaks, potholes, waste, and electrical hazards on our Home page for automated AI triage.",
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, fallbackMsg]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetChat = () => {
+    setMessages([
+      {
+        id: Date.now(),
+        sender: 'bot',
+        text: "Chat cleared! How can I assist you with your municipal queries or tickets today?",
+        time: 'Just now'
+      }
+    ]);
   };
 
   return (
     <div className="chatbot-wrapper">
       
-      {/* ================= 1. FLOATING PROMPT BUBBLE (Notice box) ================= */}
+      {/* ================= 1. FLOATING PROMPT BUBBLE ================= */}
       {showPrompt && !isOpen && (
         <div className="chatbot-prompt-bubble" onClick={toggleChat} title="Click to chat with AI">
-          {/* Left: Custom Cartoon Robot Image */}
           <img 
             src={aiRoboImg} 
             alt="AI Bot" 
             className="bubble-robot-img" 
           />
-
-          {/* Right: Message & Title */}
           <div className="bubble-text-content">
             <div className="bubble-title">AI Assistant</div>
             <div className="bubble-msg">Need help? Chat with me!</div>
           </div>
-
-          {/* Close 'X' Button to dismiss prompt */}
           <button 
             type="button" 
             className="bubble-close-btn" 
@@ -123,42 +155,81 @@ const Chatbot = () => {
             <div className="header-left">
               <img src={aiRoboImg} alt="Robot Avatar" className="header-avatar" />
               <div className="header-info">
-                <h4>AI Assistant</h4>
+                <h4>NovaDesk AI Assistant</h4>
                 <div className="header-status">
-                  <span className="status-indicator" /> Online
+                  <span className="status-indicator" /> Gemini 3.5 Active
                 </div>
               </div>
             </div>
-            <button className="header-close-btn" onClick={toggleChat} title="Minimize Chat">
-              <Minus size={18} />
-            </button>
+            <div className="header-actions">
+              <button className="header-action-icon-btn" onClick={handleResetChat} title="Clear Chat History">
+                <RotateCcw size={14} />
+              </button>
+              <button className="header-close-btn" onClick={toggleChat} title="Minimize Chat">
+                <Minus size={18} />
+              </button>
+            </div>
           </div>
 
           {/* Chat Body / Messages */}
-          <div className="chatbot-body">
+          <div className="chatbot-body" ref={chatBodyRef}>
             {messages.map((msg) => (
               <div key={msg.id} className={`message-item ${msg.sender}`}>
                 {msg.sender === 'bot' && (
                   <img src={aiRoboImg} alt="Bot" className="bot-msg-avatar" />
                 )}
-                <div>
+                <div className="msg-content-wrapper">
                   <div className="message-bubble">{msg.text}</div>
                   <div className="message-time">{msg.time}</div>
                 </div>
               </div>
             ))}
+
+            {/* Typing Loader */}
+            {isLoading && (
+              <div className="message-item bot">
+                <img src={aiRoboImg} alt="Bot" className="bot-msg-avatar" />
+                <div className="message-bubble typing-bubble">
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Footer / Input Area (Ready for custom logic) */}
+          {/* Quick Suggestions Chips */}
+          <div className="chat-quick-suggestions">
+            {QUICK_SUGGESTIONS.map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="quick-chip-btn"
+                onClick={() => handleSendMessage(item.query)}
+                disabled={isLoading}
+              >
+                <Sparkles size={11} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Footer / Input Area */}
           <div className="chatbot-footer">
-            <form onSubmit={handleSendMessage} className="chat-input-wrapper">
+            <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="chat-input-wrapper">
               <input 
                 type="text" 
-                placeholder="Type your message..." 
+                placeholder="Ask NovaDesk AI anything in English or Urdu..." 
                 value={inputMsg} 
                 onChange={(e) => setInputMsg(e.target.value)} 
+                disabled={isLoading}
               />
-              <button type="submit" className="chat-send-btn" title="Send message">
+              <button 
+                type="submit" 
+                className="chat-send-btn" 
+                title="Send message"
+                disabled={!inputMsg.trim() || isLoading}
+              >
                 <Send size={14} />
               </button>
             </form>

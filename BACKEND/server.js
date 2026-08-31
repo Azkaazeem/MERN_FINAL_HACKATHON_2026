@@ -66,6 +66,7 @@ app.use('/api/telemetry', require('./routes/telemetryRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Admin User Management Routes
 app.get('/api/admin/users', async (req, res) => {
