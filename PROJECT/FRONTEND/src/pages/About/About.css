@@ -1,5 +1,5 @@
 /* ==========================================================================
-   About.css - Senior Minimalist About & Founder Hub
+   About.css - Clean, High-Tech Platform & Founder Showcase
    ========================================================================== */
 
 .about-page-container {
@@ -12,51 +12,70 @@
 }
 
 .about-content-wrapper {
-  max-width: 1100px;
+  max-width: 1140px;
   width: 100%;
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  padding: 36px 24px 70px;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  box-sizing: border-box;
 }
 
-/* Hero Section */
+/* ================= 1. HERO ================= */
 .about-hero {
   text-align: center;
-  max-width: 750px;
-  margin: 0 auto 44px;
+  max-width: 800px;
+  margin: 0 auto 4px;
+}
+
+.about-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  padding: 4px 12px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 12px;
 }
 
 .about-hero h1 {
-  font-size: 2.4rem;
+  font-size: 2.1rem;
   font-weight: 800;
   line-height: 1.25;
   color: var(--text-dark);
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   letter-spacing: -0.5px;
 }
 
-.gradient-text-about {
+.cyan-gradient {
   color: var(--primary-color);
 }
 
 .about-hero-subtitle {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-muted);
   line-height: 1.6;
   margin: 0;
 }
 
-/* Founder Spotlight Card */
+/* ================= 2. FOUNDER CARD ================= */
 .founder-card {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: var(--border-radius-md);
   border: 1px solid var(--border-color);
-  padding: 36px;
+  padding: 32px;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 36px;
-  margin-bottom: 40px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  grid-template-columns: 240px 1fr;
+  gap: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  align-items: center;
 }
 
 @media (max-width: 850px) {
@@ -73,32 +92,34 @@
 }
 
 .founder-img-wrapper {
-  width: 220px;
-  height: 220px;
-  border-radius: 14px;
+  width: 200px;
+  height: 200px;
+  border-radius: var(--border-radius-sm);
   overflow: hidden;
-  border: 2px solid var(--border-color);
-  background: var(--card-hover);
+  border: 2px solid var(--primary-color);
+  background: var(--input-bg);
+  box-shadow: 0 4px 16px var(--primary-glow);
 }
 
 .founder-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .founder-info-col {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .founder-name {
-  font-size: 1.8rem;
+  font-size: 1.7rem;
   font-weight: 800;
   color: var(--text-dark);
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .founder-role-tags {
@@ -114,24 +135,23 @@
 }
 
 .role-tag {
-  background: var(--card-hover);
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.76rem;
+  font-weight: 700;
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
 }
 
 .role-tag.highlight {
   background: var(--primary-light);
   color: var(--primary-color);
-  border-color: var(--border-accent);
-  font-weight: 700;
+  border-color: var(--primary-color);
 }
 
 .founder-bio {
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   color: var(--text-color);
   line-height: 1.6;
   margin: 0;
@@ -139,8 +159,9 @@
 
 .founder-socials {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  margin-top: 4px;
 }
 
 @media (max-width: 850px) {
@@ -153,13 +174,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--bg-card);
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-dark);
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 0.84rem;
-  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.15s ease;
 }
@@ -167,4 +188,209 @@
 .social-link-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
+  background: var(--primary-light);
+  transform: translateY(-1px);
 }
+
+.social-link-btn.portfolio-btn {
+  background: var(--primary-color);
+  color: #ffffff;
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+.social-link-btn.portfolio-btn:hover {
+  background: var(--primary-hover);
+  color: #ffffff;
+}
+
+/* ================= 3. ARCHITECTURAL PILLARS ================= */
+.pillars-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title-wrap {
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.section-title-wrap h2 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0 0 4px;
+}
+
+.section-title-wrap p {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.pillar-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.18s ease;
+}
+
+.pillar-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.pillar-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--border-radius-sm);
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.pillar-card h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.pillar-card p {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+  flex: 1;
+}
+
+.pillar-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pillar-metric strong {
+  color: var(--primary-color);
+}
+
+/* ================= 4. TECH STACK SPECIFICATION ================= */
+.tech-stack-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+}
+
+.tech-stack-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tech-stack-header h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.tech-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tech-pill {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-dark);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.15s ease;
+}
+
+.tech-pill:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* ================= 5. CTA BANNER ================= */
+.about-cta-banner {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12) 0%, rgba(59, 130, 246, 0.08) 100%);
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius-md);
+  padding: 32px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px var(--primary-glow);
+}
+
+.about-cta-banner h2 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.about-cta-banner p {
+  max-width: 600px;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.cta-btn-white {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  padding: 10px 22px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 2px 10px var(--primary-glow);
+  transition: all 0.15s ease;
+  margin-top: 4px;
+}
+
+.cta-btn-white:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Icons */
+.icon-cyan { color: var(--primary-color); }
+.icon-emerald { color: #10b981; }
+.icon-amber { color: #f59e0b; }
