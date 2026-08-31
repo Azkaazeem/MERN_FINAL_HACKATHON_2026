@@ -473,14 +473,14 @@ const TicketChatModal = ({ ticket, isOpen, onClose, userRole = 'customer' }) => 
             />
           )}
 
-          {/* Send Button */}
+          {/* Send Button Icon */}
           <button 
             type="submit" 
             className="chat-send-btn" 
             disabled={!inputText.trim() && !isRecordingVoice}
+            title="Send Message"
           >
-            <Send size={15} />
-            <span>Send</span>
+            <Send size={17} />
           </button>
         </form>
 

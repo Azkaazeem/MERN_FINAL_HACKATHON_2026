@@ -241,16 +241,43 @@
 }
 
 .chat-message-row.outgoing .msg-bubble-card {
-  background-color: var(--primary-color);
-  color: #ffffff;
+  background-color: #00e5ff;
+  color: #000000 !important;
   border-bottom-right-radius: 2px;
+}
+
+.chat-message-row.outgoing .msg-bubble-card .msg-sender-name,
+.chat-message-row.outgoing .msg-bubble-card .msg-time,
+.chat-message-row.outgoing .msg-bubble-card .msg-text-content,
+.chat-message-row.outgoing .msg-bubble-card .voice-duration {
+  color: #000000 !important;
+  font-weight: 600;
 }
 
 .chat-message-row.incoming .msg-bubble-card {
   background-color: var(--input-bg);
   border: 1px solid var(--border-color);
-  color: var(--text-dark);
+  color: #000000 !important;
   border-bottom-left-radius: 2px;
+}
+
+[data-theme='dark'] .chat-message-row.incoming .msg-bubble-card {
+  background-color: #1e293b;
+  color: #ffffff !important;
+}
+
+.chat-message-row.incoming .msg-bubble-card .msg-sender-name {
+  color: #0284c7;
+  font-weight: 700;
+}
+
+.chat-message-row.incoming .msg-bubble-card .msg-text-content {
+  color: #000000 !important;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .chat-message-row.incoming .msg-bubble-card .msg-text-content {
+  color: #ffffff !important;
 }
 
 .msg-header-row {
@@ -260,7 +287,6 @@
   gap: 10px;
   font-size: 11px;
   font-weight: 700;
-  opacity: 0.9;
 }
 
 .msg-actions-group {
@@ -271,7 +297,7 @@
 
 .msg-time {
   font-size: 10px;
-  opacity: 0.75;
+  opacity: 0.85;
 }
 
 .msg-delete-btn {
@@ -291,7 +317,7 @@
 }
 
 .msg-text-content {
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.45;
   margin: 0;
   word-break: break-word;
@@ -583,27 +609,31 @@
 .chat-send-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   background-color: var(--primary-color);
-  color: #ffffff;
+  color: #0f172a;
   border: none;
-  padding: 9px 16px;
   border-radius: var(--border-radius-sm);
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 2px 8px var(--primary-glow);
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .chat-send-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  background-color: var(--input-bg);
+  color: var(--text-muted);
+  box-shadow: none;
 }
 
 .chat-send-btn:not(:disabled):hover {
   background-color: var(--primary-hover);
+  transform: scale(1.05);
 }
 
 /* Lightbox Sub-Modal */
