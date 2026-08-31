@@ -75,9 +75,13 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`==========================================================`);
-  console.log(`[INFO] Server listening on port ${PORT}`);
-  console.log(`[INFO] API available at: http://localhost:${PORT}`);
-  console.log(`==========================================================`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`==========================================================`);
+    console.log(`[INFO] Server listening on port ${PORT}`);
+    console.log(`[INFO] API available at: http://localhost:${PORT}`);
+    console.log(`==========================================================`);
+  });
+}
+
+module.exports = app;
