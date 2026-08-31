@@ -13,10 +13,13 @@ try {
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config();
 
-const CLUSTER0_URI = 'mongodb+srv://azkaazeem804_db_user:KlHAmuaQuOjKfNbc@cluster0.clkrb0s.mongodb.net/test?retryWrites=true&w=majority';
-
 const connectDB = async () => {
-  const mongoUri = process.env.MONGO_URI || CLUSTER0_URI;
+  const mongoUri = process.env.MONGO_URI;
+  if (!mongoUri) {
+    console.error('[MongoDB Error] MONGO_URI is missing in .env file!');
+    return null;
+  }
+
   try {
     const conn = await mongoose.connect(mongoUri, { 
       serverSelectionTimeoutMS: 8000 
@@ -25,15 +28,6 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error('[MongoDB Error] Database connection failed:', error.message);
-    try {
-      const fallbackConn = await mongoose.connect(CLUSTER0_URI, {
-        serverSelectionTimeoutMS: 8000
-      });
-      console.log(`[MongoDB Atlas] Connected to Cluster0: ${fallbackConn.connection.host}`);
-      return fallbackConn;
-    } catch (e) {
-      console.error('[MongoDB Error] Cluster0 connection retry failed:', e.message);
-    }
   }
 };
 
