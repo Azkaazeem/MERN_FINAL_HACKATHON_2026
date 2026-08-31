@@ -283,35 +283,43 @@ const Home = () => {
     };
 
     try {
-      await API.post('/complaints', {
+      const res = await API.post('/complaints', {
         title: formData.title,
         description: formData.description,
         location: formData.location,
         category: payload.category,
         priority: payload.priority,
         department: payload.assigned_department,
-        citizenName: formData.citizen_name,
-        citizenContact: formData.citizen_contact,
+        citizenName: formData.citizen_name || user?.name || 'Citizen Reporter',
+        citizenEmail: (user?.email || '').toLowerCase().trim(),
+        citizenContact: formData.citizen_contact || user?.phone || '',
+        imageUrl: formData.image_url || '',
         aiSummary: payload.aiSummary
       });
+
+      const saved = res.data?.complaint;
+      const actualTicketId = saved?.ticketId || newId;
+
+      const newRecord = {
+        id: actualTicketId,
+        ticketId: actualTicketId,
+        title: saved?.title || formData.title,
+        category: saved?.category || payload.category,
+        priority: saved?.priority || payload.priority,
+        status: saved?.status === 'Open' ? 'Pending' : (saved?.status || 'Pending'),
+        assigned_department: saved?.department || payload.assigned_department,
+        location: saved?.location || formData.location,
+        date: new Date(saved?.createdAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        image_url: saved?.imageUrl || formData.image_url || ''
+      };
+
+      setSubmittedComplaints(prev => [newRecord, ...prev]);
+      setTrackId(actualTicketId);
+      setTrackedComplaint(newRecord);
     } catch (err) {
-      console.warn('API fallback:', err);
+      console.warn('API complaint post error:', err);
+      toast.error('Failed to register complaint in database.');
     }
-
-    const newRecord = {
-      id: newId,
-      title: formData.title,
-      category: payload.category,
-      priority: payload.priority,
-      status: 'Pending',
-      assigned_department: payload.assigned_department,
-      location: formData.location,
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    };
-
-    setSubmittedComplaints(prev => [newRecord, ...prev]);
-    setTrackId(newId);
-    setTrackedComplaint(newRecord);
 
     Swal.fire({
       icon: 'success',
