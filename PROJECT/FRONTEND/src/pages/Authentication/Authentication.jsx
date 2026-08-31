@@ -206,7 +206,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
               <input 
                 type="email" 
                 name="email" 
-                placeholder="Email" 
+                placeholder="admin@gmail.com" 
                 value={loginData.email} 
                 onChange={handleLoginChange} 
                 className="clean-input"
@@ -217,7 +217,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                 <input 
                   type={showLoginPassword ? 'text' : 'password'} 
                   name="password" 
-                  placeholder="Password" 
+                  placeholder="admin123@" 
                   value={loginData.password} 
                   onChange={handleLoginChange} 
                   className="clean-input"
