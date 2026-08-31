@@ -9,23 +9,27 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, username, email, password, role, dob, department } = req.body;
+    const { name, username, email, password, role, dob, department, profilePic } = req.body;
     const finalName = name || username;
+    const cleanEmail = (email || '').trim().toLowerCase();
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ 
+      email: { $regex: new RegExp(`^${cleanEmail.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } 
+    });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    const finalRole = role || (email.toLowerCase().includes('admin') ? 'admin' : email.toLowerCase().includes('worker') ? 'worker' : 'customer');
+    const finalRole = role || (cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('worker') ? 'worker' : 'customer');
 
     const user = await User.create({ 
       name: finalName, 
-      email, 
+      email: cleanEmail, 
       password, 
       role: finalRole,
       dob: dob || '',
       department: department || 'General Civic Support',
+      profilePic: profilePic || '',
       karmaPoints: 150,
       verifiedReportsCount: 1,
       badge: 'Active Reporter'
@@ -56,9 +60,18 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
 
-    const user = await User.findOne({ email });
-    if (!user || !(await user.matchPassword(password))) {
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${cleanEmail.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } 
+    });
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
@@ -99,11 +112,7 @@ exports.updateProfile = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(200).json({
-        success: true,
-        message: 'Profile updated in session!',
-        user: { name, dob, department, profilePic }
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     if (name) user.name = name;
@@ -111,14 +120,14 @@ exports.updateProfile = async (req, res) => {
     if (department) user.department = department;
     if (profilePic) user.profilePic = profilePic;
     if (password && password.length >= 6) {
-      user.password = password; // Will be hashed by pre('save') hook
+      user.password = password; // Will be hashed by pre-save hook
     }
 
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: 'Profile details saved successfully in Database!',
+      message: 'Profile updated successfully!',
       user: {
         id: user._id,
         name: user.name,
@@ -132,11 +141,6 @@ exports.updateProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update profile: ' + error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
-};
-
-// @route   GET /api/auth/me
-exports.getMe = async (req, res) => {
-  res.status(200).json({ success: true, user: req.user });
 };

@@ -156,6 +156,47 @@
   transition: all 0.2s ease;
 }
 
+/* Clean Password Wrap with Eye Toggle Icon */
+.clean-password-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.clean-password-wrap .clean-input {
+  padding-right: 44px;
+}
+
+.clean-eye-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.clean-eye-btn:hover {
+  color: #00e5ff;
+}
+
+[data-theme="dark"] .clean-eye-btn {
+  color: #64748b;
+}
+
+[data-theme="dark"] .clean-eye-btn:hover {
+  color: #00e5ff;
+}
+
 [data-theme="dark"] .clean-input {
   background-color: #0b1325;
   border-color: rgba(255, 255, 255, 0.12);

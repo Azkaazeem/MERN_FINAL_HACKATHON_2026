@@ -9,23 +9,27 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, username, email, password, role, dob, department } = req.body;
+    const { name, username, email, password, role, dob, department, profilePic } = req.body;
     const finalName = name || username;
+    const cleanEmail = (email || '').trim().toLowerCase();
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ 
+      email: { $regex: new RegExp(`^${cleanEmail.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } 
+    });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    const finalRole = role || (email.toLowerCase().includes('admin') ? 'admin' : email.toLowerCase().includes('worker') ? 'worker' : 'customer');
+    const finalRole = role || (cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('worker') ? 'worker' : 'customer');
 
     const user = await User.create({ 
       name: finalName, 
-      email, 
+      email: cleanEmail, 
       password, 
       role: finalRole,
       dob: dob || '',
       department: department || 'General Civic Support',
+      profilePic: profilePic || '',
       karmaPoints: 150,
       verifiedReportsCount: 1,
       badge: 'Active Reporter'
@@ -56,9 +60,18 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
 
-    const user = await User.findOne({ email });
-    if (!user || !(await user.matchPassword(password))) {
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${cleanEmail.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } 
+    });
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 

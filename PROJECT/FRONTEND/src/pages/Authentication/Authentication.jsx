@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
-import { Camera, User } from 'lucide-react';
+import { Camera, User, Eye, EyeOff } from 'lucide-react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import './Authentication.css';
@@ -12,6 +12,11 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(defaultIsSignUp);
   const [loading, setLoading] = useState(false);
+
+  // Password visibility toggles
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
 
   // --- Signin State (Roles: Customer, Worker, Admin) ---
   const [loginData, setLoginData] = useState({
@@ -108,7 +113,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
 
     try {
       const res = await API.post('/auth/login', {
-        email: loginData.email.trim(),
+        email: loginData.email.trim().toLowerCase(),
         password: loginData.password,
         role: loginData.role
       });
@@ -120,7 +125,7 @@ const Authentication = ({ defaultIsSignUp = false }) => {
         toast.error(res.data?.message || 'Login failed. Please check credentials.');
       }
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Invalid email or password. User not found in database.';
+      const errMsg = err.response?.data?.message || 'Invalid email or password. Please check your credentials.';
       toast.error(errMsg);
     } finally {
       setLoading(false);
@@ -202,15 +207,26 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                 required 
               />
 
-              <input 
-                type="password" 
-                name="password" 
-                placeholder="Password" 
-                value={loginData.password} 
-                onChange={handleLoginChange} 
-                className="clean-input"
-                required 
-              />
+              <div className="clean-password-wrap">
+                <input 
+                  type={showLoginPassword ? 'text' : 'password'} 
+                  name="password" 
+                  placeholder="Password" 
+                  value={loginData.password} 
+                  onChange={handleLoginChange} 
+                  className="clean-input"
+                  required 
+                />
+                <button 
+                  type="button" 
+                  className="clean-eye-btn" 
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  tabIndex="-1"
+                  aria-label="Toggle password visibility"
+                >
+                  {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <button className="clean-solid-btn" type="submit" disabled={loading}>
@@ -313,25 +329,47 @@ const Authentication = ({ defaultIsSignUp = false }) => {
                 </select>
               )}
 
-              <input 
-                type="password" 
-                name="password" 
-                placeholder="Password" 
-                value={signupData.password} 
-                onChange={handleSignupChange} 
-                className="clean-input"
-                required 
-              />
+              <div className="clean-password-wrap">
+                <input 
+                  type={showSignupPassword ? 'text' : 'password'} 
+                  name="password" 
+                  placeholder="Password" 
+                  value={signupData.password} 
+                  onChange={handleSignupChange} 
+                  className="clean-input"
+                  required 
+                />
+                <button 
+                  type="button" 
+                  className="clean-eye-btn" 
+                  onClick={() => setShowSignupPassword(!showSignupPassword)}
+                  tabIndex="-1"
+                  aria-label="Toggle password visibility"
+                >
+                  {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
 
-              <input 
-                type="password" 
-                name="confirmPassword" 
-                placeholder="Confirm Password" 
-                value={signupData.confirmPassword} 
-                onChange={handleSignupChange} 
-                className="clean-input"
-                required 
-              />
+              <div className="clean-password-wrap">
+                <input 
+                  type={showSignupConfirmPassword ? 'text' : 'password'} 
+                  name="confirmPassword" 
+                  placeholder="Confirm Password" 
+                  value={signupData.confirmPassword} 
+                  onChange={handleSignupChange} 
+                  className="clean-input"
+                  required 
+                />
+                <button 
+                  type="button" 
+                  className="clean-eye-btn" 
+                  onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                  tabIndex="-1"
+                  aria-label="Toggle password visibility"
+                >
+                  {showSignupConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <button className="clean-solid-btn" type="submit" disabled={loading}>
