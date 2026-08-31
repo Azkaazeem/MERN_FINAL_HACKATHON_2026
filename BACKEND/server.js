@@ -11,11 +11,6 @@ const connectDB = require('./config/db');
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
-try {
-  const dns = require("dns");
-  dns.setServers(['8.8.8.8', '1.1.1.1']); 
-} catch (e) {}
-
 // Connect Database & run automatic initial seed
 connectDB().then(() => {
   seedInitialData();
@@ -55,13 +50,11 @@ app.use(express.urlencoded({ limit: '15mb', extended: true }));
 // Serverless DB Connection Middleware: Ensure MongoDB is connected for every incoming request
 app.use(async (req, res, next) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await connectDB();
-    }
+    await connectDB();
     next();
   } catch (err) {
     console.error('Serverless connection middleware error:', err.message);
-    next();
+    res.status(500).json({ success: false, message: 'Database connection failed: ' + err.message });
   }
 });
 
