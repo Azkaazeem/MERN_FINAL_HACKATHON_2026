@@ -13,10 +13,10 @@ try {
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 dotenv.config();
 
-const LIVE_ATLAS_URI = 'mongodb+srv://azkaazeem804_db_user:KlHAmuaQuOjKfNbc@cluster1.n9chvof.mongodb.net/civic_support_db?retryWrites=true&w=majority';
+const CLUSTER0_URI = 'mongodb+srv://azkaazeem804_db_user:KlHAmuaQuOjKfNbc@cluster0.clkrb0s.mongodb.net/test?retryWrites=true&w=majority';
 
 const connectDB = async () => {
-  const mongoUri = process.env.MONGO_URI || LIVE_ATLAS_URI;
+  const mongoUri = process.env.MONGO_URI || CLUSTER0_URI;
   try {
     const conn = await mongoose.connect(mongoUri, { 
       serverSelectionTimeoutMS: 8000 
@@ -24,15 +24,15 @@ const connectDB = async () => {
     console.log(`[MongoDB Atlas] Connected successfully to host: ${conn.connection.host}`);
     return conn;
   } catch (error) {
-    console.warn(`[MongoDB Warning] Primary connection failed (${error.message}). Retrying with fallback Atlas cluster...`);
+    console.error('[MongoDB Error] Database connection failed:', error.message);
     try {
-      const fallbackConn = await mongoose.connect(LIVE_ATLAS_URI, {
+      const fallbackConn = await mongoose.connect(CLUSTER0_URI, {
         serverSelectionTimeoutMS: 8000
       });
-      console.log(`[MongoDB Atlas] Fallback cluster connected: ${fallbackConn.connection.host}`);
+      console.log(`[MongoDB Atlas] Connected to Cluster0: ${fallbackConn.connection.host}`);
       return fallbackConn;
     } catch (e) {
-      console.error('[MongoDB Error] Database connection failed completely:', e.message);
+      console.error('[MongoDB Error] Cluster0 connection retry failed:', e.message);
     }
   }
 };
