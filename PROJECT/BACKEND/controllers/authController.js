@@ -10,17 +10,29 @@ const generateToken = (id) => {
 exports.register = async (req, res) => {
   try {
     const { name, username, email, password, role, dob, department, profilePic } = req.body;
-    const finalName = name || username;
+    const finalName = (name || username || '').trim();
     const cleanEmail = (email || '').trim().toLowerCase();
+
+    if (!finalName) {
+      return res.status(400).json({ success: false, message: 'Please enter your full name.' });
+    }
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
 
     const userExists = await User.findOne({ 
       email: { $regex: new RegExp(`^${cleanEmail.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } 
     });
     if (userExists) {
-      return res.status(400).json({ success: false, message: 'User already exists with this email' });
+      return res.status(400).json({ success: false, message: 'An account with this email already exists. Please sign in.' });
     }
 
-    const finalRole = role || (cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('worker') ? 'worker' : 'customer');
+    const finalRole = (role || (cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('worker') ? 'worker' : 'customer')).toLowerCase();
 
     const user = await User.create({ 
       name: finalName, 

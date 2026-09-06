@@ -139,6 +139,14 @@ const Authentication = ({ defaultIsSignUp = false }) => {
   const handleSignUp = async (e) => {
     e.preventDefault();
 
+    if (!signupData.username.trim()) {
+      return toast.error('Please enter your full name.');
+    }
+
+    if (!signupData.email.trim() || !signupData.email.includes('@')) {
+      return toast.error('Please enter a valid email address.');
+    }
+
     if (signupData.password !== signupData.confirmPassword) {
       return toast.error('Passwords do not match!');
     }
@@ -168,9 +176,9 @@ const Authentication = ({ defaultIsSignUp = false }) => {
       }
     } catch (err) {
       if (!err.response || err.message === 'Network Error') {
-        toast.error('Cannot connect to backend server! Please make sure backend is running on port 5000.');
+        toast.error('Cannot connect to backend server! Please make sure backend is running.');
       } else {
-        toast.error(err.response.data?.message || 'Registration failed. Email might already exist.');
+        toast.error(err.response.data?.message || 'Registration failed. Please check your details.');
       }
     } finally {
       setLoading(false);
