@@ -85,6 +85,52 @@ exports.createComplaint = async (req, res) => {
     const complaint = new Complaint(complaintData);
     const saved = await complaint.save();
 
+    // 1. Dispatch Notification to System Admin
+    try {
+      const assignedMsg = (assignedWorkerName && assignedWorkerName !== 'Unassigned')
+        ? ` (Assigned Officer: ${assignedWorkerName})`
+        : ' (Unassigned)';
+      await Notification.create({
+        recipientRole: 'admin',
+        recipientEmail: 'admin@civic.gov',
+        type: 'ticket_created',
+        title: '📝 New Civic Ticket Logged',
+        message: `Citizen ${complaintData.citizenName} created Ticket #${ticketId}: "${title}" [${category || 'General Civic'}]${assignedMsg}`,
+        ticketId,
+        senderName: complaintData.citizenName,
+        senderEmail: complaintData.citizenEmail,
+        senderAvatar: req.user?.profilePic || '',
+        isRead: false
+      });
+
+      // 2. If citizen assigned a worker during ticket creation, notify worker too
+      if (assignedWorkerId || (assignedWorkerName && assignedWorkerName !== 'Unassigned')) {
+        let workerUser = null;
+        if (assignedWorkerId && mongoose.Types.ObjectId.isValid(assignedWorkerId)) {
+          workerUser = await User.findById(assignedWorkerId);
+        }
+        if (!workerUser && assignedWorkerName) {
+          workerUser = await User.findOne({ name: assignedWorkerName, role: { $in: ['worker', 'agent'] } });
+        }
+        if (workerUser && workerUser.email) {
+          await Notification.create({
+            recipientRole: 'worker',
+            recipientEmail: workerUser.email.toLowerCase().trim(),
+            type: 'ticket_assigned',
+            title: '📋 New Ticket Assigned',
+            message: `Citizen ${complaintData.citizenName} assigned you to Ticket #${ticketId}: "${title}"`,
+            ticketId,
+            senderName: complaintData.citizenName,
+            senderEmail: complaintData.citizenEmail,
+            senderAvatar: req.user?.profilePic || '',
+            isRead: false
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.warn('Ticket creation notification warning:', notifErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Complaint registered successfully in Municipal Database!',
@@ -150,6 +196,32 @@ exports.getAllComplaints = async (req, res) => {
   }
 };
 
+// @desc    Get real-time complaint KPI statistics directly from MongoDB
+// @route   GET /api/complaints/stats
+exports.getComplaintStats = async (req, res) => {
+  try {
+    const all = await Complaint.find();
+    const total = all.length;
+    const inProgress = all.filter(c => c.status === 'In Progress').length;
+    const resolved = all.filter(c => c.status === 'Resolved' || c.status === 'Closed').length;
+    const open = all.filter(c => c.status === 'Open' || !c.status).length;
+    const critical = all.filter(c => c.priority === 'Critical' && c.status !== 'Resolved' && c.status !== 'Closed').length;
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        total,
+        open,
+        inProgress,
+        resolved,
+        critical
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to calculate stats', error: error.message });
+  }
+};
+
 // @desc    Delete user's own complaint
 // @route   DELETE /api/complaints/:id
 exports.deleteComplaint = async (req, res) => {
@@ -177,6 +249,26 @@ exports.deleteComplaint = async (req, res) => {
           { id: cleanId }
         ]
       });
+    }
+
+    // Dispatch Notification to Admin upon deletion
+    if (deleted) {
+      try {
+        const tId = deleted.ticketId || cleanId;
+        await Notification.create({
+          recipientRole: 'admin',
+          recipientEmail: 'admin@civic.gov',
+          type: 'ticket_deleted',
+          title: '🗑️ Ticket Deleted from Registry',
+          message: `Ticket #${tId} ("${deleted.title || 'Civic Ticket'}") was removed from the database`,
+          ticketId: tId,
+          senderName: req.user?.name || 'Citizen',
+          senderEmail: req.user?.email || '',
+          isRead: false
+        });
+      } catch (notifErr) {
+        console.warn('Delete ticket notification warning:', notifErr.message);
+      }
     }
 
     res.status(200).json({
@@ -260,6 +352,78 @@ exports.updateComplaintStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Ticket not found in database' });
     }
 
+    // Dispatch Notifications to Admin and Citizen
+    try {
+      const assignedName = updated.assignedWorker || assignedWorker || 'Field Crew';
+      const senderName = req.user?.name || assignedName;
+      const senderEmail = req.user?.email || '';
+      const senderAvatar = req.user?.profilePic || '';
+
+      if (status === 'Resolved') {
+        // 1. Notify Admin
+        await Notification.create({
+          recipientRole: 'admin',
+          recipientEmail: 'admin@civic.gov',
+          type: 'ticket_resolved',
+          title: '✅ Work Order Resolved',
+          message: `Officer ${assignedName} submitted resolution for Ticket #${updated.ticketId}`,
+          ticketId: updated.ticketId,
+          senderName,
+          senderEmail,
+          senderAvatar,
+          isRead: false
+        });
+
+        // 2. Notify Citizen
+        if (updated.citizenEmail) {
+          await Notification.create({
+            recipientRole: 'customer',
+            recipientEmail: updated.citizenEmail.toLowerCase().trim(),
+            type: 'ticket_resolved',
+            title: '🎉 Ticket Resolved',
+            message: `Your complaint #${updated.ticketId} has been marked as Resolved by Officer ${assignedName}`,
+            ticketId: updated.ticketId,
+            senderName,
+            senderEmail,
+            senderAvatar,
+            isRead: false
+          });
+        }
+      } else if (status === 'In Progress') {
+        // 1. Notify Admin
+        await Notification.create({
+          recipientRole: 'admin',
+          recipientEmail: 'admin@civic.gov',
+          type: 'status_updated',
+          title: '⚡ Work Order Started',
+          message: `Officer ${assignedName} started work order on Ticket #${updated.ticketId}`,
+          ticketId: updated.ticketId,
+          senderName,
+          senderEmail,
+          senderAvatar,
+          isRead: false
+        });
+
+        // 2. Notify Citizen
+        if (updated.citizenEmail) {
+          await Notification.create({
+            recipientRole: 'customer',
+            recipientEmail: updated.citizenEmail.toLowerCase().trim(),
+            type: 'status_updated',
+            title: '🛠️ Work In Progress',
+            message: `Officer ${assignedName} has started working on Ticket #${updated.ticketId}`,
+            ticketId: updated.ticketId,
+            senderName,
+            senderEmail,
+            senderAvatar,
+            isRead: false
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.warn('Status update notification warning:', notifErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: `Ticket updated to ${status}!`,
@@ -269,6 +433,7 @@ exports.updateComplaintStatus = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to update ticket: ' + error.message });
   }
 };
+
 // @desc    Assign a specific worker exclusively to a complaint
 // @route   PUT /api/complaints/:id/assign
 exports.assignWorker = async (req, res) => {
@@ -326,18 +491,19 @@ exports.assignWorker = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Ticket not found in database' });
     }
 
-    // Trigger Notification for the assigned worker
+    const sName = senderName || req.user?.name || updated.citizenName || 'Citizen';
+    const sEmail = senderEmail || req.user?.email || updated.citizenEmail || '';
+    const sAvatar = senderAvatar || req.user?.profilePic || req.user?.avatar || '';
+
+    // 1. Trigger Notification for the assigned worker
     if (assignedWorkerEmail) {
       try {
-        const sName = senderName || req.user?.name || updated.citizenName || 'Citizen';
-        const sEmail = senderEmail || req.user?.email || updated.citizenEmail || '';
-        const sAvatar = senderAvatar || req.user?.profilePic || req.user?.avatar || '';
         await Notification.create({
           recipientEmail: assignedWorkerEmail,
           recipientRole: 'worker',
           type: 'ticket_assigned',
           title: '📋 New Ticket Assigned',
-          message: `${sName} assigned u..`,
+          message: `${sName} assigned you to Ticket #${updated.ticketId}`,
           ticketId: updated.ticketId,
           senderName: sName,
           senderEmail: sEmail,
@@ -347,6 +513,24 @@ exports.assignWorker = async (req, res) => {
       } catch (ne) {
         console.warn('Assign worker notification warning:', ne.message);
       }
+    }
+
+    // 2. Trigger Notification for Admin
+    try {
+      await Notification.create({
+        recipientRole: 'admin',
+        recipientEmail: 'admin@civic.gov',
+        type: 'worker_assigned',
+        title: '👷 Worker Assigned to Ticket',
+        message: `Ticket #${updated.ticketId} assigned to Officer ${assignedWorkerName} by ${sName}`,
+        ticketId: updated.ticketId,
+        senderName: sName,
+        senderEmail: sEmail,
+        senderAvatar: sAvatar,
+        isRead: false
+      });
+    } catch (adminNotifErr) {
+      console.warn('Admin worker assign notification warning:', adminNotifErr.message);
     }
 
     res.status(200).json({
@@ -359,6 +543,7 @@ exports.assignWorker = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to assign worker: ' + error.message });
   }
 };
+
 // @desc    Real-time Dynamic GIS Radar Telemetry (Calculated directly from MongoDB Complaint records)
 // @route   GET /api/complaints/telemetry/gis
 exports.getGisTelemetry = async (req, res) => {
@@ -372,7 +557,6 @@ exports.getGisTelemetry = async (req, res) => {
     ];
 
     const results = await Promise.all(districts.map(async (dist) => {
-      // Find all complaints matching this district
       const allForDist = await Complaint.find({
         $or: [
           { district: dist.district },
@@ -428,7 +612,7 @@ exports.getMathematicalTelemetry = async (req, res) => {
         const diffMs = new Date(c.resolvedAt).getTime() - new Date(c.createdAt).getTime();
         return Math.max(0.2, diffMs / (1000 * 60 * 60));
       }
-      return 2.5; // fallback average if timestamps equal
+      return 2.5;
     }).sort((a, b) => a - b);
 
     let mean = 0;
@@ -437,25 +621,20 @@ exports.getMathematicalTelemetry = async (req, res) => {
     let iqr = 0;
 
     if (durations.length > 0) {
-      // Mean
       const sum = durations.reduce((acc, val) => acc + val, 0);
       mean = sum / durations.length;
 
-      // Median (50th percentile)
       const mid = Math.floor(durations.length / 2);
       median = durations.length % 2 !== 0 ? durations[mid] : (durations[mid - 1] + durations[mid]) / 2;
 
-      // StdDev
       const variance = durations.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / durations.length;
       stdDev = Math.sqrt(variance);
 
-      // IQR (Q3 - Q1)
       const q1Index = Math.floor(durations.length * 0.25);
       const q3Index = Math.floor(durations.length * 0.75);
       iqr = Math.max(0, durations[q3Index] - durations[q1Index]);
     }
 
-    // Category distribution counts from DB
     const categories = ['Water & Sewerage', 'Roads & Infrastructure', 'Solid Waste & Sanitation', 'Electrical & Fire Hazard'];
     const colors = ['#00e5ff', '#3b82f6', '#10b981', '#f59e0b'];
     
@@ -555,7 +734,7 @@ exports.submitReview = async (req, res) => {
     }
     if (!worker && complaint.assignedWorker && complaint.assignedWorker !== 'Unassigned') {
       worker = await User.findOne({
-        name: { $regex: new RegExp(complaint.assignedWorker.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i') },
+        name: { $regex: new RegExp(complaint.assignedWorker.replace(/[-/\^$*+?.()|[]{}]/g, '\\$&'), 'i') },
         role: { $in: ['worker', 'agent'] }
       });
     }
@@ -594,8 +773,8 @@ exports.submitReview = async (req, res) => {
             recipientEmail: targetWorkerEmail,
             recipientRole: 'worker',
             type: 'new_review',
-            title: `New ${ratingNum}★ Review Received`,
-            message: `${resolvedCustomerName} rated you ${ratingNum} ★ on Ticket #${complaint.ticketId}: "${cleanComment || 'Service Completed'}"`,
+            title: `⭐ New ${ratingNum}★ Review Received`,
+            message: `${resolvedCustomerName} rated you ${ratingNum}★ on Ticket #${complaint.ticketId}: "${cleanComment || 'Service Completed'}"`,
             ticketId: complaint.ticketId || '',
             senderName: resolvedCustomerName,
             senderEmail: resolvedCustomerEmail,
@@ -606,6 +785,25 @@ exports.submitReview = async (req, res) => {
       } catch (notifErr) {
         console.warn('Failed to create worker rating notification:', notifErr.message);
       }
+    }
+
+    // 4. Dispatch Live Notification to System Admin
+    try {
+      const assignedOfficerName = worker ? worker.name : (complaint.assignedWorker || 'Officer');
+      await Notification.create({
+        recipientRole: 'admin',
+        recipientEmail: 'admin@civic.gov',
+        type: 'new_review',
+        title: `⭐ Citizen Rated Worker (${ratingNum}★)`,
+        message: `${resolvedCustomerName} submitted a ${ratingNum}★ review for Officer ${assignedOfficerName} on Ticket #${complaint.ticketId}`,
+        ticketId: complaint.ticketId || '',
+        senderName: resolvedCustomerName,
+        senderEmail: resolvedCustomerEmail,
+        senderAvatar: resolvedCustomerAvatar,
+        isRead: false
+      });
+    } catch (adminNotifErr) {
+      console.warn('Failed to create admin rating notification:', adminNotifErr.message);
     }
 
     res.status(200).json({

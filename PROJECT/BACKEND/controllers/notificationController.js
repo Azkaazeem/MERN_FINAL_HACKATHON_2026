@@ -6,7 +6,15 @@ exports.getNotifications = async (req, res) => {
     const role = (req.query.role || req.user?.role || '').toLowerCase().trim();
 
     let query = {};
-    if (email && (role === 'worker' || role === 'agent')) {
+    if (role === 'admin' || role === 'administrator' || email === 'admin@gmail.com' || email === 'amin@gmail.com') {
+      // Admin sees notifications addressed to admin role, or to their email, or broadcast
+      query = {
+        $or: [
+          { recipientRole: { $in: ['admin', 'administrator'] } },
+          ...(email ? [{ recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } }] : [])
+        ]
+      };
+    } else if (email && (role === 'worker' || role === 'agent')) {
       query = {
         $or: [
           { recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } },
@@ -14,12 +22,19 @@ exports.getNotifications = async (req, res) => {
         ]
       };
     } else if (email) {
-      query = { recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } };
+      query = {
+        $or: [
+          { recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } },
+          { recipientRole: 'customer', recipientEmail: { $in: [email, '', null] } }
+        ]
+      };
     } else if (role === 'worker' || role === 'agent') {
       query = { recipientRole: { $in: ['worker', 'agent'] } };
+    } else if (role === 'admin' || role === 'administrator') {
+      query = { recipientRole: { $in: ['admin', 'administrator'] } };
     }
 
-    const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(30);
+    const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(50);
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     res.status(200).json({
@@ -37,12 +52,14 @@ exports.getNotifications = async (req, res) => {
 exports.createNotification = async (req, res) => {
   try {
     const { recipientEmail, recipientRole, type, title, message, ticketId, senderName, senderEmail, senderAvatar } = req.body;
-    if (!recipientEmail || !title || !message) {
-      return res.status(400).json({ success: false, message: 'Missing required notification fields' });
+    if (!title || !message) {
+      return res.status(400).json({ success: false, message: 'Missing title or message for notification' });
     }
 
+    const fallbackEmail = recipientEmail || (recipientRole === 'admin' ? 'admin@civic.gov' : '');
+
     const notif = await Notification.create({
-      recipientEmail: recipientEmail.toLowerCase().trim(),
+      recipientEmail: (fallbackEmail || '').toLowerCase().trim(),
       recipientRole: recipientRole || 'worker',
       type: type || 'ticket_assigned',
       title,
@@ -75,10 +92,17 @@ exports.markAllAsRead = async (req, res) => {
     const role = (req.body.role || req.query.role || req.user?.role || '').toLowerCase().trim();
 
     let query = {};
-    if (email) {
-      query.recipientEmail = { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') };
+    if (role === 'admin' || role === 'administrator' || email === 'admin@gmail.com' || email === 'amin@gmail.com') {
+      query = {
+        $or: [
+          { recipientRole: { $in: ['admin', 'administrator'] } },
+          ...(email ? [{ recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } }] : [])
+        ]
+      };
+    } else if (email) {
+      query = { recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } };
     } else if (role) {
-      query.recipientRole = role;
+      query = { recipientRole: role };
     }
 
     await Notification.updateMany(query, { $set: { isRead: true } });
@@ -94,10 +118,17 @@ exports.clearAllNotifications = async (req, res) => {
     const role = (req.body.role || req.query.role || req.user?.role || '').toLowerCase().trim();
 
     let query = {};
-    if (email) {
-      query.recipientEmail = { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') };
+    if (role === 'admin' || role === 'administrator' || email === 'admin@gmail.com' || email === 'amin@gmail.com') {
+      query = {
+        $or: [
+          { recipientRole: { $in: ['admin', 'administrator'] } },
+          ...(email ? [{ recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } }] : [])
+        ]
+      };
+    } else if (email) {
+      query = { recipientEmail: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } };
     } else if (role) {
-      query.recipientRole = role;
+      query = { recipientRole: role };
     }
 
     await Notification.deleteMany(query);

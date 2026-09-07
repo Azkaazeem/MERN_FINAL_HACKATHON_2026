@@ -4,6 +4,7 @@ const {
   createComplaint, 
   getAllComplaints, 
   getMyComplaints,
+  getComplaintStats,
   deleteComplaint,
   trackComplaint, 
   updateComplaintStatus, 
@@ -15,15 +16,16 @@ const {
 } = require('../controllers/complaintController');
 
 router.get('/workers', getWorkers);
+router.get('/stats', getComplaintStats);
+router.get('/my', getMyComplaints);
+router.get('/telemetry/gis', getGisTelemetry);
+router.get('/telemetry/math', getMathematicalTelemetry);
 router.put('/:id/assign', assignWorker);
 router.post('/:id/review', submitReview);
 router.post('/', createComplaint);
 router.get('/', getAllComplaints);
-router.get('/my', getMyComplaints);
 router.delete('/:id', deleteComplaint);
 router.get('/track/:ticketId', trackComplaint);
 router.put('/:id/status', updateComplaintStatus);
-router.get('/telemetry/gis', getGisTelemetry);
-router.get('/telemetry/math', getMathematicalTelemetry);
 
 module.exports = router;

@@ -3,10 +3,10 @@ const mongoose = require('mongoose');
 const notificationSchema = new mongoose.Schema({
   recipientEmail: {
     type: String,
-    required: true,
     lowercase: true,
     trim: true,
-    index: true
+    index: true,
+    default: ''
   },
   recipientRole: {
     type: String,
@@ -15,8 +15,19 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['ticket_assigned', 'new_message', 'ticket_resolved', 'new_review', 'general'],
-    default: 'ticket_assigned'
+    enum: [
+      'ticket_created',
+      'ticket_assigned',
+      'worker_assigned',
+      'status_updated',
+      'ticket_resolved',
+      'new_review',
+      'ticket_deleted',
+      'new_message',
+      'general',
+      'admin_alert'
+    ],
+    default: 'general'
   },
   title: {
     type: String,

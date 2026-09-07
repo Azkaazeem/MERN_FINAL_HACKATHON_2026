@@ -1,44 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Home, 
-  Info, 
-  User as UserIcon, 
-  Shield, 
-  LogOut, 
-  LogIn,
-  UserPlus,
-  Sun,
-  Moon,
-  Wrench,
-  BarChart3,
-  Bell,
-  ChevronDown,
-  Menu,
-  X,
-  FileText,
-  HardHat,
-  MessageSquare,
-  Star,
-  CheckCircle2,
-  Check,
-  Clock,
-  Trash2
-} from 'lucide-react';
-import Swal from 'sweetalert2';
-import toast from 'react-hot-toast';
 import API from '../api/axios';
+import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import logoImg from '../assets/logo.png';
+import { 
+  Sun, 
+  Moon, 
+  Menu, 
+  X, 
+  ChevronDown, 
+  User as UserIcon, 
+  LogOut, 
+  LogIn, 
+  UserPlus, 
+  FileText, 
+  Shield, 
+  Wrench, 
+  Home, 
+  BarChart3, 
+  Info, 
+  Bell, 
+  Check, 
+  Trash2, 
+  HardHat, 
+  MessageSquare, 
+  Star, 
+  CheckCircle2, 
+  Clock,
+  ClipboardList
+} from 'lucide-react';
 import './Navbar.css';
 
+// Lightweight human readable relative time helper
 const timeAgo = (dateStr) => {
-  if (!dateStr) return 'Just now';
-  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (seconds < 60) return 'Just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
+  if (!dateStr) return 'just now';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / (1000 * 60));
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
@@ -47,6 +49,7 @@ const timeAgo = (dateStr) => {
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -69,7 +72,7 @@ const Navbar = () => {
     }
   }, []);
 
-  // Fetch Live Notifications for logged-in user / worker
+  // Fetch Live Notifications for logged-in user / worker / admin
   const fetchNotifications = async (isInitial = false) => {
     if (!user) {
       setNotifications([]);
@@ -167,7 +170,9 @@ const Navbar = () => {
     } catch (e) {}
 
     setNotifDropdownOpen(false);
-    if (user?.role === 'worker') {
+    if (user?.role === 'admin' || user?.role === 'administrator' || user?.email?.toLowerCase() === 'admin@gmail.com' || user?.email?.toLowerCase() === 'amin@gmail.com') {
+      navigate('/admin');
+    } else if (user?.role === 'worker' || user?.role === 'agent') {
       navigate('/worker');
     } else {
       navigate('/my-complaints');
@@ -225,21 +230,6 @@ const Navbar = () => {
 
   const homeLink = isAdmin ? '/admin' : isWorker ? '/worker' : '/home';
 
-  const getNotifIcon = (type) => {
-    switch (type) {
-      case 'ticket_assigned':
-        return <HardHat size={15} color="#00e5ff" />;
-      case 'new_message':
-        return <MessageSquare size={15} color="#3b82f6" />;
-      case 'new_review':
-        return <Star size={15} fill="#eab308" color="#eab308" />;
-      case 'ticket_resolved':
-        return <CheckCircle2 size={15} color="#10b981" />;
-      default:
-        return <Bell size={15} color="#00e5ff" />;
-    }
-  };
-
   return (
     <header className="navbar-header">
       <div className="navbar-container">
@@ -260,7 +250,7 @@ const Navbar = () => {
             My Complaints
           </NavLink>
 
-          {/* Admin Navigation Tab (Only for Admin, with clean text) */}
+          {/* Admin Navigation Tab (Only for Admin) */}
           {isAdmin && (
             <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               Admin
@@ -347,7 +337,7 @@ const Navbar = () => {
                     notifications.map((n) => {
                       const sender = n.senderName || 'User';
                       let actionText = 'alerted u..';
-                      if (n.type === 'ticket_assigned') {
+                      if (n.type === 'ticket_assigned' || n.type === 'worker_assigned') {
                         actionText = 'assigned u..';
                       } else if (n.type === 'new_message') {
                         actionText = 'msg u..';
@@ -355,6 +345,8 @@ const Navbar = () => {
                         actionText = 'reviewed u..';
                       } else if (n.type === 'ticket_resolved') {
                         actionText = 'resolved ticket..';
+                      } else if (n.type === 'ticket_created') {
+                        actionText = 'logged ticket..';
                       }
 
                       return (
@@ -404,7 +396,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Profile Trigger Button (Visible on both Desktop & Mobile Right Side) */}
+          {/* Profile Trigger Button */}
           <button 
             className="navbar-profile-trigger" 
             onClick={() => {
@@ -430,7 +422,7 @@ const Navbar = () => {
             <ChevronDown size={14} className={`dropdown-arrow ${profileDropdownOpen ? 'rotated' : ''}`} />
           </button>
 
-          {/* Universal Hamburger Menu Button (Accessible on ALL screen sizes) */}
+          {/* Universal Hamburger Menu Button */}
           <button 
             className="navbar-hamburger-btn" 
             onClick={() => {
