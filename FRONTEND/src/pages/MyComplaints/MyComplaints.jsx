@@ -786,19 +786,6 @@ const MyComplaints = () => {
                             </button>
                           )}
 
-                          <button
-                            type="button"
-                            className="cvc-delete-action-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteComplaint(c.ticketId || c.id || c._id);
-                            }}
-                            title="Permanently delete this ticket"
-                          >
-                            <Trash2 size={13} />
-                            <span>Delete</span>
-                          </button>
-
                           <span className={`cvc-status-pill ${c.status?.toLowerCase().replace(' ', '-')}`}>
                             {c.status}
                           </span>

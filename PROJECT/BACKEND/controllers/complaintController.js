@@ -1,4 +1,5 @@
 const Complaint = require('../models/Complaint');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 const { cloudinary } = require('../config/cloudinary');
 
@@ -37,7 +38,9 @@ exports.createComplaint = async (req, res) => {
       citizenContact, 
       imageUrl, 
       aiSummary, 
-      department 
+      department,
+      assignedWorkerId,
+      assignedWorkerName
     } = req.body;
 
     const ticketId = 'TKT-' + Math.floor(1000 + Math.random() * 9000);
@@ -72,7 +75,9 @@ exports.createComplaint = async (req, res) => {
       aiSummary: aiSummary || '',
       department: department || 'Municipal Works & Engineering Dept',
       status: 'Open',
-      assignedWorker: 'Unassigned',
+      assignedWorker: assignedWorkerName || 'Unassigned',
+      assignedWorkerId: assignedWorkerId || null,
+      assignedWorkerName: assignedWorkerName || 'Unassigned',
       createdAt: new Date()
     };
 
@@ -232,6 +237,67 @@ exports.updateComplaintStatus = async (req, res) => {
   }
 };
 
+// @desc    Assign a specific worker exclusively to a complaint
+// @route   PUT /api/complaints/:id/assign
+exports.assignWorker = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { workerId, workerName } = req.body;
+
+    let worker = null;
+    if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
+      worker = await User.findById(workerId);
+    }
+    if (!worker && workerName) {
+      worker = await User.findOne({ name: workerName, role: { $in: ['worker', 'agent'] } });
+    }
+
+    const assignedWorkerName = worker ? worker.name : (workerName || 'Assigned Officer');
+    const assignedWorkerId = worker ? worker._id : (workerId || null);
+
+    let updated = await Complaint.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          assignedWorker: assignedWorkerName,
+          assignedWorkerId: assignedWorkerId,
+          assignedWorkerName: assignedWorkerName,
+          status: 'In Progress'
+        }
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      updated = await Complaint.findOneAndUpdate(
+        { ticketId: id },
+        {
+          $set: {
+            assignedWorker: assignedWorkerName,
+            assignedWorkerId: assignedWorkerId,
+            assignedWorkerName: assignedWorkerName,
+            status: 'In Progress'
+          }
+        },
+        { new: true }
+      );
+    }
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Ticket not found in database' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Ticket successfully assigned exclusively to ${assignedWorkerName}!`,
+      complaint: updated
+    });
+  } catch (error) {
+    console.error('Assign Worker Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to assign worker: ' + error.message });
+  }
+};
+
 // @desc    Real-time Dynamic GIS Radar Telemetry (Calculated directly from MongoDB Complaint records)
 // @route   GET /api/complaints/telemetry/gis
 exports.getGisTelemetry = async (req, res) => {
@@ -356,5 +422,218 @@ exports.getMathematicalTelemetry = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to calculate telemetry', error: error.message });
+  }
+};
+
+// @desc    Get all active field workers with ratings, reviews, and status
+// @route   GET /api/complaints/workers
+exports.getWorkers = async (req, res) => {
+  try {
+    let workers = await User.find({ role: { $in: ['worker', 'agent'] } }, '-password').sort({ rating: -1 });
+
+    // Auto-seed default verified workers if none registered yet
+    if (workers.length === 0) {
+      const defaultWorkers = [
+        {
+          name: 'Engr. Tariq Mehmood',
+          email: 'tariq.worker@novadesk.gov.pk',
+          password: 'password123',
+          role: 'worker',
+          department: 'Water Supply & Sewerage Board (WSSB)',
+          specialization: 'Water Pipe Ruptures & Trunk Valve Isolation',
+          phone: '0300-1122334',
+          profilePic: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          rating: 4.9,
+          reviewsCount: 14,
+          karmaPoints: 480,
+          verifiedReportsCount: 28,
+          badge: 'Senior Master Lineman',
+          status: 'Available',
+          reviews: [
+            {
+              customerName: 'Ayesha Khan',
+              customerEmail: 'ayesha@gmail.com',
+              stars: 5,
+              comment: 'Repaired the main water leakage in Block 7 within 2 hours. Very polite and professional!',
+              ticketId: 'TKT-1042',
+              createdAt: new Date(Date.now() - 86400000 * 2)
+            },
+            {
+              customerName: 'Bilal Ahmed',
+              customerEmail: 'bilal@gmail.com',
+              stars: 5,
+              comment: 'Fast response and shared photo updates during the excavation.',
+              ticketId: 'TKT-1098',
+              createdAt: new Date(Date.now() - 86400000 * 5)
+            }
+          ]
+        },
+        {
+          name: 'Kamran Alvi',
+          email: 'kamran.worker@novadesk.gov.pk',
+          password: 'password123',
+          role: 'worker',
+          department: 'Power & Grid Safety Board (Energy Corp)',
+          specialization: 'High-Voltage Grid & Sparking Transformer Hazards',
+          phone: '0301-8899776',
+          profilePic: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+          rating: 4.8,
+          reviewsCount: 19,
+          karmaPoints: 420,
+          verifiedReportsCount: 22,
+          badge: 'Certified Grid Specialist',
+          status: 'Available',
+          reviews: [
+            {
+              customerName: 'Hamza Sheikh',
+              customerEmail: 'hamza@gmail.com',
+              stars: 5,
+              comment: 'Fixed exposed hanging electric wire during rain. Lifesaver!',
+              ticketId: 'TKT-2031',
+              createdAt: new Date(Date.now() - 86400000 * 1)
+            }
+          ]
+        },
+        {
+          name: 'Zubair Haider',
+          email: 'zubair.worker@novadesk.gov.pk',
+          password: 'password123',
+          role: 'worker',
+          department: 'Solid Waste Management Authority (SWMA)',
+          specialization: 'Urban Compactor Fleet & Open Dump Clearing',
+          phone: '0302-5544332',
+          profilePic: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+          rating: 4.7,
+          reviewsCount: 24,
+          karmaPoints: 390,
+          verifiedReportsCount: 31,
+          badge: 'Sanitation Fleet Chief',
+          status: 'Available',
+          reviews: [
+            {
+              customerName: 'Fatima Noor',
+              customerEmail: 'fatima@gmail.com',
+              stars: 5,
+              comment: 'Dispatched compactor truck within 3 hours. Street completely clean.',
+              ticketId: 'TKT-3012',
+              createdAt: new Date(Date.now() - 86400000 * 3)
+            }
+          ]
+        },
+        {
+          name: 'Engr. Farhan Lodhi',
+          email: 'farhan.worker@novadesk.gov.pk',
+          password: 'password123',
+          role: 'worker',
+          department: 'Municipal Works & Asphalt Dept',
+          specialization: 'Asphalt Pothole Milling & Structural Concrete',
+          phone: '0303-9988112',
+          profilePic: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&auto=format&fit=crop&q=80',
+          rating: 4.9,
+          reviewsCount: 16,
+          karmaPoints: 460,
+          verifiedReportsCount: 19,
+          badge: 'Senior Asphalt Engineer',
+          status: 'Available',
+          reviews: [
+            {
+              customerName: 'Usman Ali',
+              customerEmail: 'usman@gmail.com',
+              stars: 5,
+              comment: 'Deep sinkhole filled with cold-mix and compacted perfectly. Great work.',
+              ticketId: 'TKT-4081',
+              createdAt: new Date(Date.now() - 86400000 * 4)
+            }
+          ]
+        }
+      ];
+
+      await User.insertMany(defaultWorkers);
+      workers = await User.find({ role: { $in: ['worker', 'agent'] } }, '-password').sort({ rating: -1 });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: workers.length,
+      workers
+    });
+  } catch (error) {
+    console.error('Get Workers Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch workers', error: error.message });
+  }
+};
+
+// @desc    Submit star rating and review description for a completed ticket
+// @route   POST /api/complaints/:id/review
+exports.submitReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stars, comment, customerName } = req.body;
+
+    const ratingNum = Math.min(5, Math.max(1, parseInt(stars, 10) || 5));
+    const cleanComment = (comment || '').trim();
+
+    // 1. Find the Complaint
+    let complaint = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      complaint = await Complaint.findById(id);
+    }
+    if (!complaint) {
+      complaint = await Complaint.findOne({ ticketId: id });
+    }
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Ticket not found' });
+    }
+
+    complaint.rating = ratingNum;
+    complaint.review = cleanComment;
+    complaint.reviewedAt = new Date();
+    await complaint.save();
+
+    // 2. Find Assigned Worker & Push Review
+    let worker = null;
+    if (complaint.assignedWorkerId) {
+      worker = await User.findById(complaint.assignedWorkerId);
+    }
+    if (!worker && complaint.assignedWorker && complaint.assignedWorker !== 'Unassigned') {
+      worker = await User.findOne({
+        name: { $regex: new RegExp(complaint.assignedWorker.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i') },
+        role: { $in: ['worker', 'agent'] }
+      });
+    }
+
+    if (worker) {
+      const newReview = {
+        customerName: customerName || req.user?.name || complaint.citizenName || 'Citizen',
+        customerEmail: req.user?.email || complaint.citizenEmail || '',
+        customerAvatar: req.user?.profilePic || '',
+        stars: ratingNum,
+        comment: cleanComment,
+        ticketId: complaint.ticketId,
+        createdAt: new Date()
+      };
+
+      worker.reviews = worker.reviews || [];
+      worker.reviews.push(newReview);
+      worker.reviewsCount = worker.reviews.length;
+
+      // Recalculate Worker Average Star Rating
+      const totalStars = worker.reviews.reduce((acc, r) => acc + (r.stars || 5), 0);
+      worker.rating = parseFloat((totalStars / worker.reviews.length).toFixed(1));
+      worker.karmaPoints = (worker.karmaPoints || 100) + 50;
+
+      await worker.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Thank you! Your 5-star rating and review have been recorded.',
+      complaint,
+      workerRating: worker ? worker.rating : ratingNum
+    });
+  } catch (error) {
+    console.error('Submit Review Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit review: ' + error.message });
   }
 };

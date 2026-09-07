@@ -8,9 +8,15 @@ const {
   trackComplaint, 
   updateComplaintStatus, 
   getGisTelemetry,
-  getMathematicalTelemetry
+  getMathematicalTelemetry,
+  getWorkers,
+  assignWorker,
+  submitReview
 } = require('../controllers/complaintController');
 
+router.get('/workers', getWorkers);
+router.put('/:id/assign', assignWorker);
+router.post('/:id/review', submitReview);
 router.post('/', createComplaint);
 router.get('/', getAllComplaints);
 router.get('/my', getMyComplaints);

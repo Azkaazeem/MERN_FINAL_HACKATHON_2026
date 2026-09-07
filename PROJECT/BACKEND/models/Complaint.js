@@ -72,6 +72,25 @@ const complaintSchema = new mongoose.Schema({
     type: String,
     default: 'Unassigned'
   },
+  assignedWorkerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  assignedWorkerName: {
+    type: String,
+    default: 'Unassigned'
+  },
+  rating: {
+    type: Number,
+    default: 0
+  },
+  review: {
+    type: String,
+    default: ''
+  },
+  reviewedAt: {
+    type: Date
+  },
   resolutionNotes: {
     type: String,
     default: ''

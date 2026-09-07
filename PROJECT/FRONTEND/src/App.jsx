@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import CustomCursor from './components/CustomCursor/CustomCursor';
 import Chatbot from './components/Chatbot/Chatbot';
 import Navbar from './components/Navbar';
+import PendingResolutionReviewModal from './components/PendingResolutionReviewModal/PendingResolutionReviewModal';
 
 function App() {
   return (
@@ -22,6 +23,9 @@ function App() {
 
       {/* Global Navigation Bar across all pages */}
       <Navbar />
+
+      {/* Global Automatic Post-Resolution 5-Star Rating & Review Modal */}
+      <PendingResolutionReviewModal />
 
       {/* Floating AI Chatbot Widget */}
       <Chatbot />

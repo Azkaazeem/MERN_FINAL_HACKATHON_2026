@@ -41,6 +41,34 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: ''
         },
+        specialization: {
+            type: String,
+            default: 'Water & Drainage Specialist'
+        },
+        status: {
+            type: String,
+            enum: ['Available', 'On Duty', 'Busy'],
+            default: 'Available'
+        },
+        rating: {
+            type: Number,
+            default: 5.0
+        },
+        reviewsCount: {
+            type: Number,
+            default: 0
+        },
+        reviews: [
+            {
+                customerName: { type: String, default: 'Citizen' },
+                customerEmail: { type: String, default: '' },
+                customerAvatar: { type: String, default: '' },
+                stars: { type: Number, default: 5 },
+                comment: { type: String, default: '' },
+                ticketId: { type: String, default: '' },
+                createdAt: { type: Date, default: Date.now }
+            }
+        ],
         karmaPoints: {
             type: Number,
             default: 120
