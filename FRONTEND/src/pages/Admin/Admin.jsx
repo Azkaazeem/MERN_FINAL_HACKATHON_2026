@@ -538,19 +538,19 @@ const Admin = () => {
                           <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
-                      <XAxis dataKey="time" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                      <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                      <XAxis dataKey="time" stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} />
+                      <YAxis stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#090e1a', 
-                          borderColor: 'rgba(0, 229, 255, 0.25)', 
+                          backgroundColor: '#0f172a', 
+                          borderColor: 'rgba(0, 229, 255, 0.4)', 
                           borderRadius: 8, 
-                          color: '#fff',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+                          color: '#ffffff',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
                         }} 
                       />
-                      <Area type="monotone" dataKey="complaints" stroke="#00e5ff" strokeWidth={2.5} fillOpacity={1} fill="url(#colorComplaints)" />
+                      <Area type="monotone" dataKey="complaints" stroke="#00bcd4" strokeWidth={2.5} fillOpacity={1} fill="url(#colorComplaints)" />
                       <Area type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorResolved)" />
                     </AreaChart>
                   </ResponsiveContainer>
