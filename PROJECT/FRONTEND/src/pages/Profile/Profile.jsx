@@ -76,11 +76,33 @@ const Profile = () => {
     }
   }, [user]);
 
+  // Fetch live worker profile and customer reviews from MongoDB Atlas
+  useEffect(() => {
+    const fetchWorkerData = async () => {
+      if (user && (user.role === 'worker' || user.role === 'agent')) {
+        try {
+          const res = await API.get('/complaints/workers');
+          const workers = res.data?.workers || [];
+          const myWorkerDoc = workers.find(w => 
+            (user._id && w._id === user._id) || 
+            (user.id && w.id === user.id) || 
+            (w.email && user.email && w.email.toLowerCase() === user.email.toLowerCase())
+          );
+          if (myWorkerDoc) {
+            setWorkerProfileData(myWorkerDoc);
+          }
+        } catch (err) {
+          console.warn('Failed to load worker profile reviews:', err);
+        }
+      }
+    };
+    fetchWorkerData();
+  }, [user]);
+
   // Handle Input Changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
   // Handle Profile Picture Selection
   const handleImageChange = (e) => {
     if (!user) {

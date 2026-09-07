@@ -1,3 +1,4 @@
+const Notification = require('../models/Notification');
 const Complaint = require('../models/Complaint');
 const User = require('../models/User');
 const mongoose = require('mongoose');
@@ -154,20 +155,37 @@ exports.getAllComplaints = async (req, res) => {
 exports.deleteComplaint = async (req, res) => {
   try {
     const { id } = req.params;
-    let deleted = await Complaint.findByIdAndDelete(id);
-    if (!deleted) {
-      deleted = await Complaint.findOneAndDelete({ ticketId: id });
+    const cleanId = (id || '').trim();
+
+    let deleted = null;
+
+    // 1. If valid Mongo ObjectId, delete by _id
+    if (mongoose.Types.ObjectId.isValid(cleanId)) {
+      deleted = await Complaint.findByIdAndDelete(cleanId);
     }
 
+    // 2. If not ObjectId or not found, search by ticketId variations
     if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Complaint not found in database' });
+      const rawNum = cleanId.replace('TKT-', '').replace('#', '').trim();
+      deleted = await Complaint.findOneAndDelete({
+        $or: [
+          { ticketId: cleanId },
+          { ticketId: cleanId.replace('#', '') },
+          { ticketId: 'TKT-' + rawNum },
+          { ticketId: '#' + rawNum },
+          { ticketId: rawNum },
+          { id: cleanId }
+        ]
+      });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Complaint deleted successfully from database!'
+      message: 'Complaint deleted successfully from database!',
+      deletedTicketId: cleanId
     });
   } catch (error) {
+    console.error('Delete Complaint Error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete complaint', error: error.message });
   }
 };
@@ -218,9 +236,24 @@ exports.updateComplaintStatus = async (req, res) => {
     if (resolutionProofUrl) updateFields.resolutionProofUrl = resolutionProofUrl;
     if (status === 'Resolved') updateFields.resolvedAt = new Date();
 
-    let updated = await Complaint.findByIdAndUpdate(id, { $set: updateFields }, { new: true });
+    let updated = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      updated = await Complaint.findByIdAndUpdate(id, { $set: updateFields }, { new: true });
+    }
     if (!updated) {
-      updated = await Complaint.findOneAndUpdate({ ticketId: id }, { $set: updateFields }, { new: true });
+      const cleanId = (id || '').toString().replace('#', '').trim();
+      const cleanNum = cleanId.replace('TKT-', '');
+      updated = await Complaint.findOneAndUpdate(
+        {
+          $or: [
+            { ticketId: cleanId },
+            { ticketId: `TKT-${cleanNum}` },
+            { ticketId: cleanNum }
+          ]
+        },
+        { $set: updateFields },
+        { new: true }
+      );
     }
 
     if (!updated) {
@@ -233,58 +266,87 @@ exports.updateComplaintStatus = async (req, res) => {
       complaint: updated
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update ticket' });
+    res.status(500).json({ success: false, message: 'Failed to update ticket: ' + error.message });
   }
 };
-
 // @desc    Assign a specific worker exclusively to a complaint
 // @route   PUT /api/complaints/:id/assign
 exports.assignWorker = async (req, res) => {
   try {
     const { id } = req.params;
-    const { workerId, workerName } = req.body;
+    const { workerId, workerName, workerEmail, workerPic, senderName, senderEmail, senderAvatar } = req.body;
 
     let worker = null;
     if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
       worker = await User.findById(workerId);
+    }
+    if (!worker && workerEmail) {
+      worker = await User.findOne({ email: workerEmail.toLowerCase().trim() });
     }
     if (!worker && workerName) {
       worker = await User.findOne({ name: workerName, role: { $in: ['worker', 'agent'] } });
     }
 
     const assignedWorkerName = worker ? worker.name : (workerName || 'Assigned Officer');
-    const assignedWorkerId = worker ? worker._id : (workerId || null);
+    const assignedWorkerId = worker ? worker._id : (workerId && mongoose.Types.ObjectId.isValid(workerId) ? workerId : null);
+    const assignedWorkerEmail = worker ? (worker.email || '').toLowerCase().trim() : (workerEmail || '').toLowerCase().trim();
+    const assignedWorkerPic = worker ? (worker.profilePic || worker.avatar || '') : (workerPic || '');
 
-    let updated = await Complaint.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          assignedWorker: assignedWorkerName,
-          assignedWorkerId: assignedWorkerId,
-          assignedWorkerName: assignedWorkerName,
-          status: 'In Progress'
-        }
-      },
-      { new: true }
-    );
+    const updateFields = {
+      assignedWorker: assignedWorkerName,
+      assignedWorkerId: assignedWorkerId,
+      assignedWorkerName: assignedWorkerName,
+      assignedWorkerEmail: assignedWorkerEmail,
+      assignedWorkerPic: assignedWorkerPic,
+      status: 'In Progress'
+    };
+
+    let updated = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      updated = await Complaint.findByIdAndUpdate(id, { $set: updateFields }, { new: true });
+    }
 
     if (!updated) {
+      const cleanId = (id || '').toString().replace('#', '').trim();
+      const cleanNum = cleanId.replace('TKT-', '');
       updated = await Complaint.findOneAndUpdate(
-        { ticketId: id },
         {
-          $set: {
-            assignedWorker: assignedWorkerName,
-            assignedWorkerId: assignedWorkerId,
-            assignedWorkerName: assignedWorkerName,
-            status: 'In Progress'
-          }
+          $or: [
+            { ticketId: cleanId },
+            { ticketId: `TKT-${cleanNum}` },
+            { ticketId: cleanNum }
+          ]
         },
+        { $set: updateFields },
         { new: true }
       );
     }
 
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Ticket not found in database' });
+    }
+
+    // Trigger Notification for the assigned worker
+    if (assignedWorkerEmail) {
+      try {
+        const sName = senderName || req.user?.name || updated.citizenName || 'Citizen';
+        const sEmail = senderEmail || req.user?.email || updated.citizenEmail || '';
+        const sAvatar = senderAvatar || req.user?.profilePic || req.user?.avatar || '';
+        await Notification.create({
+          recipientEmail: assignedWorkerEmail,
+          recipientRole: 'worker',
+          type: 'ticket_assigned',
+          title: '📋 New Ticket Assigned',
+          message: `${sName} assigned u..`,
+          ticketId: updated.ticketId,
+          senderName: sName,
+          senderEmail: sEmail,
+          senderAvatar: sAvatar,
+          isRead: false
+        });
+      } catch (ne) {
+        console.warn('Assign worker notification warning:', ne.message);
+      }
     }
 
     res.status(200).json({
@@ -297,7 +359,6 @@ exports.assignWorker = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to assign worker: ' + error.message });
   }
 };
-
 // @desc    Real-time Dynamic GIS Radar Telemetry (Calculated directly from MongoDB Complaint records)
 // @route   GET /api/complaints/telemetry/gis
 exports.getGisTelemetry = async (req, res) => {
@@ -431,127 +492,6 @@ exports.getWorkers = async (req, res) => {
   try {
     let workers = await User.find({ role: { $in: ['worker', 'agent'] } }, '-password').sort({ rating: -1 });
 
-    // Auto-seed default verified workers if none registered yet
-    if (workers.length === 0) {
-      const defaultWorkers = [
-        {
-          name: 'Engr. Tariq Mehmood',
-          email: 'tariq.worker@novadesk.gov.pk',
-          password: 'password123',
-          role: 'worker',
-          department: 'Water Supply & Sewerage Board (WSSB)',
-          specialization: 'Water Pipe Ruptures & Trunk Valve Isolation',
-          phone: '0300-1122334',
-          profilePic: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-          rating: 4.9,
-          reviewsCount: 14,
-          karmaPoints: 480,
-          verifiedReportsCount: 28,
-          badge: 'Senior Master Lineman',
-          status: 'Available',
-          reviews: [
-            {
-              customerName: 'Ayesha Khan',
-              customerEmail: 'ayesha@gmail.com',
-              stars: 5,
-              comment: 'Repaired the main water leakage in Block 7 within 2 hours. Very polite and professional!',
-              ticketId: 'TKT-1042',
-              createdAt: new Date(Date.now() - 86400000 * 2)
-            },
-            {
-              customerName: 'Bilal Ahmed',
-              customerEmail: 'bilal@gmail.com',
-              stars: 5,
-              comment: 'Fast response and shared photo updates during the excavation.',
-              ticketId: 'TKT-1098',
-              createdAt: new Date(Date.now() - 86400000 * 5)
-            }
-          ]
-        },
-        {
-          name: 'Kamran Alvi',
-          email: 'kamran.worker@novadesk.gov.pk',
-          password: 'password123',
-          role: 'worker',
-          department: 'Power & Grid Safety Board (Energy Corp)',
-          specialization: 'High-Voltage Grid & Sparking Transformer Hazards',
-          phone: '0301-8899776',
-          profilePic: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-          rating: 4.8,
-          reviewsCount: 19,
-          karmaPoints: 420,
-          verifiedReportsCount: 22,
-          badge: 'Certified Grid Specialist',
-          status: 'Available',
-          reviews: [
-            {
-              customerName: 'Hamza Sheikh',
-              customerEmail: 'hamza@gmail.com',
-              stars: 5,
-              comment: 'Fixed exposed hanging electric wire during rain. Lifesaver!',
-              ticketId: 'TKT-2031',
-              createdAt: new Date(Date.now() - 86400000 * 1)
-            }
-          ]
-        },
-        {
-          name: 'Zubair Haider',
-          email: 'zubair.worker@novadesk.gov.pk',
-          password: 'password123',
-          role: 'worker',
-          department: 'Solid Waste Management Authority (SWMA)',
-          specialization: 'Urban Compactor Fleet & Open Dump Clearing',
-          phone: '0302-5544332',
-          profilePic: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-          rating: 4.7,
-          reviewsCount: 24,
-          karmaPoints: 390,
-          verifiedReportsCount: 31,
-          badge: 'Sanitation Fleet Chief',
-          status: 'Available',
-          reviews: [
-            {
-              customerName: 'Fatima Noor',
-              customerEmail: 'fatima@gmail.com',
-              stars: 5,
-              comment: 'Dispatched compactor truck within 3 hours. Street completely clean.',
-              ticketId: 'TKT-3012',
-              createdAt: new Date(Date.now() - 86400000 * 3)
-            }
-          ]
-        },
-        {
-          name: 'Engr. Farhan Lodhi',
-          email: 'farhan.worker@novadesk.gov.pk',
-          password: 'password123',
-          role: 'worker',
-          department: 'Municipal Works & Asphalt Dept',
-          specialization: 'Asphalt Pothole Milling & Structural Concrete',
-          phone: '0303-9988112',
-          profilePic: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&auto=format&fit=crop&q=80',
-          rating: 4.9,
-          reviewsCount: 16,
-          karmaPoints: 460,
-          verifiedReportsCount: 19,
-          badge: 'Senior Asphalt Engineer',
-          status: 'Available',
-          reviews: [
-            {
-              customerName: 'Usman Ali',
-              customerEmail: 'usman@gmail.com',
-              stars: 5,
-              comment: 'Deep sinkhole filled with cold-mix and compacted perfectly. Great work.',
-              ticketId: 'TKT-4081',
-              createdAt: new Date(Date.now() - 86400000 * 4)
-            }
-          ]
-        }
-      ];
-
-      await User.insertMany(defaultWorkers);
-      workers = await User.find({ role: { $in: ['worker', 'agent'] } }, '-password').sort({ rating: -1 });
-    }
-
     res.status(200).json({
       success: true,
       count: workers.length,
@@ -568,7 +508,7 @@ exports.getWorkers = async (req, res) => {
 exports.submitReview = async (req, res) => {
   try {
     const { id } = req.params;
-    const { stars, comment, customerName } = req.body;
+    const { stars, comment, customerName, customerEmail, customerAvatar, workerEmail, workerId } = req.body;
 
     const ratingNum = Math.min(5, Math.max(1, parseInt(stars, 10) || 5));
     const cleanComment = (comment || '').trim();
@@ -579,22 +519,39 @@ exports.submitReview = async (req, res) => {
       complaint = await Complaint.findById(id);
     }
     if (!complaint) {
-      complaint = await Complaint.findOne({ ticketId: id });
+      const cleanId = (id || '').toString().replace('#', '').trim();
+      const cleanNum = cleanId.replace('TKT-', '');
+      complaint = await Complaint.findOne({
+        $or: [
+          { ticketId: cleanId },
+          { ticketId: `TKT-${cleanNum}` },
+          { ticketId: cleanNum }
+        ]
+      });
     }
 
     if (!complaint) {
-      return res.status(404).json({ success: false, message: 'Ticket not found' });
+      return res.status(404).json({ success: false, message: 'Ticket not found in database' });
     }
 
     complaint.rating = ratingNum;
+    complaint.userRating = ratingNum;
     complaint.review = cleanComment;
+    complaint.userComment = cleanComment;
     complaint.reviewedAt = new Date();
     await complaint.save();
 
     // 2. Find Assigned Worker & Push Review
     let worker = null;
-    if (complaint.assignedWorkerId) {
+    if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
+      worker = await User.findById(workerId);
+    }
+    if (!worker && complaint.assignedWorkerId && mongoose.Types.ObjectId.isValid(complaint.assignedWorkerId)) {
       worker = await User.findById(complaint.assignedWorkerId);
+    }
+    if (!worker && (workerEmail || complaint.assignedWorkerEmail)) {
+      const emailToSearch = (workerEmail || complaint.assignedWorkerEmail || '').toLowerCase().trim();
+      worker = await User.findOne({ email: { $regex: new RegExp(`^${emailToSearch}$`, 'i') } });
     }
     if (!worker && complaint.assignedWorker && complaint.assignedWorker !== 'Unassigned') {
       worker = await User.findOne({
@@ -603,19 +560,23 @@ exports.submitReview = async (req, res) => {
       });
     }
 
-    if (worker) {
-      const newReview = {
-        customerName: customerName || req.user?.name || complaint.citizenName || 'Citizen',
-        customerEmail: req.user?.email || complaint.citizenEmail || '',
-        customerAvatar: req.user?.profilePic || '',
-        stars: ratingNum,
-        comment: cleanComment,
-        ticketId: complaint.ticketId,
-        createdAt: new Date()
-      };
+    const resolvedCustomerName = customerName || req.user?.name || complaint.citizenName || 'Citizen';
+    const resolvedCustomerEmail = customerEmail || req.user?.email || complaint.citizenEmail || '';
+    const resolvedCustomerAvatar = customerAvatar || req.user?.profilePic || '';
 
+    const newReview = {
+      customerName: resolvedCustomerName,
+      customerEmail: resolvedCustomerEmail,
+      customerAvatar: resolvedCustomerAvatar,
+      stars: ratingNum,
+      comment: cleanComment || 'Work completed and verified.',
+      ticketId: complaint.ticketId || complaint.id || 'TKT-2026',
+      createdAt: new Date()
+    };
+
+    if (worker) {
       worker.reviews = worker.reviews || [];
-      worker.reviews.push(newReview);
+      worker.reviews.unshift(newReview);
       worker.reviewsCount = worker.reviews.length;
 
       // Recalculate Worker Average Star Rating
@@ -624,12 +585,34 @@ exports.submitReview = async (req, res) => {
       worker.karmaPoints = (worker.karmaPoints || 100) + 50;
 
       await worker.save();
+
+      // 3. Dispatch Live Notification to the Worker
+      try {
+        const targetWorkerEmail = (worker.email || '').toLowerCase().trim();
+        if (targetWorkerEmail) {
+          await Notification.create({
+            recipientEmail: targetWorkerEmail,
+            recipientRole: 'worker',
+            type: 'new_review',
+            title: `New ${ratingNum}★ Review Received`,
+            message: `${resolvedCustomerName} rated you ${ratingNum} ★ on Ticket #${complaint.ticketId}: "${cleanComment || 'Service Completed'}"`,
+            ticketId: complaint.ticketId || '',
+            senderName: resolvedCustomerName,
+            senderEmail: resolvedCustomerEmail,
+            senderAvatar: resolvedCustomerAvatar,
+            isRead: false
+          });
+        }
+      } catch (notifErr) {
+        console.warn('Failed to create worker rating notification:', notifErr.message);
+      }
     }
 
     res.status(200).json({
       success: true,
-      message: 'Thank you! Your 5-star rating and review have been recorded.',
+      message: `Thank you! Your ${ratingNum}-star rating and review have been recorded.`,
       complaint,
+      review: newReview,
       workerRating: worker ? worker.rating : ratingNum
     });
   } catch (error) {

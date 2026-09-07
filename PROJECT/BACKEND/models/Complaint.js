@@ -80,6 +80,14 @@ const complaintSchema = new mongoose.Schema({
     type: String,
     default: 'Unassigned'
   },
+  assignedWorkerEmail: {
+    type: String,
+    default: ''
+  },
+  assignedWorkerPic: {
+    type: String,
+    default: ''
+  },
   rating: {
     type: Number,
     default: 0

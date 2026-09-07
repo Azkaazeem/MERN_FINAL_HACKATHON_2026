@@ -36,6 +36,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import TicketChatModal from '../../components/TicketChat/TicketChatModal';
+import SelectWorkerModal from '../../components/SelectWorkerModal/SelectWorkerModal';
+import { HardHat } from 'lucide-react';
 import API from '../../api/axios';
 import './MyComplaints.css';
 
@@ -67,6 +69,8 @@ const MyComplaints = () => {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [selectedImageModal, setSelectedImageModal] = useState(null);
   const [activeChatTicket, setActiveChatTicket] = useState(null);
+  const [selectedTicketForWorker, setSelectedTicketForWorker] = useState(null);
+  const [isSelectWorkerOpen, setIsSelectWorkerOpen] = useState(false);
 
   // Rate Worker Modal State
   const [ratingModalTicket, setRatingModalTicket] = useState(null);
@@ -129,7 +133,19 @@ const MyComplaints = () => {
     setIsSubmittingRating(true);
 
     try {
-      const ticketId = ratingModalTicket.id || ratingModalTicket.ticketId;
+      const ticketId = ratingModalTicket.ticketId || ratingModalTicket.id || ratingModalTicket._id;
+      
+      // Save rating to MongoDB Atlas and notify the worker
+      await API.post(`/complaints/${ticketId}/review`, {
+        stars: selectedStars,
+        comment: feedbackComment.trim() || 'Work marked completed and verified by citizen.',
+        customerName: user?.name || user?.username || 'Citizen',
+        customerEmail: user?.email || '',
+        customerAvatar: user?.profilePic || '',
+        workerEmail: ratingModalTicket.assignedWorkerEmail || '',
+        workerId: ratingModalTicket.assignedWorkerId || ''
+      });
+
       localStorage.setItem(`ticket_rating_${ticketId}`, JSON.stringify({
         stars: selectedStars,
         comment: feedbackComment,
@@ -137,16 +153,16 @@ const MyComplaints = () => {
       }));
 
       setComplaints(prev => prev.map(c => {
-        if (c.id === ratingModalTicket.id || c.ticketId === ratingModalTicket.ticketId) {
-          return { ...c, userRating: selectedStars, userComment: feedbackComment };
+        if (c.id === ratingModalTicket.id || c.ticketId === ratingModalTicket.ticketId || c._id === ratingModalTicket._id) {
+          return { ...c, userRating: selectedStars, userComment: feedbackComment, rating: selectedStars, review: feedbackComment };
         }
         return c;
       }));
 
       Swal.fire({
         icon: 'success',
-        title: 'Rating Submitted Successfully',
-        text: `Thank you! You rated ${selectedStars} Stars for this municipal service.`,
+        title: 'Rating & Review Submitted! ⭐',
+        text: `Thank you! You rated ${selectedStars} Stars for ${ratingModalTicket.assignedWorker || 'Officer'}. The officer has been notified and your review is now displayed on their public profile.`,
         confirmButtonColor: '#00e5ff',
         background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
         color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#f8fafc' : '#0f172a'
@@ -155,7 +171,8 @@ const MyComplaints = () => {
       setRatingModalTicket(null);
       setFeedbackComment('');
     } catch (err) {
-      toast.error('Failed to save rating.');
+      console.error('Rating submission error:', err);
+      toast.error(err.response?.data?.message || 'Failed to save rating.');
     } finally {
       setIsSubmittingRating(false);
     }
@@ -198,6 +215,11 @@ const MyComplaints = () => {
           priority: c.priority || 'Medium',
           status: c.status === 'Open' ? 'Pending' : (c.status || 'Pending'),
           assigned_department: c.department || c.assigned_department || 'Municipal Works',
+          assignedWorker: c.assignedWorker || c.assignedWorkerName || 'Unassigned',
+          assignedWorkerName: c.assignedWorkerName || c.assignedWorker || 'Unassigned',
+          assignedWorkerId: c.assignedWorkerId,
+          assignedWorkerEmail: c.assignedWorkerEmail || '',
+          assignedWorkerPic: c.assignedWorkerPic || '',
           location: c.location || 'Central District',
           date: new Date(c.createdAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
           image_url: c.imageUrl || c.image_url || ''
@@ -758,18 +780,71 @@ const MyComplaints = () => {
                           </span>
                         </div>
                         <div className="cvc-header-actions">
-                          <button 
-                            type="button" 
-                            className="cvc-chat-action-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveChatTicket(c);
-                            }}
-                            title="Open live chat with assigned field officer"
-                          >
-                            <MessageSquare size={13} />
-                            <span>Live Chat</span>
-                          </button>
+                          {c.assignedWorker && c.assignedWorker !== 'Unassigned' ? (
+                            <>
+                              <button 
+                                type="button" 
+                                className="cvc-chat-action-btn"
+                                style={{ background: 'rgba(0, 229, 255, 0.08)', borderColor: 'rgba(0, 229, 255, 0.25)' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedTicketForWorker(c);
+                                  setIsSelectWorkerOpen(true);
+                                }}
+                                title="Change Assigned Officer"
+                              >
+                                <HardHat size={13} color="#00e5ff" />
+                                <span>{c.assignedWorker}</span>
+                              </button>
+
+                              <button 
+                                type="button" 
+                                className="cvc-chat-action-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveChatTicket(c);
+                                }}
+                                title="Open live chat with assigned field officer"
+                              >
+                                <MessageSquare size={13} />
+                                <span>Live Chat</span>
+                              </button>
+                            </>
+                          ) : (
+                            <button 
+                              type="button" 
+                              className="cvc-chat-action-btn"
+                              style={{ background: 'rgba(0, 229, 255, 0.15)', borderColor: '#00e5ff', color: '#00e5ff' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTicketForWorker(c);
+                                setIsSelectWorkerOpen(true);
+                              }}
+                              title="Pehle worker select karein"
+                            >
+                              <HardHat size={13} color="#00e5ff" />
+                              <span>Select Worker to Chat</span>
+                            </button>
+                          )}
+
+                          {c.status !== 'Resolved' && (
+                            <button
+                              type="button"
+                              className="cvc-delete-action-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteComplaint(c.ticketId || c.id || c._id);
+                              }}
+                              title="Permanently delete this ticket"
+                            >
+                              <Trash2 size={13} />
+                              <span>Delete</span>
+                            </button>
+                          )}
+
+                          <span className={`cvc-status-pill ${c.status?.toLowerCase().replace(' ', '-')}`}>
+                            {c.status}
+                          </span>
 
                           {c.status === 'Resolved' && (
                             <button
@@ -785,10 +860,6 @@ const MyComplaints = () => {
                               <span>{c.userRating ? `Rated (${c.userRating}★)` : 'Rate Worker'}</span>
                             </button>
                           )}
-
-                          <span className={`cvc-status-pill ${c.status?.toLowerCase().replace(' ', '-')}`}>
-                            {c.status}
-                          </span>
                         </div>
                       </div>
 
@@ -922,11 +993,57 @@ const MyComplaints = () => {
       )}
 
       {/* ================= IN-TICKET LIVE CHAT MODAL ================= */}
+      <SelectWorkerModal
+        isOpen={isSelectWorkerOpen}
+        ticket={selectedTicketForWorker}
+        onClose={() => {
+          setIsSelectWorkerOpen(false);
+          setSelectedTicketForWorker(null);
+        }}
+        onWorkerAssigned={(worker, ticket, actionType) => {
+          setIsSelectWorkerOpen(false);
+          setSelectedTicketForWorker(null);
+
+          setComplaints(prev => prev.map(c => {
+            if (c.id === ticket.id || c.ticketId === ticket.ticketId) {
+              return {
+                ...c,
+                assignedWorker: worker.name,
+                assignedWorkerName: worker.name,
+                assignedWorkerEmail: worker.email,
+                assignedWorkerPic: worker.resolvedAvatar || worker.profilePic,
+                assignedWorkerId: worker._id,
+                status: 'In Progress'
+              };
+            }
+            return c;
+          }));
+
+          const updatedTicket = {
+            ...ticket,
+            assignedWorker: worker.name,
+            assignedWorkerName: worker.name,
+            assignedWorkerEmail: worker.email,
+            assignedWorkerPic: worker.resolvedAvatar || worker.profilePic,
+            assignedWorkerId: worker._id,
+            status: 'In Progress'
+          };
+
+          if (actionType === 'chat') {
+            setActiveChatTicket(updatedTicket);
+          }
+        }}
+      />
+
       <TicketChatModal 
         ticket={activeChatTicket}
         isOpen={!!activeChatTicket}
         onClose={() => setActiveChatTicket(null)}
         userRole="customer"
+        onSelectWorkerRequest={(ticket) => {
+          setSelectedTicketForWorker(ticket);
+          setIsSelectWorkerOpen(true);
+        }}
       />
 
       {/* ================= SERVICE RATING MODAL (Lucide Stars, No Text Emojis) ================= */}

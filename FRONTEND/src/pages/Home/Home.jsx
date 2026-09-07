@@ -7,7 +7,8 @@ import { gsap } from 'gsap';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import { 
-  Send, 
+  Send,
+  HardHat, 
   Sparkles, 
   Search, 
   Check, 
@@ -309,8 +310,8 @@ const Home = () => {
     const newId = (Math.floor(100 + Math.random() * 900)).toString();
 
     const assignedDept = aiResult?.assigned_department || 'Municipal Works Department';
-    const assignedWorkerId = formData.assignedWorkerId || (workersList[0] ? workersList[0]._id : null);
-    const assignedWorkerName = formData.assignedWorkerName || (workersList[0] ? workersList[0].name : 'Engr. Tariq Mehmood');
+    const assignedWorkerId = formData.assignedWorkerId || null;
+    const assignedWorkerName = formData.assignedWorkerName || 'Unassigned';
 
     const payload = {
       ticketId: newId,
@@ -433,43 +434,76 @@ const Home = () => {
     });
   };
 
-  const handleTrackSearch = async (e) => {
+  const handleTrackSearch = async (e, customId) => {
     if (e) e.preventDefault();
-    if (!trackId.trim()) {
+    const searchTarget = (customId || trackId || '').trim();
+    if (!searchTarget) {
       toast.error('Please enter a Ticket ID.');
       return;
     }
 
+    const cleanNum = searchTarget.replace('TKT-', '').replace('#', '').trim();
+
     try {
       const res = await API.get('/complaints');
-      const all = res.data?.data || res.data || [];
+      const all = res.data?.complaints || res.data?.data || res.data || [];
       const c = all.find(item => 
-        item.ticketId?.toString() === trackId.trim() || 
-        item._id?.toString() === trackId.trim() ||
-        item.id?.toString() === trackId.trim()
+        item.ticketId?.toString() === searchTarget || 
+        item.ticketId?.toString() === `TKT-${cleanNum}` ||
+        item._id?.toString() === searchTarget ||
+        item.id?.toString() === searchTarget ||
+        item.ticketId?.toString().includes(cleanNum)
       );
+
       if (c) {
-        setTrackedComplaint({
+        const mapped = {
           id: c.ticketId || c._id,
+          ticketId: c.ticketId || c._id,
+          _id: c._id,
           title: c.title,
           category: c.category,
           priority: c.priority,
           status: c.status,
           assigned_department: c.department || c.assigned_department,
+          assignedWorker: c.assignedWorker || c.assignedWorkerName || 'Unassigned',
+          assignedWorkerName: c.assignedWorkerName || c.assignedWorker || 'Unassigned',
+          assignedWorkerId: c.assignedWorkerId,
+          assignedWorkerEmail: c.assignedWorkerEmail || '',
+          assignedWorkerPic: c.assignedWorkerPic || '',
           location: c.location,
           date: new Date(c.createdAt || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-        });
-        toast.success(`Found live record for Ticket #${trackId}!`);
+        };
+        setTrackedComplaint(mapped);
+        setTrackId(mapped.ticketId);
+
+        // Instantly trigger the Certified Field Worker Selection Popup!
+        setCreatedTicketForWorkerSelection(mapped);
+        setIsSelectWorkerModalOpen(true);
+
+        toast.success(`Found Ticket #${mapped.ticketId}! Choose your officer below.`);
         return;
       }
-    } catch (err) {}
+    } catch (err) {
+      console.warn('Track search error:', err);
+    }
 
-    const found = submittedComplaints.find(c => c.id?.toString() === trackId.trim());
+    const found = submittedComplaints.find(c => 
+      c.id?.toString() === searchTarget || 
+      c.ticketId?.toString() === searchTarget ||
+      c.ticketId?.toString().includes(cleanNum)
+    );
+
     if (found) {
       setTrackedComplaint(found);
-      toast.success(`Found record for Ticket #${trackId}!`);
+      setTrackId(found.ticketId || found.id);
+
+      // Instantly trigger Worker Selection Popup!
+      setCreatedTicketForWorkerSelection(found);
+      setIsSelectWorkerModalOpen(true);
+
+      toast.success(`Found Ticket #${found.ticketId || found.id}! Choose your officer below.`);
     } else {
-      toast.error(`No ticket found with ID #${trackId}.`);
+      toast.error(`No ticket found with ID #${searchTarget}.`);
     }
   };
 
@@ -746,11 +780,12 @@ const Home = () => {
                         key={c.id || idx} 
                         className="clean-history-card"
                         onClick={() => {
-                          setTrackId(c.id);
+                          setTrackId(c.id || c.ticketId);
                           setTrackedComplaint(c);
+                          setCreatedTicketForWorkerSelection(c);
+                          setIsSelectWorkerModalOpen(true);
                           const el = document.getElementById('module-tracker');
                           if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          toast.success(`Loaded Ticket #${c.id} into Tracker!`);
                         }}
                         title="Click to track in live lifecycle stepper below"
                       >
@@ -764,18 +799,20 @@ const Home = () => {
                             </span>
                           </div>
                           <div className="chc-right-actions">
-                            <button
-                              type="button"
-                              className="chc-delete-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteComplaint(c.ticketId || c.id || c._id);
-                              }}
-                              title="Delete this ticket"
-                            >
-                              <Trash2 size={13} />
-                              <span>Delete</span>
-                            </button>
+                            {c.status !== 'Resolved' && (
+                              <button
+                                type="button"
+                                className="chc-delete-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteComplaint(c.ticketId || c.id || c._id);
+                                }}
+                                title="Delete this ticket"
+                              >
+                                <Trash2 size={13} />
+                                <span>Delete</span>
+                              </button>
+                            )}
                             <span className={`chc-status-pill ${c.status?.toLowerCase().replace(' ', '-')}`}>
                               {c.status}
                             </span>
@@ -821,19 +858,37 @@ const Home = () => {
 
                         {/* Prominent Chat Trigger Button */}
                         <div className="chc-footer-chat-row">
-                          <button 
-                            type="button" 
-                            className="home-open-chat-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveChatTicket(c);
-                            }}
-                            title="Open live conversation with assigned crew"
-                          >
-                            <MessageSquare size={13} className="cyan-icon" />
-                            <span>Live Chat with Assigned Officer</span>
-                            <span className="online-pill">● Online</span>
-                          </button>
+                          {c.assignedWorker && c.assignedWorker !== 'Unassigned' ? (
+                            <button 
+                              type="button" 
+                              className="home-open-chat-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveChatTicket(c);
+                              }}
+                              title={`Open live conversation with ${c.assignedWorker}`}
+                            >
+                              <MessageSquare size={13} className="cyan-icon" />
+                              <span>Live Chat with {c.assignedWorker}</span>
+                              <span className="online-pill">● Online</span>
+                            </button>
+                          ) : (
+                            <button 
+                              type="button" 
+                              className="home-open-chat-btn"
+                              style={{ background: 'rgba(0, 229, 255, 0.12)', borderColor: 'rgba(0, 229, 255, 0.35)', color: '#00e5ff' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCreatedTicketForWorkerSelection(c);
+                                setIsSelectWorkerModalOpen(true);
+                              }}
+                              title="Pehle worker select karein"
+                            >
+                              <HardHat size={14} className="cyan-icon" />
+                              <span>Select Worker to Chat</span>
+                              <span className="online-pill" style={{ background: 'rgba(0, 229, 255, 0.2)', color: '#00e5ff' }}>Choose Officer</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -906,22 +961,54 @@ const Home = () => {
                 <div className="tracked-header-right">
                   <button 
                     type="button" 
-                    className="tracker-chat-btn"
-                    onClick={() => setActiveChatTicket(trackedComplaint)}
-                    title="Open live chat with assigned field officer"
+                    className="tracker-worker-btn"
+                    onClick={() => {
+                      setCreatedTicketForWorkerSelection(trackedComplaint);
+                      setIsSelectWorkerModalOpen(true);
+                    }}
+                    title="Select or Change Municipal Officer"
                   >
-                    <MessageSquare size={14} />
-                    <span>Live Ticket Chat</span>
+                    <HardHat size={14} />
+                    <span>{trackedComplaint.assignedWorker && trackedComplaint.assignedWorker !== 'Unassigned' ? `Officer: ${trackedComplaint.assignedWorker}` : 'Choose Officer'}</span>
                   </button>
-                  <button 
-                    type="button" 
-                    className="tracker-delete-btn"
-                    onClick={() => handleDeleteComplaint(trackedComplaint.ticketId || trackedComplaint.id || trackedComplaint._id)}
-                    title="Delete this ticket"
-                  >
-                    <Trash2 size={14} />
-                    <span>Delete</span>
-                  </button>
+
+                  {trackedComplaint.assignedWorker && trackedComplaint.assignedWorker !== 'Unassigned' ? (
+                    <button 
+                      type="button" 
+                      className="tracker-chat-btn"
+                      onClick={() => setActiveChatTicket(trackedComplaint)}
+                      title="Open live chat with assigned field officer"
+                    >
+                      <MessageSquare size={14} />
+                      <span>Live Ticket Chat</span>
+                    </button>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className="tracker-chat-btn"
+                      style={{ background: 'rgba(0, 229, 255, 0.15)', borderColor: '#00e5ff', color: '#00e5ff' }}
+                      onClick={() => {
+                        setCreatedTicketForWorkerSelection(trackedComplaint);
+                        setIsSelectWorkerModalOpen(true);
+                      }}
+                      title="Pehle worker select karein"
+                    >
+                      <HardHat size={14} />
+                      <span>Select Worker to Chat</span>
+                    </button>
+                  )}
+
+                  {trackedComplaint.status !== 'Resolved' && (
+                    <button 
+                      type="button" 
+                      className="tracker-delete-btn"
+                      onClick={() => handleDeleteComplaint(trackedComplaint.ticketId || trackedComplaint.id || trackedComplaint._id)}
+                      title="Delete this ticket"
+                    >
+                      <Trash2 size={14} />
+                      <span>Delete</span>
+                    </button>
+                  )}
                   <div className={`status-pill ${trackedComplaint.status?.toLowerCase().replace(' ', '-')}`}>
                     {trackedComplaint.status}
                   </div>
@@ -1146,24 +1233,25 @@ const Home = () => {
             return c;
           }));
 
+          const updatedTicket = {
+            ...ticket,
+            assignedWorker: worker.name,
+            assignedWorkerName: worker.name,
+            assignedWorkerEmail: worker.email,
+            assignedWorkerPic: worker.resolvedAvatar || worker.profilePic || worker.profileImage || worker.avatar,
+            assignedWorkerId: worker._id,
+            department: worker.department,
+            workerRating: worker.rating,
+            status: 'In Progress'
+          };
+
+          setTrackId(ticket.ticketId || ticket.id);
+          setTrackedComplaint(updatedTicket);
+
           if (actionType === 'chat') {
-            setActiveChatTicket({
-              ...ticket,
-              assignedWorker: worker.name,
-              assignedWorkerName: worker.name,
-              assignedWorkerId: worker._id,
-              department: worker.department,
-              workerRating: worker.rating
-            });
+            setActiveChatTicket(updatedTicket);
           } else {
-            setTrackId(ticket.ticketId || ticket.id);
-            setTrackedComplaint({
-              ...ticket,
-              assignedWorker: worker.name,
-              assignedWorkerName: worker.name,
-              status: 'In Progress'
-            });
-            const trackElem = document.getElementById('track');
+            const trackElem = document.getElementById('module-tracker');
             if (trackElem) trackElem.scrollIntoView({ behavior: 'smooth' });
           }
         }}
@@ -1174,6 +1262,10 @@ const Home = () => {
         isOpen={!!activeChatTicket}
         onClose={() => setActiveChatTicket(null)}
         userRole="customer"
+        onSelectWorkerRequest={(ticket) => {
+          setCreatedTicketForWorkerSelection(ticket);
+          setIsSelectWorkerModalOpen(true);
+        }}
       />
 
       </main>

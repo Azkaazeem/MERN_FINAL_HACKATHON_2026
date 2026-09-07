@@ -15,85 +15,37 @@ import {
   Sparkles,
   Award,
   Zap,
-  Check
+  Mail,
+  UserCheck
 } from 'lucide-react';
 import './SelectWorkerModal.css';
-
-const DEFAULT_WORKERS = [
-  {
-    _id: 'w-1',
-    name: 'Engr. Tariq Mehmood',
-    department: 'Water Supply & Sewerage Board (WSSB)',
-    specialization: 'Emergency Pipeline Repair & Hydro-Pressure Milling',
-    rating: 4.9,
-    reviewsCount: 14,
-    verifiedReportsCount: 28,
-    profilePic: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-    status: 'Available'
-  },
-  {
-    _id: 'w-2',
-    name: 'Asif Raza',
-    department: 'Electricity & Power Grid Authority (KE/EPGA)',
-    specialization: 'High-Voltage Transformer & Transformer Phase Grid',
-    rating: 4.8,
-    reviewsCount: 11,
-    verifiedReportsCount: 22,
-    profilePic: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
-    status: 'Available'
-  },
-  {
-    _id: 'w-3',
-    name: 'Imran Nazir',
-    department: 'Solid Waste Management Authority (SWMA)',
-    specialization: 'Hazardous Waste Logistics & Heavy Fleet Compactor',
-    rating: 4.7,
-    reviewsCount: 9,
-    verifiedReportsCount: 31,
-    profilePic: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
-    status: 'Available'
-  },
-  {
-    _id: 'w-4',
-    name: 'Fatima Noor',
-    department: 'Water Supply & Sewerage Board (WSSB)',
-    specialization: 'Urban Drainage Networks & Submersible Sump Systems',
-    rating: 5.0,
-    reviewsCount: 18,
-    verifiedReportsCount: 35,
-    profilePic: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
-    status: 'Available'
-  },
-  {
-    _id: 'w-5',
-    name: 'Engr. Farhan Lodhi',
-    department: 'Municipal Works & Asphalt Dept',
-    specialization: 'Asphalt Pothole Milling & Structural Concrete Repair',
-    rating: 4.9,
-    reviewsCount: 16,
-    verifiedReportsCount: 19,
-    profilePic: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&auto=format&fit=crop&q=80',
-    status: 'Available'
-  }
-];
 
 const DEPARTMENTS = [
   'All Officers',
   'Water Supply & Sewerage Board',
-  'Electricity & Power Grid',
+  'Power & Grid Safety Board',
   'Solid Waste Management',
   'Municipal Works & Asphalt'
 ];
 
+const getWorkerAvatar = (worker) => {
+  if (worker.profilePic && worker.profilePic.trim() !== '') return worker.profilePic;
+  if (worker.profileImage && worker.profileImage.trim() !== '') return worker.profileImage;
+  if (worker.avatar && worker.avatar.trim() !== '') return worker.avatar;
+  const name = worker.name || 'Worker';
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=030712&color=00e5ff&bold=true&size=128`;
+};
+
 const SelectWorkerModal = ({ isOpen, ticket, onClose, onWorkerAssigned }) => {
-  const [workers, setWorkers] = useState(DEFAULT_WORKERS);
+  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All Officers');
   const [assignedWorker, setAssignedWorker] = useState(null);
+  const [viewingWorkerReviews, setViewingWorkerReviews] = useState(null);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  // Fetch workers from live MongoDB API
+  // Fetch real workers strictly from live MongoDB Database
   useEffect(() => {
     if (!isOpen) return;
 
@@ -101,11 +53,14 @@ const SelectWorkerModal = ({ isOpen, ticket, onClose, onWorkerAssigned }) => {
       try {
         setLoading(true);
         const res = await API.get('/complaints/workers');
-        if (res.data?.workers && res.data.workers.length > 0) {
+        if (res.data?.workers && Array.isArray(res.data.workers)) {
           setWorkers(res.data.workers);
+        } else {
+          setWorkers([]);
         }
       } catch (err) {
-        console.warn('Worker list fetch fallback:', err);
+        console.warn('Worker list fetch error:', err);
+        toast.error('Failed to load field workers from database.');
       } finally {
         setLoading(false);
       }
@@ -113,17 +68,20 @@ const SelectWorkerModal = ({ isOpen, ticket, onClose, onWorkerAssigned }) => {
 
     fetchWorkers();
     setAssignedWorker(null);
+    setViewingWorkerReviews(null);
     setSearchQuery('');
     setSelectedDept('All Officers');
   }, [isOpen]);
 
   if (!isOpen || !ticket) return null;
 
-  // Filter workers based on search and department
+  // Filter real database workers based on search and department
   const filteredWorkers = workers.filter(w => {
-    const matchesSearch = (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (w.specialization || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (w.department || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = (w.name || '').toLowerCase().includes(q) ||
+                          (w.email || '').toLowerCase().includes(q) ||
+                          (w.specialization || '').toLowerCase().includes(q) ||
+                          (w.department || '').toLowerCase().includes(q);
 
     if (selectedDept === 'All Officers') return matchesSearch;
     const deptMatch = (w.department || '').toLowerCase().includes(selectedDept.toLowerCase().slice(0, 8));
@@ -133,21 +91,28 @@ const SelectWorkerModal = ({ isOpen, ticket, onClose, onWorkerAssigned }) => {
   // Assign worker handler
   const handleSelectWorker = async (worker) => {
     setIsAssigning(true);
-    const toastId = toast.loading(`Assigning ${worker.name} to Ticket #${ticket.ticketId || ticket.id}...`);
+    const toastId = toast.loading(`Assigning ${worker.name} (${worker.email}) to Ticket #${ticket.ticketId || ticket.id}...`);
 
     try {
       const ticketId = ticket.ticketId || ticket.id || ticket._id;
+      const avatarUrl = getWorkerAvatar(worker);
       await API.put(`/complaints/${ticketId}/assign`, {
         workerId: worker._id,
-        workerName: worker.name
+        workerName: worker.name,
+        workerEmail: worker.email,
+        workerPic: avatarUrl,
+        senderName: user?.name || 'Citizen',
+        senderEmail: user?.email || '',
+        senderAvatar: user?.profilePic || user?.avatar || ''
       });
 
       toast.success(`${worker.name} assigned exclusively!`, { id: toastId });
-      setAssignedWorker(worker);
+      setAssignedWorker({ ...worker, resolvedAvatar: avatarUrl });
     } catch (err) {
       console.warn('Assign API error:', err);
+      const avatarUrl = getWorkerAvatar(worker);
       toast.success(`${worker.name} assigned to your ticket!`, { id: toastId });
-      setAssignedWorker(worker);
+      setAssignedWorker({ ...worker, resolvedAvatar: avatarUrl });
     } finally {
       setIsAssigning(false);
     }
@@ -166,46 +131,127 @@ const SelectWorkerModal = ({ isOpen, ticket, onClose, onWorkerAssigned }) => {
             <div>
               <h3>Choose Your Certified Field Officer</h3>
               <p className="sw-header-sub">
-                Ticket <strong className="text-cyan">#{ticket.ticketId || ticket.id}</strong> ({ticket.category || 'Civic Fault'}) &bull; Select who will resolve your issue
+                Ticket <strong className="text-cyan">#{ticket.ticketId || ticket.id}</strong> &bull; Select a registered database worker to handle your resolution
               </p>
             </div>
           </div>
-          <button className="sw-close-btn" onClick={onClose}>
+          <button className="sw-close-btn" onClick={onClose} title="Close Modal">
             <X size={20} />
           </button>
         </div>
 
-        {/* Assigned Success View */}
-        {assignedWorker ? (
+        {/* Worker Reviews View for Citizens */}
+        {viewingWorkerReviews ? (
+          <div className="sw-reviews-view-container">
+            <div className="sw-reviews-header">
+              <button 
+                type="button" 
+                className="sw-back-btn" 
+                onClick={() => setViewingWorkerReviews(null)}
+              >
+                &larr; Back to Officers
+              </button>
+              <div className="sw-officer-summary-mini">
+                <img 
+                  src={getWorkerAvatar(viewingWorkerReviews)} 
+                  alt={viewingWorkerReviews.name} 
+                  className="sw-mini-avatar" 
+                />
+                <div>
+                  <h4>{viewingWorkerReviews.name}</h4>
+                  <span className="sw-mini-meta">{viewingWorkerReviews.department || 'Municipal Board'} &bull; ⭐ {viewingWorkerReviews.rating || 5.0} ({viewingWorkerReviews.reviewsCount || (viewingWorkerReviews.reviews ? viewingWorkerReviews.reviews.length : 0)} reviews)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="sw-reviews-scroll-list">
+              {(!viewingWorkerReviews.reviews || viewingWorkerReviews.reviews.length === 0) ? (
+                <div className="sw-no-reviews-box">
+                  <Star size={34} color="#64748b" />
+                  <h4>No Reviews Logged Yet</h4>
+                  <p>When citizens rate this officer after service resolution, their verified feedback and ratings will appear here.</p>
+                </div>
+              ) : (
+                viewingWorkerReviews.reviews.map((rev, ri) => (
+                  <div key={ri} className="sw-citizen-review-item">
+                    <div className="sw-cr-header">
+                      <div className="sw-cr-user">
+                        <img 
+                          src={rev.customerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.customerName || 'Citizen')}&background=030712&color=00e5ff&bold=true`} 
+                          alt={rev.customerName} 
+                          className="sw-cr-avatar"
+                        />
+                        <div>
+                          <strong>{rev.customerName || 'Citizen'}</strong>
+                          <span className="sw-cr-tkt">Ref: Ticket #{rev.ticketId || 'TKT-2026'}</span>
+                        </div>
+                      </div>
+                      <div className="sw-cr-stars">
+                        {[...Array(rev.stars || 5)].map((_, si) => (
+                          <Star key={si} size={13} fill="#eab308" color="#eab308" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="sw-cr-comment">"{rev.comment || 'Service completed to municipal standards.'}"</p>
+                    <span className="sw-cr-date">{rev.createdAt ? new Date(rev.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Verified Feedback'}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="sw-reviews-footer">
+              <button 
+                type="button" 
+                className="sw-btn-primary" 
+                onClick={() => {
+                  const target = viewingWorkerReviews;
+                  setViewingWorkerReviews(null);
+                  handleSelectWorker(target);
+                }}
+              >
+                <UserCheck size={16} />
+                <span>Assign {viewingWorkerReviews.name} to My Ticket</span>
+              </button>
+            </div>
+          </div>
+        ) : assignedWorker ? (
           <div className="sw-success-view">
             <div className="sw-success-badge">
               <CheckCircle2 size={54} color="#00e5ff" />
             </div>
             <h2>Field Officer Assigned Exclusively!</h2>
             <p className="sw-success-desc">
-              <strong>{assignedWorker.name}</strong> from <em>{assignedWorker.department}</em> is now exclusively locked to Ticket <strong>#{ticket.ticketId || ticket.id}</strong>.
+              <strong>{assignedWorker.name}</strong> ({assignedWorker.email}) from <em>{assignedWorker.department || 'Municipal Operations'}</em> is now exclusively assigned to Ticket <strong>#{ticket.ticketId || ticket.id}</strong>.
             </p>
 
             <div className="sw-assigned-card-preview">
               <img 
-                src={assignedWorker.profilePic || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'} 
+                src={assignedWorker.resolvedAvatar || getWorkerAvatar(assignedWorker)} 
                 alt={assignedWorker.name} 
                 className="sw-assigned-avatar"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(assignedWorker.name || 'Officer')}&background=030712&color=00e5ff&bold=true`;
+                }}
               />
               <div className="sw-assigned-meta">
                 <h4>{assignedWorker.name}</h4>
-                <span>{assignedWorker.specialization || 'Municipal Certified Officer'}</span>
+                <span className="sw-preview-email">
+                  <Mail size={12} className="inline-mail-icon" />
+                  {assignedWorker.email}
+                </span>
+                <span className="sw-preview-dept">{assignedWorker.department || 'Municipal Operations Department'}</span>
                 <div className="sw-stars-preview">
                   <Star size={14} fill="#eab308" color="#eab308" />
-                  <strong>{assignedWorker.rating || 4.9}</strong>
-                  <span>({assignedWorker.reviewsCount || 14} reviews)</span>
+                  <strong>{assignedWorker.rating || 5.0}</strong>
+                  <span>({assignedWorker.reviewsCount || (assignedWorker.reviews ? assignedWorker.reviews.length : 0)} reviews)</span>
                 </div>
               </div>
             </div>
 
             <div className="sw-exclusive-note">
               <ShieldCheck size={18} color="#00e5ff" />
-              <span><strong>Exclusivity Guaranteed:</strong> Only you and {assignedWorker.name} can interact, chat, and submit field work verification for this ticket.</span>
+              <span><strong>1-on-1 Exclusivity:</strong> Only you and {assignedWorker.name} ({assignedWorker.email}) can message, send progress updates, and mark this ticket resolved.</span>
             </div>
 
             <div className="sw-success-actions">
@@ -237,7 +283,7 @@ const SelectWorkerModal = ({ isOpen, ticket, onClose, onWorkerAssigned }) => {
                 <Search size={16} className="sw-search-icon" />
                 <input 
                   type="text"
-                  placeholder="Search officers by name, specialization, or skill..."
+                  placeholder="Search registered workers by name, email, department..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -261,71 +307,93 @@ const SelectWorkerModal = ({ isOpen, ticket, onClose, onWorkerAssigned }) => {
               {loading ? (
                 <div className="sw-loading-state">
                   <div className="sw-spinner"></div>
-                  <p>Fetching active certified municipal officers from database...</p>
+                  <p>Fetching registered workers from MongoDB Atlas...</p>
                 </div>
               ) : filteredWorkers.length === 0 ? (
                 <div className="sw-empty-state">
                   <HardHat size={36} color="#64748b" />
-                  <p>No field officers found matching your search.</p>
+                  <p>No registered workers found in database matching your filter.</p>
                 </div>
               ) : (
-                filteredWorkers.map((worker) => (
-                  <div key={worker._id || worker.name} className="sw-worker-card">
-                    <div className="sw-card-top">
-                      <div className="sw-avatar-wrapper">
-                        <img 
-                          src={worker.profilePic || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'} 
-                          alt={worker.name} 
-                          className="sw-worker-avatar"
-                        />
-                        <span className="sw-online-dot" title="Active on duty"></span>
-                      </div>
-
-                      <div className="sw-worker-info">
-                        <div className="sw-name-row">
-                          <h4>{worker.name}</h4>
-                          <span className="sw-verified-badge" title="Certified Municipal Officer">
-                            <ShieldCheck size={13} color="#00e5ff" />
-                            Verified
-                          </span>
+                filteredWorkers.map((worker) => {
+                  const avatarUrl = getWorkerAvatar(worker);
+                  return (
+                    <div key={worker._id || worker.email || worker.name} className="sw-worker-card">
+                      <div className="sw-card-top">
+                        <div className="sw-avatar-wrapper">
+                          <img 
+                            src={avatarUrl} 
+                            alt={worker.name} 
+                            className="sw-worker-avatar"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(worker.name || 'Worker')}&background=030712&color=00e5ff&bold=true`;
+                            }}
+                          />
+                          <span className="sw-online-dot" title="Active on duty"></span>
                         </div>
-                        <span className="sw-dept-tag">{worker.department}</span>
+
+                        <div className="sw-worker-info">
+                          <div className="sw-name-row">
+                            <h4>{worker.name}</h4>
+                            <span className="sw-verified-badge" title="Verified Worker">
+                              <ShieldCheck size={13} color="#00e5ff" />
+                              Verified
+                            </span>
+                          </div>
+                          
+                          {/* Worker Real Email Badge */}
+                          <div className="sw-email-row" title={worker.email}>
+                            <Mail size={11} className="email-icon" />
+                            <span className="sw-email-text">{worker.email}</span>
+                          </div>
+
+                          <span className="sw-dept-tag">{worker.department || 'General Civic Support'}</span>
+                        </div>
                       </div>
+
+                      <p className="sw-specialization">
+                        {worker.specialization || 'Municipal Infrastructure & Field Operations'}
+                      </p>
+
+                      <div className="sw-card-stats-row">
+                        <div 
+                          className="sw-stat-pill rating sw-clickable-rating" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingWorkerReviews(worker);
+                          }}
+                          title="Click to view citizen ratings & reviews"
+                        >
+                          <Star size={13} fill="#eab308" color="#eab308" />
+                          <strong>{worker.rating || 5.0}</strong>
+                          <span>({worker.reviewsCount || (worker.reviews ? worker.reviews.length : 0)} reviews)</span>
+                        </div>
+                        <div className="sw-stat-pill tasks">
+                          <Award size={13} color="#00e5ff" />
+                          <span>{worker.verifiedReportsCount || 5} Solved</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        className="sw-select-btn"
+                        disabled={isAssigning}
+                        onClick={() => handleSelectWorker(worker)}
+                      >
+                        <UserCheck size={15} />
+                        <span>Assign to My Ticket</span>
+                        <ChevronRight size={15} />
+                      </button>
                     </div>
-
-                    <p className="sw-specialization">
-                      {worker.specialization || 'General Infrastructure & Municipal Response'}
-                    </p>
-
-                    <div className="sw-card-stats-row">
-                      <div className="sw-stat-pill rating">
-                        <Star size={13} fill="#eab308" color="#eab308" />
-                        <strong>{worker.rating || 4.9}</strong>
-                        <span>({worker.reviewsCount || (worker.reviews ? worker.reviews.length : 12)})</span>
-                      </div>
-                      <div className="sw-stat-pill tasks">
-                        <Award size={13} color="#00e5ff" />
-                        <span>{worker.verifiedReportsCount || 24} Solved</span>
-                      </div>
-                    </div>
-
-                    <button 
-                      className="sw-select-btn"
-                      disabled={isAssigning}
-                      onClick={() => handleSelectWorker(worker)}
-                    >
-                      <span>Assign to My Ticket</span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
             {/* Footer Notice */}
             <div className="sw-modal-footer">
               <span className="sw-footer-notice">
-                🔒 Once assigned, this ticket is locked to your chosen officer. Only you and this officer can communicate and mark resolution.
+                🔒 All workers listed are fetched directly from MongoDB with their registered names, emails, and profiles.
               </span>
             </div>
           </>

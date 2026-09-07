@@ -511,3 +511,227 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Worker Email Badge & Text */
+.sw-email-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 1px 0;
+}
+
+.sw-email-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sw-preview-email {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #00e5ff;
+  margin-bottom: 2px;
+}
+
+.inline-mail-icon {
+  flex-shrink: 0;
+}
+
+/* ================= CITIZEN REVIEWS MODAL VIEW ================= */
+.sw-clickable-rating {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  transition: all 0.2s ease;
+}
+
+.sw-clickable-rating:hover {
+  background: rgba(234, 179, 8, 0.22);
+  border-color: #eab308;
+  transform: translateY(-1px);
+}
+
+.sw-reviews-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: swFadeIn 0.2s ease-out;
+}
+
+.sw-reviews-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.sw-back-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  color: #00e5ff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.2s ease;
+}
+
+.sw-back-btn:hover {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00e5ff;
+}
+
+.sw-officer-summary-mini {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 229, 255, 0.04);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.sw-mini-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #00e5ff;
+  object-fit: cover;
+}
+
+.sw-officer-summary-mini h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-dark, #f8fafc);
+}
+
+.sw-mini-meta {
+  font-size: 11.5px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.sw-reviews-scroll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.sw-no-reviews-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px 16px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+}
+
+.sw-no-reviews-box h4 {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-dark, #f8fafc);
+}
+
+.sw-no-reviews-box p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted, #94a3b8);
+  max-width: 320px;
+}
+
+.sw-citizen-review-item {
+  background: var(--input-bg, rgba(15, 23, 42, 0.6));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.sw-citizen-review-item:hover {
+  border-color: rgba(0, 229, 255, 0.25);
+  background: rgba(0, 229, 255, 0.03);
+}
+
+.sw-cr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sw-cr-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sw-cr-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.sw-cr-user strong {
+  font-size: 12px;
+  color: var(--text-dark, #f8fafc);
+  display: block;
+}
+
+.sw-cr-tkt {
+  font-size: 10.5px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.sw-cr-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sw-cr-comment {
+  font-size: 12px;
+  color: var(--text-dark, #e2e8f0);
+  margin: 0;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.sw-cr-date {
+  font-size: 10px;
+  color: var(--text-muted, #64748b);
+  align-self: flex-end;
+}
+
+.sw-reviews-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+

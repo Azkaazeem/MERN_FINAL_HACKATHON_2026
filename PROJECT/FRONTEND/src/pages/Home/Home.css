@@ -1869,3 +1869,27 @@
   color: #ffffff;
   transform: translateY(-1px);
 }
+
+/* Tracker Choose Worker Button */
+.tracker-worker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: #00e5ff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tracker-worker-btn:hover {
+  background: linear-gradient(135deg, #00e5ff 0%, #0072ff 100%);
+  color: #000;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
